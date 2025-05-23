@@ -1,0 +1,49 @@
+/* admin_panel/src/pages/DashboardPage.css (ou dans App.css) */
+.dashboard-container {
+  padding: 20px;
+  font-family: sans-serif;
+}
+
+.dashboard-container h1 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.dashboard-container p {
+  margin-bottom: 20px;
+  font-size: 1.1em;
+}
+
+.dashboard-nav ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.dashboard-nav li {
+  margin-bottom: 10px;
+}
+
+.dashboard-nav a {
+  text-decoration: none;
+  color: tomato;
+  font-weight: bold;
+}
+
+.dashboard-nav a:hover {
+  text-decoration: underline;
+}
+
+.logout-button {
+  padding: 10px 15px;
+  background-color: #f44336; /* Rouge pour déconnexion */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  margin-top: 30px;
+}
+
+.logout-button:hover {
+  background-color: #d32f2f;
+}
