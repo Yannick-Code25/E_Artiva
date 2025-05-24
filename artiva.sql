@@ -1,4 +1,4 @@
- CREATE TABLE users (
+CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
@@ -8,6 +8,14 @@
     role VARCHAR(20) DEFAULT 'customer',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE users
+ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+
+-- Et n'oublie pas le trigger si tu l'as créé :
+CREATE TRIGGER trigger_users_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
 CREATE TABLE admin (
     id SERIAL PRIMARY KEY,
     email VARCHAR(150) UNIQUE NOT NULL,
@@ -158,6 +166,10 @@ CREATE TABLE product_tags (
 
 COMMENT ON TABLE product_tags IS 'Définit les tags/badges applicables aux produits (ex: Nouveau, Populaire).';
 
+ALTER TABLE product_tags ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE product_tags ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+
+CREATE TRIGGER trigger_product_tags_updated_at BEFORE UPDATE ON product_tags FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 -- -----------------------------------------------------------------------------
 -- Table: product_tag_assignments (Liaison Many-to-Many produits et tags)
 -- -----------------------------------------------------------------------------

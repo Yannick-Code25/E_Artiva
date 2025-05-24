@@ -1,7 +1,7 @@
 // admin_panel/src/pages/DashboardPage.js
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import './DashboardPage.css'; // Importer le fichier CSS
+//import './DashboardPage.css'; // Importer le fichier CSS
 
 function DashboardPage() {
   const navigate = useNavigate();
@@ -25,17 +25,10 @@ function DashboardPage() {
   };
 
   return (
-    <div className="dashboard-container"> {/* Utiliser la classe CSS */}
+    //<div className="dashboard-container"> {/* Utiliser la classe CSS */}
+    <div> 
       <h1>Tableau de Bord Administrateur</h1>
       <p>Bienvenue, {adminUserName} !</p>
-      <nav className="dashboard-nav"> {/* Utiliser la classe CSS */}
-        <ul>
-          <li><Link to="/products/add">Ajouter un Produit</Link></li>
-          <li><Link to="/categories/add">Ajouter une Catégorie</Link></li>
-          {/* Ajouter d'autres liens plus tard */}
-        </ul>
-      </nav>
-      <button onClick={handleLogout} className="logout-button">Se déconnecter</button>
     </div>
   );
 }

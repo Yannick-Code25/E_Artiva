@@ -10,6 +10,7 @@ const userRoutes = require('./routes/userRoutes'); // Ajouter cette ligne
 const orderRoutes = require('./routes/orderRoutes');
 const productRoutes = require('./routes/productRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const productTagRoutes = require('./routes/productTagRoutes');
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use('/api/users', userRoutes); // Monter les routes utilisateur sur /api/use
 app.use('/api/orders', orderRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes); // Ajouter cette ligne
+app.use('/api/product-tags', productTagRoutes);
 
 
 // Middleware de gestion des erreurs (très basique pour l'instant)
