@@ -1,0 +1,67 @@
+/* Ajouts à ProductFormModal.css ou dans un nouveau OrderDetailsModal.css */
+
+.order-details-modal-content { /* Pour surcharger si besoin le style générique de modal-content */
+    /* max-width: 700px; */ /* Plus large pour les détails */
+  }
+  
+  .order-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+  }
+  .order-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+  
+  .order-section h4 {
+    font-size: 1.1em;
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 5px;
+  }
+  
+  .order-section p {
+    margin: 5px 0;
+    font-size: 0.95em;
+    line-height: 1.5;
+  }
+  .order-section p strong {
+    color: #555;
+    min-width: 120px; /* Pour aligner un peu les valeurs */
+    display: inline-block;
+  }
+  
+  .address-details Text, .address-details span { /* Pour le composant Text simulé */
+      display: block;
+      margin-bottom: 3px;
+  }
+  
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 0.9em;
+  }
+  .items-table th, .items-table td {
+    border: 1px solid #e0e0e0;
+    padding: 8px;
+    text-align: left;
+  }
+  .items-table th {
+    background-color: #f7f7f7;
+    font-weight: 600;
+  }
+  
+  /* Style pour le statut dans le modal (similaire à la table principale) */
+  .status-pending, .status-awaiting_payment, .status-failed { color: #dd6b20; font-weight: bold; }
+  .status-paid, .status-processing { color: #3182ce; font-weight: bold; }
+  .status-shipped { color: #2c7a7b; font-weight: bold; }
+  .status-delivered { color: #38a169; font-weight: bold; }
+  .status-cancelled, .status-refunded { color: #718096; font-weight: bold; }
+  
+  /* Ajustement pour le ScrollView dans le modal si besoin */
+  /* Le style pour .modal-content dans ProductFormModal.css contrôle déjà maxHeight et overflow-y */
