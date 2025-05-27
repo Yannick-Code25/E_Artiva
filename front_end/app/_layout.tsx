@@ -37,6 +37,9 @@ function RootStackLayout() {
       {/* <Stack.Screen name="forgot-password" options={{ title: 'Mot de passe oublié' }} /> */}
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Information' }} />
+      {/* Expo Router gère automatiquement les routes comme "product/[id]" même si non listées ici */}
+    {/* Cependant, pour configurer des options d'en-tête pour cette route, on l'ajouterait : */}
+    <Stack.Screen name="product/[id]" options={{ title: 'Détail du Produit' }} /> 
     </Stack>
   );
 }

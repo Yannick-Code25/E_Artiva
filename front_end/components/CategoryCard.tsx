@@ -1,9 +1,10 @@
 // front_end/components/CategoryCard.tsx
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import ScrollSection from './ScrollSection';
 
 // Type pour les props d'une carte de catégorie
-export interface Category { // Exporté pour pouvoir être utilisé dans l'écran d'accueil
+export interface Category { // Exporté pour pouvoir êtr utilisé dans l'écran d'accueil
   id: string;
   name: string;
   imageUrl: string; // URL de l'image de la catégorie

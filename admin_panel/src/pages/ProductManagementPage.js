@@ -33,10 +33,10 @@ function ProductManagementPage() {
     try {
       // Idéalement, cette route devrait permettre à un admin de voir TOUS les produits (publiés ou non)
       // Tu pourrais avoir une route /api/admin/products ou passer un query param
-      const response = await axios.get(`${API_BASE_URL}/products`, { 
-        // headers: { 'Authorization': `Bearer ${adminToken}` } // Décommente si GET /products est protégé
+      const response = await axios.get(`${API_BASE_URL}/products/admin/all`, { 
+         headers: { 'Authorization': `Bearer ${adminToken}` } // Décommente si GET /products est protégé
       });
-      setAllProducts(response.data || []);
+      setAllProducts(response.data.products || []);
       console.log("Produits chargés pour l'admin:", response.data.length);
     } catch (err) {
       console.error("Erreur chargement produits (admin):", err);

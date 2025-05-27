@@ -255,11 +255,10 @@ import axios from 'axios';
 import './ProductFormModal.css';
 
 function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, adminToken }) {
-  
+  const initialImageState = { image_url: '', alt_text: '', is_primary: false, display_order: 0 };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const getInitialFormData = useCallback(() => {
     if (productToEdit && productToEdit.id) {
-      console.log("ProductFormModal: Mode ÉDITION, produit reçu:", productToEdit);
       return {
         name: productToEdit.name || '',
         description: productToEdit.description || '',
@@ -270,12 +269,14 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
         is_published: productToEdit.is_published || false,
         category_ids: productToEdit.category_ids || [], 
         tag_ids: productToEdit.tag_ids || [],
+        images: (productToEdit.images || []).map((img, index) => ({ ...initialImageState, ...img, temp_id: `img-${index}-${Date.now()}` })) 
       };
     } else {
       console.log("ProductFormModal: Remplissage pour AJOUT (vide)");
       return {
         name: '', description: '', price: '', stock: '', image_url: '',
         sku: '', is_published: false, category_ids: [], tag_ids: [],
+        images: [{ ...initialImageState, temp_id: `img-0-${Date.now()}` }] // Commence avec un champ image
       };
     }
   }, [productToEdit]);
@@ -291,6 +292,34 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
     console.log("ProductFormModal: useEffect pour productToEdit/isOpen. productToEdit:", productToEdit);
     setFormData(getInitialFormData());
   }, [productToEdit, isOpen, getInitialFormData]); 
+
+  // Gérer les changements pour les champs d'images multiples
+  const handleImageChange = (index, field, value, type = 'text') => {
+    const newImages = [...formData.images];
+    newImages[index] = { ...newImages[index], [field]: type === 'checkbox' ? !newImages[index][field] : value };
+    
+    // S'assurer qu'une seule image est primaire
+    if (field === 'is_primary' && value === true) {
+        newImages.forEach((img, i) => {
+            if (i !== index) img.is_primary = false;
+        });
+    }
+    setFormData(prev => ({ ...prev, images: newImages }));
+  };
+
+  const addImageField = () => {
+    setFormData(prev => ({
+      ...prev,
+      images: [...prev.images, { ...initialImageState, temp_id: `img-${prev.images.length}-${Date.now()}` }]
+    }));
+  };
+
+  const removeImageField = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+  };
 
   const fetchOptions = useCallback(async () => {
     if (!isOpen) return;
@@ -346,15 +375,29 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
     setError('');
     setIsSubmitting(true);
 
+    // Préparer le payload, en s'assurant que les images ont les bons champs
     const payload = {
       ...formData,
-      price: parseFloat(formData.price), 
-      stock: parseInt(formData.stock, 10), 
+      price: parseFloat(formData.price) || 0,
+      stock: parseInt(formData.stock, 10) || 0,
+      images: formData.images.map(({ temp_id, ...imgData }) => ({ // Retirer temp_id
+        image_url: imgData.image_url,
+        alt_text: imgData.alt_text || null,
+        is_primary: Boolean(imgData.is_primary),
+        display_order: parseInt(String(imgData.display_order), 10) || 0
+      })).filter(img => img.image_url && img.image_url.trim() !== ''), // Ne pas envoyer d'images avec URL vide
     };
     
     if (payload.sku === '') delete payload.sku;
-    if (payload.image_url === '') delete payload.image_url;
-
+    // L'image principale est gérée par payload.image_url pour la table products.
+    // Si tu veux que la première image 'is_primary' de payload.images devienne aussi payload.image_url:
+    const primaryImage = payload.images.find(img => img.is_primary);
+    if (primaryImage) {
+        payload.image_url = primaryImage.image_url;
+    } else if (payload.images.length > 0 && !payload.image_url) {
+        // Si aucune n'est primaire, prend la première image du tableau comme image_url principale
+        payload.image_url = payload.images[0].image_url;
+    }
 
     try {
       if (productToEdit && productToEdit.id) { 
@@ -421,6 +464,37 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
                   <label htmlFor="modal-image_url">URL Image :</label>
                   <input type="text" name="image_url" id="modal-image_url" value={formData.image_url} onChange={handleChange} />
               </div>
+            </div>
+
+            {/* Section pour les images multiples (table product_images) */}
+            <div className="form-group">
+              <label>Galerie d'Images (optionnel) :</label>
+              {formData.images.map((img, index) => (
+                <div key={img.temp_id || index} className="image-entry" style={{border: '1px dashed #ccc', padding: '10px', marginBottom: '10px', borderRadius: '4px'}}>
+                  <div className="form-group">
+                    <label htmlFor={`img-url-${index}`}>URL Image {index + 1} :</label>
+                    <input type="text" id={`img-url-${index}`} value={img.image_url} onChange={(e) => handleImageChange(index, 'image_url', e.target.value)} placeholder="https://example.com/image.jpg"/>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor={`img-alt-${index}`}>Texte Alternatif :</label>
+                    <input type="text" id={`img-alt-${index}`} value={img.alt_text} onChange={(e) => handleImageChange(index, 'alt_text', e.target.value)} />
+                  </div>
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <div className="checkbox-item">
+                      <input type="checkbox" id={`img-primary-${index}`} checked={img.is_primary} onChange={(e) => handleImageChange(index, 'is_primary', e.target.checked, 'checkbox')} />
+                      <label htmlFor={`img-primary-${index}`}>Image Principale ?</label>
+                    </div>
+                    <div className="form-group" style={{width: '100px'}}>
+                        <label htmlFor={`img-order-${index}`}>Ordre:</label>
+                        <input type="number" id={`img-order-${index}`} value={img.display_order} onChange={(e) => handleImageChange(index, 'display_order', e.target.value)} style={{padding: '5px'}}/>
+                    </div>
+                    {formData.images.length > 1 && (
+                      <button type="button" onClick={() => removeImageField(index)} style={{color: 'red', background: 'none', border: 'none', cursor: 'pointer'}}>Supprimer</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <button type="button" onClick={addImageField} style={{marginTop: '5px', padding: '8px', fontSize: '0.9em'}}>+ Ajouter une autre image</button>
             </div>
 
             {/* Catégories */}

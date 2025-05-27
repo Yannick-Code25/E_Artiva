@@ -20,4 +20,7 @@ router.put('/:id', authMiddleware, adminMiddleware, productController.updateProd
 // DELETE /api/products/:id - Supprimer un produit (Admin)
 router.delete('/:id', authMiddleware, adminMiddleware, productController.deleteProduct);
 
+// NOUVELLE ROUTE ADMIN pour lister TOUS les produits (publiés ou non)
+router.get('/admin/all', authMiddleware, adminMiddleware, productController.getAllProductsAdmin);
+
 module.exports = router;

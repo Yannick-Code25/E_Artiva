@@ -1,6 +1,7 @@
 // front_end/components/ProductCard.tsx
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import ScrollSection from './ScrollSection';
 
 // Type pour les props d'une carte de produit
 export interface Product { // Exporté pour l'écran d'accueil
@@ -8,7 +9,15 @@ export interface Product { // Exporté pour l'écran d'accueil
   name: string;
   imageUrl: string;
   price: string; // Ou number si tu préfères, puis formater en string
-  // Tu pourrais ajouter d'autres champs comme oldPrice, discount, rating, etc.
+  category_ids?: (string | number)[]; // Optionnel, ajouté par l'API list
+  categories_names?: string[];        // Ajouté par l'API list
+  tag_ids?: (string | number)[];      // Optionnel, ajouté par l'API list
+  tags_names?: string[];              // Ajouté par l'API list
+  // Ajoute d'autres champs de base que GET /api/products renvoie
+  sku?: string;
+  is_published?: boolean;
+  description?: string; // Description peut aussi être dans le type de base
+  stock?: number;
 }
 
 interface ProductCardProps {
