@@ -15,17 +15,27 @@ interface UserData {
   // Ajoute d'autres champs si ton API /users/me les renvoie
 }
 
-interface OrderProduct {
-  productName: string;
-  // Ajoute d'autres détails du produit si nécessaire
+// Type pour un article DANS UNE COMMANDE (order_item)
+interface OrderItem { // Renommé de OrderProduct pour éviter confusion avec le type Product global
+  itemId: string | number; // Vient de oi.id as "itemId"
+  product_id: string | number; // Vient de oi.product_id
+  product_name: string;    // Vient de oi.product_name as "productName"
+  sku?: string;           // Vient de oi.sku
+  quantity: number;
+  unit_price: string | number; // Vient de oi.unit_price
+  subtotal: string | number;   // Vient de oi.subtotal
+  productImageUrl?: string;   // Vient de p.image_url as "productImageUrl"
 }
 
 interface Order {
   orderId: string | number;
-  createdAt: string;
-  products: OrderProduct[];
-  total: string | number;
+  order_number: string;
   status: string;
+  total: string | number; // total_amount as total
+  currency: string;       // Vient de o.currency
+  createdAt: string;
+  updatedAt?: string;
+  products: OrderItem[];
 }
 
 // Menu Items
@@ -148,18 +158,28 @@ export default function TabProfileScreen() {
         {orders.map((order) => (
           <View key={order.orderId} style={styles.orderItem}>
             <View style={styles.orderHeader}>
-              <Text style={styles.orderNumber}>Commande #{order.orderId || 'N/A'}</Text>
+              <Text style={styles.orderNumber}>Commande #{order.order_number || 'N/A'}</Text>
               <Text style={styles.orderDate}>{formatDate(order.createdAt)}</Text>
             </View>
             <View style={styles.orderProducts}>
               <Text style={styles.productsTitle}>Produits:</Text>
               {order.products && order.products.length > 0 ? (
-                order.products.map((product, idx) => (
-                  <Text key={idx} style={styles.productItem}>- {product.productName || 'Produit inconnu'}</Text>
-                ))
-              ) : (
-                <Text style={styles.productItem}>Détails des produits non disponibles.</Text>
-              )}
+              order.products.map((productItem, idx) => ( // Renommé 'product' en 'productItem' pour éviter confusion
+                <View key={productItem.itemId || productItem.product_id || idx} style={styles.modalProductItem}>
+                  {productItem.productImageUrl && ( // Afficher l'image si disponible
+                    <Image source={{ uri: productItem.productImageUrl }} style={styles.modalProductImage} />
+                  )}
+                  <View style={styles.modalProductInfo}>
+                    <Text style={styles.modalProductName}>{productItem.product_name || 'Produit inconnu'}</Text>
+                    <Text style={styles.modalProductDetails}>
+                      Qté: {productItem.quantity} - Prix Unit.: {productItem.unit_price} {order.currency}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.productItem}>Aucun détail de produit pour cette commande.</Text> // Message amélioré
+            )}
             </View>
             <View style={styles.orderFooter}>
               <Text style={styles.orderPrice}>Total: {order.total !== undefined ? order.total : 'N/A'} FCFA</Text>
@@ -289,4 +309,30 @@ const styles = StyleSheet.create({
   closeButton: { backgroundColor: 'tomato', paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginTop: 20},
   closeButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold'},
   errorText: { fontSize: 15, color: '#EF4444', textAlign: 'center', marginVertical: 15, paddingHorizontal: 10 },
+  modalProductItem: {
+  flexDirection: 'row',
+  marginBottom: 10,
+  paddingBottom: 10,
+  borderBottomWidth: 1,
+  borderBottomColor: '#f0f0f0',
+},
+modalProductImage: {
+  width: 50,
+  height: 50,
+  borderRadius: 4,
+  marginRight: 10,
+  backgroundColor: '#e0e0e0',
+},
+modalProductInfo: {
+  flex: 1,
+  justifyContent: 'center',
+},
+modalProductName: {
+  fontSize: 14,
+  fontWeight: '600',
+},
+modalProductDetails: {
+  fontSize: 12,
+  color: '#555',
+},
 });

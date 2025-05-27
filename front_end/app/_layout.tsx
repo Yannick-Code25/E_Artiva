@@ -3,6 +3,7 @@ import { Stack, SplashScreen } from 'expo-router';
 import React, { useEffect } from 'react';
 import { AuthProvider, useAuth } from '../context/AuthContext'; // Vérifie le chemin
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { CartProvider } from '../context/CartContext';
 
 // Empêche le splash screen de se masquer automatiquement au démarrage.
 SplashScreen.preventAutoHideAsync();
@@ -47,7 +48,9 @@ function RootStackLayout() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootStackLayout />
+      <CartProvider> 
+        <RootStackLayout /> 
+      </CartProvider>
     </AuthProvider>
   );
 }

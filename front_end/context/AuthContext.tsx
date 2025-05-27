@@ -11,6 +11,7 @@ export interface User {
   profileImageFromAuthContext: string | undefined; 
   id: number | string;
   name: string;
+  phone: string;
   email: string;
   role: 'customer' | 'admin' | string; 
 }

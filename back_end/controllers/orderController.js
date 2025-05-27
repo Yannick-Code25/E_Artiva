@@ -76,7 +76,7 @@ exports.createOrder = async (req, res) => {
     `;
     const orderResult = await client.query(orderQuery, [
       orderNumber, userId, 'pending', // Statut initial
-      totalAmount.toFixed(2), currency || 'FCFA', // S'assurer de 2 décimales pour le montant
+      totalAmount.toFixed(2), currency || 'XOF', // S'assurer de 2 décimales pour le montant
       JSON.stringify(shipping_address), // Stocker l'objet adresse en JSONB
       billing_address ? JSON.stringify(billing_address) : null,
       shipping_method || null,
@@ -135,8 +135,12 @@ exports.getUserOrders = async (req, res) => {
     const ordersWithProducts = await Promise.all(orders.map(async (order) => {
       const itemsQuery = `
         SELECT oi.id as "itemId", oi.product_id, oi.product_name, oi.sku, 
-               oi.quantity, oi.unit_price, oi.subtotal
-        FROM order_items oi WHERE oi.order_id = $1;`;
+               oi.quantity, oi.unit_price, oi.subtotal,
+        p.image_url as "productImageUrl" 
+        FROM order_items oi
+        LEFT JOIN products p ON oi.product_id = p.id 
+        WHERE oi.order_id = $1
+        ORDER BY oi.id; `;
       const { rows: items } = await db.query(itemsQuery, [order.orderId]);
       return { ...order, products: items }; // 'products' est ce que le frontend ProfileScreen attendait
     }));

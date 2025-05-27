@@ -3,13 +3,14 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, Image, 
   TouchableOpacity, ActivityIndicator, Alert, Dimensions, Button,
-  FlatList // Assure-toi que FlatList est importé
+  FlatList 
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter, Href } from 'expo-router'; // Href pour la navigation
 import { FontAwesome } from '@expo/vector-icons';
 import Colors from '../../constants/Colors';
 import { useColorScheme } from '../../components/useColorScheme';
 import { Product } from '../../components/ProductCard'; // Assure-toi que ce chemin et l'export sont corrects
+import { useCart, CartItem } from '../../context/CartContext'
 
 // Type pour une image de produit (venant de la table product_images ou de l'image principale)
 interface ProductImageItem {
@@ -52,7 +53,36 @@ export default function ProductDetailScreen() {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList<ProductImageItem>>(null);
 
-  
+  const { cartItems, addToCart, updateQuantity } = useCart();
+  // La 'quantity' ici est la quantité que l'utilisateur SOUHAITE ajouter ou a dans le panier
+  // Elle sera initialisée en fonction du panier.
+  // const [quantity, setQuantity] = useState(1); // On va la gérer différemment
+
+  // ... (fetchProductDetails, renderImageCarousel, etc. inchangés)
+
+  // Trouver l'item du panier correspondant à ce produit, s'il existe
+  const cartItemForThisProduct = cartItems.find(item => String(item.id) === String(product?.id));
+  const quantityInCart = cartItemForThisProduct ? cartItemForThisProduct.quantity : 0;
+
+  const handleQuantityChangeOnDetailPage = (amount: number) => {
+    if (!product) return;
+    const newQuantity = quantityInCart + amount;
+
+    if (newQuantity <= 0) {
+      // Si la nouvelle quantité est 0 ou moins, on le retire du panier (similaire à updateQuantity dans le contexte)
+      // ou on réaffiche le bouton "Ajouter au panier"
+      // Pour la simplicité ici, on va juste s'assurer que updateQuantity dans le contexte gère la suppression à 0.
+      updateQuantity(product.id, newQuantity); 
+    } else {
+      updateQuantity(product.id, newQuantity);
+    }
+  };
+
+  const handleInitialAddToCart = () => {
+    if (!product) return;
+    addToCart(product, 1); 
+    Alert.alert("Panier", `${product.name} ajouté au panier !`);
+  };
 
   const fetchProductDetails = useCallback(async () => {
     if (!id) { 
@@ -104,15 +134,20 @@ export default function ProductDetailScreen() {
 
   const handleAddToCart = () => {
     if (!product) return;
-    Alert.alert("Ajout au panier", `${quantity} x ${product.name} ajouté(s) au panier (simulation).`);
-    console.log({ productId: product.id, quantity });
+    addToCart(product, quantity); // Passe le produit entier et la quantité sélectionnée
+    Alert.alert("Panier", `${quantity} x ${product.name} ajouté(s) au panier !`);
+    // Optionnel: Naviguer vers le panier ou afficher une confirmation plus élaborée
+    // router.push('/(tabs)/CartScreen'); 
   };
 
+  // ... (JSX reste le même, le bouton "Ajouter au panier" appelle maintenant ce handleAddToCart)
+
+
    // Fonction pour gérer le changement d'index lors du scroll du carrousel
-   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: Array<ViewableItemInfo<ProductImageItem>> }) => { // << TYPAGE AJOUTÉ ICI
+   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: Array<ViewableItemInfo<ProductImageItem>> }) => { 
     if (viewableItems.length > 0) {
       const firstViewableItem = viewableItems[0];
-      if (firstViewableItem.index !== null) { // Vérifier que l'index n'est pas null
+      if (firstViewableItem.index !== null) { 
         setActiveIndex(firstViewableItem.index);
         console.log("Image active (index):", firstViewableItem.index);
       }
@@ -138,7 +173,7 @@ export default function ProductDetailScreen() {
       <View style={styles.dotsContainer}>
         {product.images.map((_, index) => (
           <View
-            key={`dot-${index}`} // Utiliser un préfixe pour la clé
+            key={`dot-${index}`} 
             style={[
               styles.dot,
               index === activeIndex ? styles.dotActive : styles.dotInactive,
@@ -148,7 +183,7 @@ export default function ProductDetailScreen() {
       </View>
     );
   };
-  // L'ACCOLADE FERMANTE EN TROP A ÉTÉ SUPPRIMÉE D'ICI
+
 
   if (isLoading) {
     return (
@@ -180,8 +215,6 @@ export default function ProductDetailScreen() {
   return (
     <ScrollView style={styles.screenContainer}>
       <Stack.Screen options={{ title: product.name || 'Détail Produit' }} />
-
-      {/* Carrousel d'Images */}
       {product.images && product.images.length > 0 ? (
         <View style={styles.carouselWrapper}>
           <FlatList
@@ -206,42 +239,56 @@ export default function ProductDetailScreen() {
 
       <View style={styles.detailsContainer}>
         <Text style={styles.productName}>{product.name || 'Nom du produit non disponible'}</Text>
+        
         {product.tags_names && product.tags_names.length > 0 && (
             <Text style={styles.tags}>Tags: {product.tags_names.join(', ')}</Text>
         )}
         {product.categories_names && product.categories_names.length > 0 && (
             <Text style={styles.categories}>Catégories: {product.categories_names.join(', ')}</Text>
         )}
-        <Text style={styles.productPrice}>{product.price || 'Prix N/A'} {'FCFA'}</Text> 
+
+        <Text style={styles.productPrice}>{product.price || 'Prix N/A'}</Text> 
+        
         <Text style={styles.productDescription}>{product.description || 'Pas de description disponible.'}</Text>
         
-        <View style={styles.quantityContainer}>
-          <Text style={styles.quantityLabel}>Quantité :</Text>
-          <TouchableOpacity onPress={() => handleQuantityChange(-1)} style={styles.quantityButton}>
-            <FontAwesome name="minus" size={20} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.quantityValue}>{quantity}</Text>
-          <TouchableOpacity onPress={() => handleQuantityChange(1)} style={styles.quantityButton}>
-            <FontAwesome name="plus" size={20} color="#333" />
-          </TouchableOpacity>
-        </View>
+        {quantityInCart > 0 ? (
+          <View style={styles.quantityContainer}>
+            <Text style={styles.quantityLabel}>Quantité :</Text>
+            <TouchableOpacity 
+              onPress={() => handleQuantityChangeOnDetailPage(-1)} 
+              style={styles.quantityButton}
+            >
+              <FontAwesome name="minus" size={20} color="#333" />
+            </TouchableOpacity>
+            <Text style={styles.quantityValue}>{quantityInCart}</Text>
+            <TouchableOpacity 
+              onPress={() => handleQuantityChangeOnDetailPage(1)} 
+              style={styles.quantityButton}
+              disabled={quantityInCart >= (product.stock || Infinity)} 
+            >
+              <FontAwesome name="plus" size={20} color={(quantityInCart >= (product.stock || Infinity)) ? '#ccc' : '#333'} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          
+          (product.stock !== undefined && product.stock > 0) ? (
+            <TouchableOpacity style={styles.addToCartButton} onPress={handleInitialAddToCart}>
+              <Text style={styles.addToCartButtonText}>Ajouter au panier</Text>
+            </TouchableOpacity>
+          ) : null 
+        )}
         
         <Text style={styles.stockInfo}>
-            {(product.stock !== undefined && product.stock > 0) ? `Stock disponible : ${product.stock}` : 'Produit indisponible'}
+            {(product.stock !== undefined && product.stock > 0) 
+                ? `Stock disponible : ${product.stock}` 
+                : 'Produit indisponible'
+            }
         </Text>
-        
-        <TouchableOpacity 
-            style={[styles.addToCartButton, (product.stock === undefined || product.stock === 0) && styles.disabledButton]} 
-            onPress={handleAddToCart} 
-            disabled={product.stock === undefined || product.stock === 0}>
-          <Text style={styles.addToCartButtonText}>
-            {(product.stock === undefined || product.stock === 0) ? 'Indisponible' : 'Ajouter au panier'}
-          </Text>
-        </TouchableOpacity>      
       </View>
     </ScrollView>
   );
-} // <<< ACCOLADE FERMANTE DE ProductDetailScreen
+}
+ 
 
 // Styles (incluant les styles du carrousel que j'avais fournis)
 const styles = StyleSheet.create({

@@ -243,6 +243,9 @@ CREATE TABLE orders (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE orders ALTER COLUMN currency TYPE VARCHAR(4); 
+-- Et fais de même pour la table payments si elle a aussi une colonne currency
+ALTER TABLE payments ALTER COLUMN currency TYPE VARCHAR(4);
 
 COMMENT ON TABLE orders IS 'Stocke les informations principales de chaque commande passée.';
 COMMENT ON COLUMN orders.order_number IS 'Identifiant public et unique de la commande.';
