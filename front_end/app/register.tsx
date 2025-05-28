@@ -15,7 +15,7 @@ import {
 import { Link, useRouter } from "expo-router";
 import { FontAwesome } from "@expo/vector-icons";
 
-const API_BASE_URL = "http://192.168.1.2:3001/api"; // EXEMPLE: 'http://192.168.1.105:3001/api'
+const API_BASE_URL = "http://192.168.248.151:3001/api"; // EXEMPLE: 'http://192.168.1.105:3001/api'
 
 export default function RegisterScreen() {
   const router = useRouter();

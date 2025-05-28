@@ -20,7 +20,7 @@ import { useRouter, Href } from 'expo-router'; // Href pour le typage de router.
 import { useAuth } from '../../context/AuthContext';
 
 // **ATTENTION: REMPLACE 'VOTRE_ADRESSE_IP_LOCALE' PAR TON IP RÉELLE**
-const API_BASE_URL = 'http://192.168.1.2:3001/api'; // Exemple, mets la tienne
+const API_BASE_URL = 'http://192.168.248.151:3001/api'; // Exemple, mets la tienne
 
 export default function TabAccueilScreen() {
   const router = useRouter();

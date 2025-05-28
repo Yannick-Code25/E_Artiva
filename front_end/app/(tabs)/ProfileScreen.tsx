@@ -48,7 +48,7 @@ const menuItems: { icon: React.ElementType, title: string, subtitle: string, rou
 ];
 
 // URL de base de ton API
-const API_BASE_URL = 'http://192.168.1.2:3001/api'; // **ASSURE-TOI QUE C'EST TON IP**
+const API_BASE_URL = 'http://192.168.248.151:3001/api'; // **ASSURE-TOI QUE C'EST TON IP**
 
 export default function TabProfileScreen() {
   const { user, userToken, signOut, isLoading: isAuthLoading } = useAuth();

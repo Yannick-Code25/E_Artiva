@@ -48,8 +48,10 @@ export default function TabCartScreen() {
     return isNaN(priceNumber) ? 0 : priceNumber * item.quantity;
   };
 
-  const renderCartItem = ({ item }: { item: CartItem }) => (
-    <View style={[styles.itemContainer, {backgroundColor: Colors[colorScheme ?? 'light'].card}]}>
+  const renderCartItem = ({ item }: { item: CartItem }) => {
+    console.log("Render CartItem:", item.name, "imageUrl:", item.imageUrl);
+    return(
+      <View style={[styles.itemContainer, {backgroundColor: Colors[colorScheme ?? 'light'].card}]}>
       <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
       <View style={styles.itemDetails}>
         <Text style={[styles.itemName, {color: textColor}]} numberOfLines={2}>{item.name}</Text>
@@ -82,6 +84,7 @@ export default function TabCartScreen() {
       </View>
     </View>
   );
+  }
 
   if (isLoadingCart) {
     return <View style={styles.centered}><ActivityIndicator size="large" color={tintColor}/></View>
