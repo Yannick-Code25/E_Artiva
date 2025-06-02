@@ -1,14 +1,17 @@
 // ARTIVA/front_end/app/(tabs)/WishlistScreen.tsx
-import React from 'react';
+import React, { useEffect  } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Button, ActivityIndicator, Platform } from 'react-native';
 import { Stack, useRouter, Href } from 'expo-router';
 import { useWishlist, WishlistItem } from '../../context/WishlistContext'; // Importer WishlistItem
 import { FontAwesome } from '@expo/vector-icons';
 import Colors from '../../constants/Colors';
 import { useColorScheme } from '../../components/useColorScheme';
+import { useAuth } from '../../context/AuthContext';
+
 
 export default function TabWishlistScreen() {
   const { wishlistItems, removeFromWishlist, isLoadingWishlist, fetchWishlist } = useWishlist();
+  const { userToken, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const tintColor = Colors[colorScheme ?? 'light'].tint;
@@ -17,7 +20,15 @@ export default function TabWishlistScreen() {
   const cardColor = Colors[colorScheme ?? 'light'].card;
   const subtleTextColor = Colors[colorScheme ?? 'light'].tabIconDefault;
 
+useEffect(() => {
+    // Attendre que le chargement initial de l'auth soit terminé
+    if (!isAuthLoading && !userToken) {
+      console.log("WishlistScreen: Utilisateur non connecté, redirection vers /login");
+      router.replace('/login' as Href); 
+    }
+  }, [isAuthLoading, userToken, router]);
 
+  
   const handleProductPress = (productId: string | number) => {
     const path = `/product/${String(productId)}` as Href;
     router.push(path);
@@ -36,15 +47,17 @@ export default function TabWishlistScreen() {
       </TouchableOpacity>
     </TouchableOpacity>
   );
+  
 
   // Afficher un loader pendant le chargement initial de la wishlist
-  if (isLoadingWishlist && wishlistItems.length === 0) { // Loader seulement si la liste est vide et qu'on charge
+  if (isAuthLoading || (!userToken && !isAuthLoading) || (isLoadingWishlist && wishlistItems.length === 0) ) { // Loader seulement si la liste est vide et qu'on charge
     return (
       <View style={[styles.centered, {backgroundColor}]}>
         <ActivityIndicator size="large" color={tintColor}/>
         <Text style={{marginTop: 10, color: textColor}}>Chargement de votre liste de souhaits...</Text>
       </View>
     );
+
   }
   
   return (

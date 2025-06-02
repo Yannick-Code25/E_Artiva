@@ -21,8 +21,13 @@ import {
   Bell,
   LogOut,
 } from "lucide-react-native";
-import { useRouter, Href } from "expo-router"; // Ajout de Href pour un meilleur typage
+import { useRouter, Href, Stack } from "expo-router"; // Ajout de Href pour un meilleur typage
 import { useAuth } from "../../context/AuthContext";
+import Colors from '../../constants/Colors'; // Pour les couleurs du bouton
+import { useColorScheme } from '../../components/useColorScheme';
+
+
+
 
 // Définition des types pour les données
 interface UserData {
@@ -98,12 +103,30 @@ const API_BASE_URL = "http://192.168.1.2:3001/api"; // **ASSURE-TOI QUE C'EST TO
 export default function TabProfileScreen() {
   const { user, userToken, signOut, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
+  const colorScheme = useColorScheme(); // Pour le style du bouton
+  const tintColor = Colors[colorScheme ?? 'light'].tint;
 
   const [userDataDetails, setUserDataDetails] = useState<UserData | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isFetchingData, setIsFetchingData] = useState<boolean>(false);
+
+
+
+
+  useEffect(() => {
+  if (!isAuthLoading && !userToken) {
+    router.replace('/login'); // Ou router.push si tu veux que l'utilisateur puisse revenir
+  }
+}, [isAuthLoading, userToken, router]);
+
+if (isAuthLoading || !userToken) { // Affiche un loader ou rien tant que l'état n'est pas clair ou si pas de token
+  return <View style={styles.centered}><ActivityIndicator size="large" /></View>;
+}
+
+
+
 
   const fetchUserDetails = useCallback(async () => {
     if (!userToken) return;
@@ -230,6 +253,15 @@ export default function TabProfileScreen() {
         </Text>
       );
     }
+    // Si l'authentification est en cours de vérification ou si l'utilisateur n'est pas encore authentifié (et la redirection n'a pas encore eu lieu)
+  if (isAuthLoading || !userToken || !user) { 
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={tintColor} />
+        <Text style={{marginTop:10, color: Colors[colorScheme ?? 'light'].text}}>Chargement du profil...</Text>
+      </View>
+    );
+  }
     return (
       <ScrollView style={styles.ordersContainer} nestedScrollEnabled={true}>
         {orders.map((order) => (

@@ -12,6 +12,7 @@ const productRoutes = require('./routes/productRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const productTagRoutes = require('./routes/productTagRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
+const cartRoutes = require('./routes/cartRoutes');
 
 const app = express();
 
@@ -32,7 +33,9 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes); // Ajouter cette ligne
 app.use('/api/product-tags', productTagRoutes);
-app.use('/api/wishlist', wishlistRoutes); // AJOUTER
+app.use('/api/wishlist', wishlistRoutes); 
+app.use('/api/cart', cartRoutes);
+
 
 
 

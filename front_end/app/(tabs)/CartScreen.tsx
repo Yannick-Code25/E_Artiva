@@ -32,6 +32,7 @@ export default function TabCartScreen() {
           { text: "Se connecter", onPress: () => router.push('/login') } 
         ]
       );
+      router.push('/login');
       return;
     }
     if (cartItems.length === 0) {

@@ -3,9 +3,9 @@ import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Link, Tabs, Redirect } from 'expo-router'; // Link et Pressable ne sont plus nécessaires si headerRight est commenté
 
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import Colors from '../../constants/Colors';
+import { useColorScheme } from '../../components/useColorScheme';
+import { useClientOnlyValue } from '../../components/useClientOnlyValue';
 import { Pressable } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 
@@ -33,10 +33,10 @@ export default function TabLayout() {
   // Si l'utilisateur n'est pas connecté et essaie d'accéder à ce layout d'onglets,
   // le rediriger vers login. Normalement, app/index.tsx devrait déjà l'avoir fait.
   // C'est une double sécurité ou utile si l'utilisateur atterrit ici via un deep link.
-  if (!userToken) {
-    console.log("TabLayout: Pas de token, redirection vers /login depuis le layout des onglets.");
-    return <Redirect href="/login" />;
-  }
+  // if (!userToken) {
+  //   console.log("TabLayout: Pas de token, redirection vers /login depuis le layout des onglets.");
+  //   return <Redirect href="/login" />;
+  // }
 
   // Si l'utilisateur est connecté, afficher les onglets
 
