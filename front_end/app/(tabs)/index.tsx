@@ -1,264 +1,375 @@
 // ARTIVA/front_end/app/(tabs)/index.tsx
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  ScrollView, 
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  StyleSheet,
+  View,
+  ScrollView,
   Text as DefaultText, // Renommé pour éviter conflit si tu as un composant Text personnalisé
-  useColorScheme, 
-  ActivityIndicator, 
-  RefreshControl, 
-  Alert, 
-  Button, 
-  Platform 
-} from 'react-native';
-import ScrollSection from '../../components/ScrollSection';
-import CategoryCard, { Category } from '../../components/CategoryCard';
-import ProductCard, { Product } from '../../components/ProductCard';
-import Colors from '../../constants/Colors'; // Ajuste le chemin si nécessaire
-import { useRouter, Href } from 'expo-router'; // Href pour le typage de router.push
-import { useAuth } from '../../context/AuthContext';
+  useColorScheme,
+  ActivityIndicator,
+  RefreshControl,
+  Alert,
+  Button,
+  Platform,
+} from "react-native";
+import ScrollSection from "../../components/ScrollSection";
+import CategoryCard, {
+  Category as CategoryType,
+} from "../../components/CategoryCard";
+import ProductCard, {
+  Product as ProductType,
+} from "../../components/ProductCard";
+import Colors from "../../constants/Colors";
+import { useRouter, Href } from "expo-router";
+// import { useAuth } from '../../context/AuthContext'; // Non utilisé directement ici, mais disponible
 
 // **ATTENTION: REMPLACE 'VOTRE_ADRESSE_IP_LOCALE' PAR TON IP RÉELLE**
-const API_BASE_URL = 'http://192.168.248.151:3001/api'; // Exemple, mets la tienne
+const API_BASE_URL = "http://192.168.1.2:3001/api"; // Exemple, mets la tienne
+
+interface TaggedProductsStore {
+  tagId: string | number; // Peut être l'ID du tag si tu le récupères
+  tagName: string;
+  products: ProductType[];
+}
 
 export default function TabAccueilScreen() {
   const router = useRouter();
-  const { userToken } = useAuth(); // Non utilisé ici, mais disponible si besoin
+
   const colorScheme = useColorScheme();
-  const siteNameColor = Colors[colorScheme ?? 'light'].text;
-  const pageBackgroundColor = Colors[colorScheme ?? 'light'].background;
-  const textColor = Colors[colorScheme ?? 'light'].text;
+  const siteNameColor = Colors[colorScheme ?? "light"].text;
+  const pageBackgroundColor = Colors[colorScheme ?? "light"].background;
+  const textColor = Colors[colorScheme ?? "light"].text;
+  const tintColor = Colors[colorScheme ?? "light"].tint;
 
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [newArrivals, setNewArrivals] = useState<Product[]>([]);
-  const [forYouProducts, setForYouProducts] = useState<Product[]>([]);
+  const [mainCategories, setMainCategories] = useState<CategoryType[]>([]);
+  const [featuredProductSections, setFeaturedProductSections] = useState<
+    TaggedProductsStore[]
+  >([]);
 
-  const [isLoading, setIsLoading] = useState(true); // Loader global pour le premier chargement
+  // Configure ici les noms exacts des tags de ta BDD que tu veux afficher
+  const FEATURED_TAG_NAMES: string[] = ["Nouveaute", "Populaire", "Pour Vous"]; //Utiliser sa pour afficher choisir les tags qui devront apparait sur la page d'accueil
+  const PRODUCTS_PER_TAG_SECTION = 5;
+
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false); // Pour le Pull-to-Refresh
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchData = useCallback(async () => {
-    console.log("TabAccueilScreen: Appel de fetchData...");
-    // Ne pas remettre isLoading à true ici si ce n'est pas le premier chargement (géré par onRefresh)
-    // setIsLoading(true); // Commenté pour que le loader n'apparaisse que si c'est pertinent
+    console.log("TabAccueilScreen: Appel de fetchData pour l'accueil...");
+    // Ne mettre setIsLoading(true) que si ce n'est pas un refresh, pour éviter que le loader plein écran ne s'affiche pendant le refresh
+    if (!refreshing) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
-      // --- Charger les catégories ---
-      console.log("TabAccueilScreen: fetchCategories...");
+      // 1. Charger toutes les catégories
+      console.log("TabAccueilScreen: fetchCategories (toutes)...");
       const catResponse = await fetch(`${API_BASE_URL}/categories`);
       if (!catResponse.ok) {
-        const errorText = await catResponse.text();
-        throw new Error(`Erreur catégories (${catResponse.status}): ${errorText}`);
+        const errorText = await catResponse
+          .text()
+          .catch(() => "Impossible de lire le corps de l'erreur catégorie");
+        throw new Error(
+          `Erreur catégories (${catResponse.status}): ${errorText}`
+        );
       }
-      const catData = await catResponse.json();
-      console.log("Données brutes Catégories reçues:", JSON.stringify(catData, null, 2));
-      
-      setCategories(catData.map((cat: any) => {
-        const categoryName = cat.name || 'Catégorie Inconnue';
-        return {
-          id: String(cat.id),
-          name: categoryName,
-          imageUrl: cat.image_url || `https://via.placeholder.com/100x100/FECACA/000?text=${encodeURIComponent(categoryName.substring(0,10))}`,
-        };
-      }));
-      console.log("TabAccueilScreen: Catégories traitées.");
+      const allCatData = await catResponse.json();
+      console.log(
+        "TabAccueilScreen: Toutes les catégories brutes:",
+        allCatData.length
+      );
 
-      // --- Charger les produits ---
-      console.log("TabAccueilScreen: fetchProducts...");
-      const prodResponse = await fetch(`${API_BASE_URL}/products`);
-      if (!prodResponse.ok) {
-        const errorText = await prodResponse.text();
-        throw new Error(`Erreur produits (${prodResponse.status}): ${errorText}`);
-      }
-      const prodData = await prodResponse.json();
-      console.log("Données brutes Produits reçues:", JSON.stringify(prodData, null, 2));
+      const mainCats = allCatData
+        .filter((cat: any) => cat.parent_id === null) // Garder seulement les catégories principales
+        .map((cat: any) => {
+          const categoryName = cat.name || "Catégorie";
+          return {
+            id: String(cat.id),
+            name: categoryName,
+            imageUrl:
+              cat.image_url ||
+              `https://via.placeholder.com/100x100/E2E8F0/4A5568?text=${encodeURIComponent(
+                categoryName.substring(0, 3)
+              )}`,
+          };
+        });
+      setMainCategories(mainCats);
+      console.log(
+        "TabAccueilScreen: Catégories principales traitées:",
+        mainCats.length
+      );
 
-      if (!Array.isArray(prodData)) {
-          console.error("Erreur: prodData n'est pas un tableau!", prodData);
-          throw new Error("Format de données produits inattendu du serveur.");
-      }
+      // 2. Pour chaque tag à mettre en avant, charger quelques produits aléatoires
+      const productSectionsPromises = FEATURED_TAG_NAMES.map(
+        async (tagName) => {
+          console.log(
+            `TabAccueilScreen: fetchProducts pour tag "${tagName}"...`
+          );
+          const prodResponse = await fetch(
+            `${API_BASE_URL}/products?tag_name=${encodeURIComponent(
+              tagName
+            )}&limit=${PRODUCTS_PER_TAG_SECTION}&random=true`
+          );
+          if (!prodResponse.ok) {
+            console.warn(
+              `Erreur produits pour tag "${tagName}" (${prodResponse.status}), section ignorée.`
+            );
+            return null;
+          }
+          // L'API /products renvoie directement un tableau de produits (ou un objet avec une clé products si tu as la pagination)
+          // On suppose ici que si tag_name est utilisé, l'API renvoie directement le tableau de produits filtrés.
+          // Si elle renvoie {products: [...]}, il faut adapter prodData.map plus bas.
+          const productsForTag = await prodResponse.json();
 
-      const adaptedProdData = prodData.map((prod: any) => {
-        const productName = prod.name || 'Produit Inconnu';
-        const productPrice = prod.price !== undefined && prod.price !== null ? String(prod.price) : 'N/A';
-        return {
-          id: String(prod.id),
-          name: productName,
-          price: `${productPrice} FCFA`,
-          imageUrl: prod.image_url || `https://via.placeholder.com/150x150/BFDBFE/000?text=${encodeURIComponent(productName.substring(0,10))}`,
-          categories_names: prod.categories_names || [],
-          tags_names: prod.tags_names || [],
-          // Assure-toi que ton type Product inclut ces champs si tu les utilises dans ProductCard
-          stock: prod.stock, 
-          description: prod.description,
-          is_published: prod.is_published,
-        };
-      });
+          // Vérifier si productsForTag est bien un tableau (si l'API renvoie direct un tableau)
+          // ou si c'est un objet avec une clé 'products' (si l'API renvoie un objet de pagination)
+          let actualProductArray = [];
+          if (Array.isArray(productsForTag)) {
+            actualProductArray = productsForTag;
+          } else if (productsForTag && Array.isArray(productsForTag.products)) {
+            actualProductArray = productsForTag.products;
+          } else {
+            console.warn(
+              `Format de données produits inattendu pour tag "${tagName}", section ignorée.`
+            );
+            return null;
+          }
 
-      // Logique pour diviser les produits (à améliorer avec tes tags "nouveau", "pour_vous")
-      // Pour l'instant, division simple
-      const allPublishedProducts = adaptedProdData.filter(p => p.is_published !== false); // Si is_published peut être undefined
-      setNewArrivals(allPublishedProducts.slice(0, 5)); 
-      setForYouProducts(allPublishedProducts.slice(5, 10)); 
-      console.log("TabAccueilScreen: Produits (publiés) traités et chargés:", allPublishedProducts.length);
-      console.log("TabAccueilScreen: Total produits adaptés (avant filtre publication):", adaptedProdData.length);
+          const adaptedProducts = actualProductArray.map((prod: any) => {
+            const productName = prod.name || "Produit";
+            const productPrice =
+              prod.price !== undefined && prod.price !== null
+                ? String(prod.price)
+                : "N/A";
+            return {
+              id: String(prod.id),
+              name: productName,
+              price: `${productPrice} FCFA`, // Ou utilise ta fonction formatPrice
+              imageUrl:
+                prod.image_url ||
+                `https://via.placeholder.com/150x150/BFDBFE/000?text=${encodeURIComponent(
+                  productName.substring(0, 3)
+                )}`,
+              stock: prod.stock,
+              description: prod.description,
+              category_ids: prod.category_ids || [],
+              categories_names: prod.categories_names || [],
+              tag_ids: prod.tag_ids || [],
+              tags_names: prod.tags_names || [],
+              is_published: prod.is_published,
+            };
+          });
+          // Tu pourrais vouloir l'ID du tag ici si tu l'as dans la réponse ou si tu fais un autre appel pour les tags
+          return {
+            tagId: tagName,
+            tagName: tagName,
+            products: adaptedProducts,
+          };
+        }
+      );
+
+      const resolvedSections = (
+        await Promise.all(productSectionsPromises)
+      ).filter(
+        (section) => section !== null && section.products.length > 0
+      ) as TaggedProductsStore[];
+      setFeaturedProductSections(resolvedSections);
+      console.log(
+        "TabAccueilScreen: Sections de produits par tag chargées:",
+        resolvedSections.length
+      );
     } catch (err: any) {
-      console.error("TabAccueilScreen: Erreur fetchData:", err.message, err);
-      setError(err.message || 'Une erreur est survenue lors du chargement des données.');
+      console.error(
+        "TabAccueilScreen: Erreur fetchData global:",
+        err.message,
+        err
+      );
+      setError(
+        err.message || "Une erreur est survenue lors du chargement des données."
+      );
       // Ne pas vider les données existantes en cas d'erreur de refresh pour une meilleure UX
-      // setCategories([]); 
-      // setNewArrivals([]); 
-      // setForYouProducts([]);
     } finally {
-      setIsLoading(false); // Toujours mettre à false, même le loader initial
+      setIsLoading(false);
       setRefreshing(false);
     }
-  }, []); // Tableau de dépendances vide pour que fetchData ne soit défini qu'une fois
+  }, [refreshing]); // Dépend de refreshing pour que le premier setIsLoading ne s'active pas pendant un refresh
 
   useEffect(() => {
-    fetchData(); // Appeler au montage initial
-  }, [fetchData]); // fetchData est maintenant stable grâce à useCallback
+    fetchData();
+  }, [fetchData]);
 
   const onRefresh = useCallback(() => {
     console.log("TabAccueilScreen: onRefresh appelé");
-    setRefreshing(true);
-    fetchData(); // Appelle la fonction qui mettra refreshing à false dans son finally
+    setRefreshing(true); // Cela va déclencher un re-rendu, et l'effet ci-dessus ne mettra pas setIsLoading(true)
+    fetchData();
   }, [fetchData]);
 
-  const handleCategoryPress = (categoryId: string) => {
-    Alert.alert('Navigation Catégorie', `ID: ${categoryId}`);
-    // const path = `/category/${categoryId}` as Href; // Prépare pour la navigation réelle
+  const handleCategoryPress = (categoryId: string, categoryName?: string) => {
+    // categoryId est l'ID de la catégorie sur laquelle l'utilisateur a cliqué.
+    // categoryName est le nom de cette catégorie (optionnel, mais utile pour le titre de la page suivante).
+
+    console.log('Accueil: Catégorie cliquée - ID:', categoryId, 'Nom:', categoryName);
+
+    // Construire le chemin vers la page qui affichera les produits de cette catégorie.
+    // Le nom du fichier pour cette page est `app/category-products/[categoryId].tsx`
+    // Donc, la route sera de la forme `/category-products/ID_DE_LA_CATEGORIE`
+    const path = `/category-products/${categoryId}` as Href; 
+
+    // Utiliser router.push pour naviguer.
+    // On peut passer des paramètres supplémentaires (comme categoryName) via la propriété 'params'.
+    // Ces paramètres seront accessibles sur la page de destination via `useLocalSearchParams`.
+    router.push(`/category-products/${categoryId}` as Href);
+  };
+
+  const handleProductPress = (productId: string | number) => {
+    console.log("Navigation vers produit ID:", productId);
+    const path = `/product/${String(productId)}` as Href;
+    router.push(path);
+  };
+
+  const handleSeeAllTagProducts = (tagName: string) => {
+    Alert.alert(
+      "Voir tout par Tag",
+      `Redirection pour le tag: ${tagName} (à implémenter)`
+    );
+    // const path = `/tag/${encodeURIComponent(tagName)}/products` as Href;
     // router.push(path);
   };
 
-  const handleProductPress = (productId: string | number) => { // productId est l'ID du produit cliqué
-    console.log('Tentative de navigation vers le produit ID:', productId); // Log pour déboguer
-    const path = `/product/${String(productId)}` as Href; // Construit le chemin et le caste en Href
-    try {
-      router.push(path);
-      console.log(`Navigation vers ${path} demandée.`);
-    } catch (e) {
-      console.error("Erreur lors de router.push:", e);
-      Alert.alert("Erreur de Navigation", "Impossible d'ouvrir la page du produit.");
-    }
-  };
-  
-
-  // Loader pour le premier chargement uniquement si aucune donnée n'est encore affichée
-  if (isLoading && categories.length === 0 && newArrivals.length === 0 && !refreshing) {
+  // Loader pour le premier chargement uniquement
+  if (
+    isLoading &&
+    mainCategories.length === 0 &&
+    featuredProductSections.length === 0 &&
+    !refreshing
+  ) {
     return (
-      <View style={[styles.centeredLoader, { backgroundColor: pageBackgroundColor }]}>
-        <ActivityIndicator size="large" color="tomato" />
-        <DefaultText style={{ marginTop: 10, color: textColor }}>Chargement des données...</DefaultText>
+      <View
+        style={[
+          styles.centeredLoader,
+          { backgroundColor: pageBackgroundColor },
+        ]}
+      >
+        <ActivityIndicator size="large" color={tintColor} />
+        <DefaultText style={{ marginTop: 10, color: textColor }}>
+          Chargement...
+        </DefaultText>
       </View>
     );
   }
 
   return (
-    <ScrollView 
+    <ScrollView
       style={[styles.container, { backgroundColor: pageBackgroundColor }]}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="tomato" />}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={tintColor}
+        />
+      }
     >
       <View style={styles.headerContainer}>
-        <DefaultText style={[styles.siteName, { color: siteNameColor }]}>Artiva</DefaultText>
+        <DefaultText style={[styles.siteName, { color: siteNameColor }]}>
+          Artiva
+        </DefaultText>
       </View>
 
-      {error && !isLoading && ( // Afficher l'erreur seulement si on ne charge plus (évite d'afficher erreur + loader)
+      {error && !isLoading && (
         <View style={styles.errorContainer}>
           <DefaultText style={styles.errorText}>{error}</DefaultText>
-          <Button title="Réessayer" onPress={onRefresh} color="tomato"/>
+          <Button title="Réessayer" onPress={onRefresh} color={tintColor} />
         </View>
       )}
 
-      {(categories.length > 0 || isLoading) && !error && ( // Afficher la section si on a des données ou si on charge encore (et pas d'erreur globale)
-         <ScrollSection<Category>
-            title="Catégories"
-            data={categories}
-            renderItem={({ item }) => <CategoryCard item={item} onPress={handleCategoryPress} />}
-            keyExtractor={(item) => item.id.toString()} // item.id est déjà une chaîne après adaptation
-          />
+      {/* Section des Catégories Principales */}
+      {(mainCategories.length > 0 || (isLoading && !refreshing)) && !error && (
+        <ScrollSection<CategoryType>
+          title="Catégories"
+          data={mainCategories}
+          renderItem={({ item }) => (
+            <CategoryCard item={item} onPress={() => handleCategoryPress(item.id, item.name)} />
+          )}
+          keyExtractor={(item) => item.id.toString()}
+          // onSeeAllPress={() => router.push('/all-categories' as Href)}
+        />
       )}
-      {!isLoading && !error && categories.length === 0 && (
-        <DefaultText style={styles.noDataText}>Aucune catégorie disponible.</DefaultText>
-      )}
-
-
-      
-      {(newArrivals.length > 0 || isLoading) && !error && (
-         <ScrollSection<Product>
-            title="Nouvelles Arrivées"
-            data={newArrivals}
-            renderItem={({ item }) => <ProductCard item={item} onPress={handleProductPress} />}
-            keyExtractor={(item) => item.id.toString()}
-          />
-      )}
-       {!isLoading && !error && newArrivals.length === 0 && (
-        <DefaultText style={styles.noDataText}>Aucune nouvelle arrivée pour le moment.</DefaultText>
+      {!isLoading && !error && mainCategories.length === 0 && (
+        <DefaultText style={styles.noDataText}>
+          Aucune catégorie à afficher.
+        </DefaultText>
       )}
 
+      {/* Sections de Produits par Tag */}
+      {featuredProductSections.map((section) => (
+        <ScrollSection<ProductType>
+          key={section.tagId.toString()}
+          title={section.tagName}
+          data={section.products}
+          renderItem={({ item }) => (
+            <ProductCard item={item} onPress={handleProductPress} />
+          )}
+          keyExtractor={(item) => item.id.toString()}
+          onSeeAllPress={() => handleSeeAllTagProducts(section.tagName)}
+        />
+      ))}
 
-      
-      {(forYouProducts.length > 0 || isLoading) && !error && (
-          <ScrollSection<Product>
-            title="Pour Vous"
-            data={forYouProducts}
-            renderItem={({ item }) => <ProductCard item={item} onPress={handleProductPress} />}
-            keyExtractor={(item) => item.id.toString()}
-          />
-      )}
-      {!isLoading && !error && forYouProducts.length === 0 && (
-        <DefaultText style={styles.noDataText}>Pas de recommandations pour le moment.</DefaultText>
-      )}
-      
-      <View style={{height: 30}} /> 
+      {!isLoading &&
+        !error &&
+        featuredProductSections.length === 0 &&
+        mainCategories.length > 0 && (
+          <DefaultText style={styles.noDataText}>
+            Découvrez bientôt nos sélections spéciales !
+          </DefaultText>
+        )}
+
+      <View style={{ height: 30 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
+  container: {
+    flex: 1,
   },
-  centeredLoader: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
+  centeredLoader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  headerContainer: { 
-    paddingHorizontal: 16, 
-    paddingTop: Platform.OS === 'android' ? 40 : 30, // Plus d'espace en haut
-    paddingBottom: 15, 
+  headerContainer: {
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "android" ? 40 : 30, // Plus d'espace pour la barre de statut
+    paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0', // Ligne de séparation subtile
+    borderBottomColor: "#E0E0E0",
   },
-  siteName: { 
-    fontSize: 26, // Légèrement réduit pour un look plus moderne
-    fontWeight: '700', // Un peu plus gras
+  siteName: {
+    fontSize: 26,
+    fontWeight: "700",
   },
-  errorContainer: { 
-    marginHorizontal: 16, 
-    marginVertical: 15, 
-    padding: 15, 
-    backgroundColor: '#FFEBEE', // Fond rouge clair pour l'erreur
-    borderRadius: 8, 
-    alignItems: 'center',
+  errorContainer: {
+    marginHorizontal: 16,
+    marginVertical: 15,
+    padding: 15,
+    backgroundColor: "#FFEBEE",
+    borderRadius: 8,
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#FFCDD2',
+    borderColor: "#FFCDD2",
   },
-  errorText: { 
-    color: '#D32F2F', // Rouge plus foncé pour le texte d'erreur
-    fontSize: 16, 
-    marginBottom: 10, 
-    textAlign: 'center',
+  errorText: {
+    color: "#D32F2F",
+    fontSize: 16,
+    marginBottom: 10,
+    textAlign: "center",
   },
-  noDataText: { 
-    textAlign: 'center', 
-    color: '#757575', 
-    marginVertical: 25, 
-    fontSize: 15, 
-    fontStyle: 'italic',
-  }
+  noDataText: {
+    textAlign: "center",
+    color: "#757575",
+    marginVertical: 25,
+    fontSize: 15,
+    fontStyle: "italic",
+  },
 });
-

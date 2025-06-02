@@ -1,7 +1,11 @@
 // front_end/components/ProductCard.tsx
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 import ScrollSection from './ScrollSection';
+import { useWishlist } from '../context/WishlistContext'; // Importer le hook
+import { Product as ProductType } from './ProductCard'; // S'assurer que ProductType est bien exporté
+
 
 // Type pour les props d'une carte de produit
 export interface Product { // Exporté pour l'écran d'accueil
@@ -26,9 +30,26 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ item, onPress }) => {
+  const { addToWishlist, removeFromWishlist, isProductInWishlist } = useWishlist();
+  const isInWishlist = isProductInWishlist(item.id);
+
+  const handleWishlistToggle = () => {
+    if (isInWishlist) {
+      removeFromWishlist(item.id);
+    } else {
+      addToWishlist(item); // Passe l'objet produit entier
+    }
+  };
   return (
     <TouchableOpacity onPress={() => onPress(item.id)} style={styles.container}>
       <Image source={{ uri: item.imageUrl }} style={styles.image} />
+      <TouchableOpacity onPress={handleWishlistToggle} style={styles.wishlistIconContainer}>
+        <FontAwesome 
+          name={isInWishlist ? "heart" : "heart-o"} 
+          size={22} 
+          color={isInWishlist ? "tomato" : "grey"} 
+        />
+      </TouchableOpacity>
       <View style={styles.infoContainer}>
         <Text style={styles.nameText} numberOfLines={2}>{item.name}</Text>
         <Text style={styles.priceText}>{item.price}</Text>
@@ -36,6 +57,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ item, onPress }) => {
     </TouchableOpacity>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -49,20 +71,33 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.20,
     shadowRadius: 1.41,
     overflow: 'hidden', // Pour que l'ombre ne soit pas coupée par l'image si elle a un borderRadius
+    marginBottom: 10,
   },
   image: {
     width: '100%',
     height: 130, // Hauteur de l'image produit
     backgroundColor: '#e0e0e0', // Placeholder
+    borderTopLeftRadius: 8, 
+    borderTopRightRadius: 8,
+  },
+  wishlistIconContainer: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    padding: 5,
+    borderRadius: 15,
   },
   infoContainer: {
     padding: 8, // Padding pour les infos du produit
+    paddingTop: 5,
   },
   nameText: {
     fontSize: 14,
     fontWeight: '600',
     // color: '#333',
     marginBottom: 4,
+    minHeight: 36,
   },
   priceText: {
     fontSize: 15,

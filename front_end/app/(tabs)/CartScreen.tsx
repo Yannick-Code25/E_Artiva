@@ -1,7 +1,7 @@
 // ARTIVA/front_end/app/(tabs)/CartScreen.tsx
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Button, Alert, ActivityIndicator, Platform } from 'react-native';
-import { Stack, useRouter, Link } from 'expo-router';
+import { Stack, useRouter, Link, Href } from 'expo-router';
 import { useCart, CartItem } from '../../context/CartContext'; // Importer CartItem aussi
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import Colors from '../../constants/Colors';

@@ -119,40 +119,133 @@ exports.createProduct = async (req, res) => {
 // --- Récupérer tous les produits (Publique) ---
 // --- Récupérer tous les produits (Publique) ---
 exports.getAllProducts = async (req, res) => {
+  const { 
+    category_id, 
+    tag_id,      
+    tag_name,    
+    limit,       
+    random,      
+    search       
+  } = req.query;
+
   try {
-    const query = `
+    let queryParams = [];
+    let paramIndex = 1;
+    
+    // Note: SELECT DISTINCT ON (p.id) a été retiré
+    let baseQuery = `
       SELECT 
         p.id, p.name, p.description, p.price, p.stock, p.image_url, 
         p.sku, p.is_published, p.created_at, p.updated_at,
         (SELECT ARRAY_AGG(c.name ORDER BY c.name) 
          FROM categories c 
-         JOIN product_categories pc ON c.id = pc.category_id 
-         WHERE pc.product_id = p.id) as categories_names,
-        (SELECT ARRAY_AGG(pc.category_id) -- <<< AJOUTÉ CECI : RÉCUPÉRER LES ID DES CATÉGORIES
+         JOIN product_categories pc_names ON c.id = pc_names.category_id 
+         WHERE pc_names.product_id = p.id) as categories_names,
+        (SELECT ARRAY_AGG(pc.category_id)
          FROM product_categories pc
-         WHERE pc.product_id = p.id) as category_ids,      -- <<< ALIAS : category_ids
+         WHERE pc.product_id = p.id) as category_ids,
         (SELECT ARRAY_AGG(t.name ORDER BY t.name) 
          FROM product_tags t 
-         JOIN product_tag_assignments pta ON t.id = pta.tag_id 
-         WHERE pta.product_id = p.id) as tags_names
+         JOIN product_tag_assignments pta_names ON t.id = pta_names.tag_id 
+         WHERE pta_names.product_id = p.id) as tags_names,
+        (SELECT ARRAY_AGG(pta.tag_id)
+         FROM product_tag_assignments pta
+         WHERE pta.product_id = p.id) as tag_ids
       FROM products p
-      WHERE p.is_published = TRUE 
-      ORDER BY p.created_at DESC; 
     `;
-    const { rows } = await db.query(query);
-    // S'assurer que category_ids et tags_names sont des tableaux vides si null
-    const productsWithDefaults = rows.map(product => ({
+    
+    let joinClauses = "";
+    let whereClauses = ["p.is_published = TRUE", "p.stock > 0"];
+
+    if (category_id) {
+      // Si on filtre par category_id, il FAUT joindre product_categories
+      joinClauses += ` JOIN product_categories pc_filter ON p.id = pc_filter.product_id`;
+      whereClauses.push(`pc_filter.category_id = $${paramIndex++}`);
+      queryParams.push(parseInt(category_id, 10));
+    }
+
+    if (tag_id) {
+      joinClauses += ` JOIN product_tag_assignments pta_filter ON p.id = pta_filter.product_id`;
+      whereClauses.push(`pta_filter.tag_id = $${paramIndex++}`);
+      queryParams.push(parseInt(tag_id, 10));
+    } else if (tag_name) {
+      joinClauses += ` JOIN product_tag_assignments pta_filter ON p.id = pta_filter.product_id JOIN product_tags pt_filter ON pta_filter.tag_id = pt_filter.id`;
+      whereClauses.push(`pt_filter.name = $${paramIndex++}`);
+      queryParams.push(tag_name);
+    }
+
+    if (search) {
+        whereClauses.push(`(p.name ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex} OR p.sku ILIKE $${paramIndex})`);
+        queryParams.push(`%${search}%`);
+        paramIndex++; // Attention à l'index si on utilise plusieurs fois $${paramIndex} pour le même %search%
+                      // Il serait mieux d'utiliser un seul placeholder pour %search%
+                      // Ex: queryParams.push(`%${search}%`); ... ILIKE $${paramIndex} ... OR ... ILIKE $${paramIndex}
+                      // Mais pour pg, chaque $N doit être unique pour une valeur unique.
+                      // Donc, si on a (p.name ILIKE $N OR p.description ILIKE $N), c'est ok.
+    }
+
+    let finalQuery = baseQuery + joinClauses;
+    if (whereClauses.length > 0) {
+      finalQuery += ` WHERE ${whereClauses.join(' AND ')}`;
+    }
+
+    if (random === 'true' || random === true) {
+      finalQuery += " ORDER BY RANDOM()";
+    } else {
+      finalQuery += " ORDER BY p.created_at DESC"; 
+    }
+
+    // La requête pour COUNT doit avoir les mêmes JOINs et WHERE que la requête principale
+    let countQuery = `SELECT COUNT(DISTINCT p.id) FROM products p ${joinClauses}`; // Utilise DISTINCT p.id ici pour le count
+    if (whereClauses.length > 0) {
+        countQuery += ` WHERE ${whereClauses.join(' AND ')}`;
+    }
+    // Pour countQuery, les queryParams sont les mêmes que pour finalQuery, SAUF ceux pour LIMIT et OFFSET
+    const countResult = await db.query(countQuery, queryParams.slice(0, paramIndex -1)); // Exclure les params de limit/offset
+    const totalItems = parseInt(countResult.rows[0].count, 10);
+    const totalPages = Math.ceil(totalItems / (parseInt(limit, 10) || 20));
+
+
+    if (limit) {
+      finalQuery += ` LIMIT $${paramIndex++}`;
+      queryParams.push(parseInt(limit, 10));
+    } else {
+      finalQuery += ` LIMIT $${paramIndex++}`; 
+      queryParams.push(20); 
+    }
+    // Ajout de OFFSET pour la pagination
+    const offset = ( (parseInt(req.query.page, 10) || 1) - 1) * (parseInt(limit, 10) || 20);
+    finalQuery += ` OFFSET $${paramIndex++}`;
+    queryParams.push(offset);
+
+
+    console.log("SQL pour getAllProducts:", finalQuery);
+    console.log("Params pour getAllProducts:", queryParams);
+
+    const { rows } = await db.query(finalQuery, queryParams);
+    
+    const productsData = rows.map(product => ({
         ...product,
         category_ids: product.category_ids || [],
         categories_names: product.categories_names || [],
+        tag_ids: product.tag_ids || [],
         tags_names: product.tags_names || []
     }));
-    res.status(200).json(productsWithDefaults);
+
+    res.status(200).json({
+        products: productsData,
+        currentPage: parseInt(req.query.page, 10) || 1,
+        totalPages,
+        totalItems
+    });
+
   } catch (error) {
     console.error('Erreur lors de la récupération de tous les produits:', error);
     res.status(500).json({ message: 'Erreur serveur lors de la récupération des produits.' });
   }
 };
+
+
 
 
 

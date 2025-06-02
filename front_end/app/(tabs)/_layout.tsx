@@ -62,10 +62,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="TrendScreen" // Doit correspondre au nom de fichier: TrendScreen.tsx
+         name="WishlistScreen" // DOIT ÊTRE CE NOM EXACT
         options={{
-          title: 'Tendances',
-          tabBarIcon: ({ color }) => <TabBarIcon name="line-chart" color={color} />,
+          title: 'Souhaits',    
+          tabBarIcon: ({ color }) => <TabBarIcon name="heart" color={color} />, 
         }}
       />
       <Tabs.Screen

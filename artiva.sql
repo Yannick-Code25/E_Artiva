@@ -322,6 +322,17 @@ COMMENT ON TABLE notifications IS 'Stocke les notifications envoyées aux utilis
 COMMENT ON COLUMN notifications.link_url IS 'Lien cliquable associé à la notification (vers une page de l''app).';
 
 
+
+
+CREATE TABLE wishlist_items (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, product_id) -- Un utilisateur ne peut ajouter un produit qu'une fois à sa liste
+);
+
+COMMENT ON TABLE wishlist_items IS 'Stocke les produits ajoutés à la liste de souhaits des utilisateurs.';
+
 -- =============================================================================
 -- Ajout d'index pour améliorer les performances (exemples)
 -- À ajouter après la création des tables.
