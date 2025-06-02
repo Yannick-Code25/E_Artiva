@@ -205,20 +205,34 @@ export default function TabAccueilScreen() {
   }, [fetchData]);
 
   const handleCategoryPress = (categoryId: string, categoryName?: string) => {
-    // categoryId est l'ID de la catégorie sur laquelle l'utilisateur a cliqué.
-    // categoryName est le nom de cette catégorie (optionnel, mais utile pour le titre de la page suivante).
+    console.log('Accueil: Catégorie cliquée - ID:', categoryId, 'Nom:', categoryName); 
 
-    console.log('Accueil: Catégorie cliquée - ID:', categoryId, 'Nom:', categoryName);
+    // Construire la base du chemin
+    let pathToPush = `/category-products/${categoryId}`;
 
-    // Construire le chemin vers la page qui affichera les produits de cette catégorie.
-    // Le nom du fichier pour cette page est `app/category-products/[categoryId].tsx`
-    // Donc, la route sera de la forme `/category-products/ID_DE_LA_CATEGORIE`
-    const path = `/category-products/${categoryId}` as Href; 
+    // Ajouter categoryName comme query parameter s'il existe
+    if (categoryName) {
+      // encodeURIComponent est important pour les query params au cas où le nom contiendrait des caractères spéciaux
+      pathToPush += `?categoryName=${encodeURIComponent(categoryName)}`;
+    } else {
+      // Optionnel: si categoryName n'est pas fourni, tu peux quand même passer un placeholder
+      // ou ne rien passer et laisser la page de destination gérer.
+      // Pour l'exemple, je passe un nom par défaut si categoryName est vide.
+      const defaultName = `Catégorie ${categoryId}`;
+      pathToPush += `?categoryName=${encodeURIComponent(defaultName)}`;
+    }
 
-    // Utiliser router.push pour naviguer.
-    // On peut passer des paramètres supplémentaires (comme categoryName) via la propriété 'params'.
-    // Ces paramètres seront accessibles sur la page de destination via `useLocalSearchParams`.
-    router.push(`/category-products/${categoryId}` as Href);
+    console.log(`Accueil: Navigation vers la chaîne de chemin: ${pathToPush}`);
+
+    try {
+      // Maintenant, on passe une simple chaîne à router.push.
+      // Le cast 'as Href' est souvent nécessaire pour satisfaire TypeScript
+      // car il s'attend à des types de routes plus spécifiques.
+      router.push(pathToPush as Href); 
+    } catch (e) {
+      console.error("Accueil: Erreur lors de router.push pour catégorie:", e);
+      Alert.alert("Erreur de Navigation", "Impossible d'ouvrir la page de la catégorie.");
+    }
   };
 
   const handleProductPress = (productId: string | number) => {
