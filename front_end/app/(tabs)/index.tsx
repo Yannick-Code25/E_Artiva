@@ -24,7 +24,7 @@ import { useRouter, Href } from "expo-router";
 // import { useAuth } from '../../context/AuthContext'; // Non utilisé directement ici, mais disponible
 
 // **ATTENTION: REMPLACE 'VOTRE_ADRESSE_IP_LOCALE' PAR TON IP RÉELLE**
-const API_BASE_URL = "http://192.168.1.2:3001/api"; // Exemple, mets la tienne
+const API_BASE_URL = "http://192.168.248.151:3001/api"; // Exemple, mets la tienne
 
 interface TaggedProductsStore {
   tagId: string | number; // Peut être l'ID du tag si tu le récupères
@@ -205,7 +205,12 @@ export default function TabAccueilScreen() {
   }, [fetchData]);
 
   const handleCategoryPress = (categoryId: string, categoryName?: string) => {
-    console.log('Accueil: Catégorie cliquée - ID:', categoryId, 'Nom:', categoryName); 
+    console.log(
+      "Accueil: Catégorie cliquée - ID:",
+      categoryId,
+      "Nom:",
+      categoryName
+    );
 
     // Construire la base du chemin
     let pathToPush = `/category-products/${categoryId}`;
@@ -228,10 +233,13 @@ export default function TabAccueilScreen() {
       // Maintenant, on passe une simple chaîne à router.push.
       // Le cast 'as Href' est souvent nécessaire pour satisfaire TypeScript
       // car il s'attend à des types de routes plus spécifiques.
-      router.push(pathToPush as Href); 
+      router.push(pathToPush as Href);
     } catch (e) {
       console.error("Accueil: Erreur lors de router.push pour catégorie:", e);
-      Alert.alert("Erreur de Navigation", "Impossible d'ouvrir la page de la catégorie.");
+      Alert.alert(
+        "Erreur de Navigation",
+        "Impossible d'ouvrir la page de la catégorie."
+      );
     }
   };
 
@@ -303,7 +311,10 @@ export default function TabAccueilScreen() {
           title="Catégories"
           data={mainCategories}
           renderItem={({ item }) => (
-            <CategoryCard item={item} onPress={() => handleCategoryPress(item.id, item.name)} />
+            <CategoryCard
+              item={item}
+              onPress={() => handleCategoryPress(item.id, item.name)}
+            />
           )}
           keyExtractor={(item) => item.id.toString()}
           // onSeeAllPress={() => router.push('/all-categories' as Href)}

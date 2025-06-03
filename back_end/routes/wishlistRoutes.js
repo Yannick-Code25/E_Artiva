@@ -4,7 +4,7 @@ const router = express.Router();
 const wishlistController = require('../controllers/wishlistController');
 const authMiddleware = require('../middlewares/authMiddleware'); // Toutes les actions wishlist nécessitent auth
 
-// GET /api/wishlist - Récupérer la wishlist de l'utilisateur
+// GET /api/wishlist -Récupérer la wishlist de l'utilisateur
 router.get('/', authMiddleware, wishlistController.getWishlist);
 
 // POST /api/wishlist - Ajouter un produit à la wishlist

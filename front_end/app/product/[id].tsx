@@ -19,8 +19,7 @@ import Colors from "../../constants/Colors"; // Ajuste le chemin si nécessaire
 import { useColorScheme } from "../../components/useColorScheme"; // Ajuste le chemin
 import { Product as BaseProductType } from "../../components/ProductCard"; // Renommé pour clarté, assure-toi de l'export
 import { useCart } from "../../context/CartContext"; // Importer le contexte du panier
-import { useWishlist } from '../../context/WishlistContext'; // Importer le hook
-
+import { useWishlist } from "../../context/WishlistContext"; // Importer le hook
 
 // Type pour un élément image dans la galerie/carrousel
 interface ProductImageGalleryItem {
@@ -50,7 +49,7 @@ interface ProductDetail extends BaseProductType {
 }
 
 // **ATTENTION: METS TON ADRESSE IP LOCALE CORRECTE ICI**
-const API_BASE_URL = "http://192.168.1.2:3001/api"; // Exemple, mets la tienne
+const API_BASE_URL = "http://192.168.248.151:3001/api"; // Exemple, mets la tienne
 const { width: screenWidth } = Dimensions.get("window");
 
 // Fonction utilitaire pour formater le prix (peut être déplacée dans un fichier utils/)
@@ -87,7 +86,8 @@ export default function ProductDetailScreen() {
 
   const [activeIndex, setActiveIndex] = useState(0); // Pour le carrousel d'images
   const flatListRef = useRef<FlatList<ProductImageGalleryItem>>(null);
-  const { addToWishlist, removeFromWishlist, isProductInWishlist } = useWishlist();
+  const { addToWishlist, removeFromWishlist, isProductInWishlist } =
+    useWishlist();
 
   // Déterminer la quantité de ce produit déjà dans le panier
   const cartItemForThisProduct = product
@@ -313,17 +313,25 @@ export default function ProductDetailScreen() {
 
   return (
     <ScrollView style={styles.screenContainer}>
-      <Stack.Screen options={{ title: product.name || "Détail Produit" ,// Ajout de l'icône cœur à l'en-tête
+      <Stack.Screen
+        options={{
+          title: product.name || "Détail Produit", // Ajout de l'icône cœur à l'en-tête
           headerRight: () => (
-            <TouchableOpacity onPress={handleWishlistToggleOnDetail} style={{ marginRight: 15 }}>
-              <FontAwesome 
-                name={isInWishlist ? "heart" : "heart-o"} 
-                size={24} 
-                color={isInWishlist ? "tomato" : Colors[colorScheme ?? 'light'].text} 
+            <TouchableOpacity
+              onPress={handleWishlistToggleOnDetail}
+              style={{ marginRight: 15 }}
+            >
+              <FontAwesome
+                name={isInWishlist ? "heart" : "heart-o"}
+                size={24}
+                color={
+                  isInWishlist ? "tomato" : Colors[colorScheme ?? "light"].text
+                }
               />
             </TouchableOpacity>
           ),
-           }} />
+        }}
+      />
 
       {product.imagesForCarousel && product.imagesForCarousel.length > 0 ? (
         <View style={styles.carouselWrapper}>

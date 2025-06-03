@@ -35,9 +35,8 @@ interface Product {
 }
 
 // **ATTENTION: METS TON ADRESSE IP LOCALE CORRECTE ICI**
-const API_BASE_URL = "http://192.168.1.2:3001/api";
+const API_BASE_URL = "http://192.168.248.151:3001/api";
 // Exemple: const API_BASE_URL = 'http://192.168.1.105:3001/api';
-
 
 export default function TabShopScreen() {
   const colorScheme = useColorScheme();
@@ -88,13 +87,21 @@ export default function TabShopScreen() {
 
       if (!prodResponse.ok)
         throw new Error(`Erreur produits (${prodResponse.status})`);
-      const prodDataWrapper = await prodResponse.json();// Renommer en prodDataWrapper pour clarté
-      console.log("ShopScreen: Données brutes Produits (wrapper):", JSON.stringify(prodDataWrapper, null, 2));
+      const prodDataWrapper = await prodResponse.json(); // Renommer en prodDataWrapper pour clarté
+      console.log(
+        "ShopScreen: Données brutes Produits (wrapper):",
+        JSON.stringify(prodDataWrapper, null, 2)
+      );
       // Adapter si besoin (id, name, price, imageUrl, category_ids sont attendus)
       // Assure-toi que 'price' est formaté si ce n'est pas déjà fait par l'API
       if (!prodDataWrapper || !Array.isArray(prodDataWrapper.products)) {
-          console.error("Erreur: prodDataWrapper.products n'est pas un tableau!", prodDataWrapper);
-          throw new Error("Format de données produits inattendu du serveur (ShopScreen).");
+        console.error(
+          "Erreur: prodDataWrapper.products n'est pas un tableau!",
+          prodDataWrapper
+        );
+        throw new Error(
+          "Format de données produits inattendu du serveur (ShopScreen)."
+        );
       }
       const productsArray = prodDataWrapper.products; // Extraire le tableau de produits
       setAllProducts(

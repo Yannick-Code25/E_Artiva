@@ -7,6 +7,7 @@ import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import Colors from '../../constants/Colors';
 import { useColorScheme } from '../../components/useColorScheme';
 import { useAuth } from '../../context/AuthContext'; //Verifie si le users est connecté
+import CartListItem from '../../components/CartListItem';
 
 export default function TabCartScreen() {
   const { cartItems, updateQuantity, removeFromCart, getTotalPrice, getTotalItems, clearCart, isLoadingCart } = useCart();
@@ -117,7 +118,8 @@ export default function TabCartScreen() {
         <>
           <FlatList
             data={cartItems}
-            renderItem={renderCartItem}
+            // renderItem={renderCartItem}
+            renderItem={({ item }) => <CartListItem item={item} />} // NOUVEAU
             keyExtractor={(item) => String(item.id)}
             contentContainerStyle={styles.listContainer}
             ListFooterComponent={<View style={{height: 20}}/>} // Espace en bas de la liste

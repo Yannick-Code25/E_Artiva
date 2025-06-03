@@ -21,7 +21,7 @@ exports.getWishlist = async (req, res) => {
       ORDER BY wi.added_at DESC;
     `;
     const { rows } = await db.query(query, [userId]);
-    // Adapter les données si nécessaire (ex: formater le prix)
+    // Adapter les donnés si nécessaire (ex: formater le prix)
     const wishlistProducts = rows.map(p => ({
         ...p,
         price: p.price ? `${parseFloat(p.price).toFixed(2)} FCFA` : 'N/A',

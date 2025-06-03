@@ -225,4 +225,75 @@ exports.clearUserCart = async (req, res) => {
   } finally {
     client.release();
   }
-};
+
+  
+  // Récupérer le panier actif de l'utilisateur connecté et ses articles
+exports.getCurrentUserCart = async (req, res) => {
+  const userId = req.user.userId; // De authMiddleware
+
+  try {
+    // 1. Trouver le panier actif de l'utilisateur (on suppose un seul panier actif par utilisateur pour l'instant)
+    //    Si tu gères guest_token, la logique serait plus complexe pour potentiellement fusionner.
+    //    Pour l'instant, on cherche un panier lié à user_id.
+    //    Si tu n'as pas de table 'carts' séparée et que 'cart_items' référence directement 'users', adapte.
+    //    Ici, je suppose que tu as une table 'carts' avec une colonne 'user_id'.
+
+    let cartQuery = 'SELECT id FROM carts WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1';
+    // Si tu as un champ is_active ou is_checked_out=false sur carts :
+    // cartQuery = 'SELECT id FROM carts WHERE user_id = $1 AND is_checked_out = FALSE ORDER BY created_at DESC LIMIT 1';
+    
+    const cartResult = await db.query(cartQuery, [userId]);
+
+    if (cartResult.rows.length === 0) {
+      // Aucun panier actif trouvé pour cet utilisateur, renvoyer un panier vide
+      return res.status(200).json([]); // Un tableau vide est une réponse valide pour un panier vide
+    }
+
+    const cartId = cartResult.rows[0].id;
+
+    // 2. Récupérer les articles de ce panier, en joignant les infos du produit
+    const itemsQuery = `
+      SELECT 
+        ci.id as "cartItemId", 
+        ci.quantity,
+        ci.added_at as "addedAt",
+        p.id, 
+        p.name, 
+        p.price, 
+        p.image_url as "imageUrl", -- Assurer que le nom de champ correspond à ce que CartItem attend
+        p.stock,
+        p.description, -- Et autres champs de Product si besoin dans CartItem
+        p.sku,
+        p.is_published
+        -- Tu peux ajouter categories_names et tags_names ici si tu les affiches dans le panier
+      FROM cart_items ci
+      JOIN products p ON ci.product_id = p.id
+      WHERE ci.cart_id = $1 AND p.is_published = TRUE AND p.stock > 0 
+      -- On ne montre que les produits encore valides dans le panier
+      ORDER BY ci.added_at ASC;
+    `;
+    const { rows: cartItems } = await db.query(itemsQuery, [cartId]);
+    
+    // Adapter les données pour correspondre au type CartItem du frontend si nécessaire
+    const adaptedCartItems = cartItems.map(item => ({
+        ...item, // Garde les champs de base du produit
+        id: String(item.id), // ID du produit, s'assurer que c'est une chaîne
+        cartItemId: item.cartItemId, // ID de l'entrée cart_item
+        quantity: item.quantity,
+        // Le prix est déjà un nombre/chaîne de l'API produit, pas besoin de le reformater ici
+        // sauf si tu veux le stocker différemment dans cart_items.
+        // Ici, 'price' vient directement de la table 'products'.
+        // Ton CartContext s'attend à ce que 'price' soit une chaîne formatée comme "XX.XX FCFA".
+        // Donc, adaptons-le ici aussi :
+        price: item.price ? `${parseFloat(item.price).toFixed(2)} FCFA` : 'N/A',
+        imageUrl: item.imageUrl || `https://via.placeholder.com/80x80/?text=${encodeURIComponent(item.name || 'Prod')}`,
+
+    }));
+
+    res.status(200).json(adaptedCartItems); // Renvoyer le tableau d'articles du panier
+
+  } catch (error) {
+    console.error('Erreur récupération panier utilisateur:', error);
+    res.status(500).json({ message: 'Erreur serveur lors de la récupération du panier.' });
+  }
+}};

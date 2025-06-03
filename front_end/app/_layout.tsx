@@ -45,6 +45,7 @@ function RootStackLayout() {
     {/* Cependant, pour configurer des options d'en-tête pour cette route, on l'ajouterait : */}
     <Stack.Screen name="product/[id]" options={{ title: 'Détail du Produit' }} />
     <Stack.Screen name="category-products/[categoryId]" options={{ title: 'Produits' }} /> 
+    <Stack.Screen name="notifications" options={{ title: 'Mes Notifications' }} />
     </Stack>
   );
 }

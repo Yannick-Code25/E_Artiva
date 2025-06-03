@@ -99,6 +99,24 @@ exports.createOrder = async (req, res) => {
     });
     await Promise.all(orderItemsPromises);
 
+    const notificationTitle = 'Votre commande a été reçue !';
+const notificationMessage = `Merci pour votre commande #${createdOrder.order_number}. Nous la traitons actuellement.`;
+const linkUrl = `/orders/${createdOrder.id}`; // Lien vers le détail de la commande
+const notificationType = 'order_placed'; // Un nouveau type de notification
+
+const notificationQuery = `
+  INSERT INTO notifications (user_id, type, title, message, link_url)
+  VALUES ($1, $2, $3, $4, $5)
+`;
+await client.query(notificationQuery, [
+  userId, // L'ID de l'utilisateur qui a passé la commande
+  notificationType,
+  notificationTitle,
+  notificationMessage,
+  linkUrl
+]);
+console.log(`Notification de création de commande envoyée pour la commande ${createdOrder.id}`);
+
     // TODO: Vider le panier de l'utilisateur (table cart_items) si la logique du panier est implémentée
 
     await client.query('COMMIT');

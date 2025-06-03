@@ -317,11 +317,16 @@ CREATE TABLE notifications (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     -- updated_at n'est généralement pas nécessaire pour les notifications
 );
+ALTER TABLE notifications
+ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
 
 COMMENT ON TABLE notifications IS 'Stocke les notifications envoyées aux utilisateurs.';
 COMMENT ON COLUMN notifications.link_url IS 'Lien cliquable associé à la notification (vers une page de l''app).';
 
-
+CREATE TRIGGER trigger_notifications_updated_at
+BEFORE UPDATE ON notifications
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
 
 
 CREATE TABLE wishlist_items (
