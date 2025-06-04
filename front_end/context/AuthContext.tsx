@@ -1,11 +1,12 @@
 // ARTIVA/front_end/context/AuthContext.tsx
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import * as SecureStore from 'expo-secure-store';
 // Retirer useRouter et useSegments d'ici pour l'instant si l'erreur persiste
 // import { useRouter, useSegments, useRootNavigationState } from 'expo-router'; 
 
 const TOKEN_KEY = 'artiva-auth-token';
 const USER_INFO_KEY = 'artiva-user-info';
+const API_BASE_URL = 'http://192.168.248.151:3001/api';
 
 export interface User {
   profileImageFromAuthContext: string | undefined; 
@@ -14,6 +15,8 @@ export interface User {
   phone: string;
   email: string;
   role: 'customer' | 'admin' | string; 
+  address?: string; // Rendre optionnel ou s'assurer qu'il est toujours là
+
 }
 
 interface AuthContextType {
@@ -22,6 +25,8 @@ interface AuthContextType {
   user: User | null;
   userToken: string | null;
   isLoading: boolean; 
+  unreadNotificationCount: number; // NOUVEAU
+  fetchUnreadNotificationCount: () => Promise<void>; // NOUVEAU
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +47,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // const router = useRouter(); // On le retire d'ici pour l'instant
   // const segments = useSegments();
   // const navigationState = useRootNavigationState();
+
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState<number>(0); // NOUVEL ÉTAT
+
+   // Fonction pour récupérer le nombre de notifications non lues
+  const fetchUnreadNotificationCount = useCallback(async () => {
+    if (!userToken) {
+      setUnreadNotificationCount(0); // Pas de notifs si pas connecté
+      return;
+    }
+    try {
+      console.log("AuthContext: Fetching unread notification count...");
+      const response = await fetch(`${API_BASE_URL}/notifications/unread-count`, { // Appelle la nouvelle API
+        headers: { 'Authorization': `Bearer ${userToken}` },
+      });
+      if (!response.ok) {
+        console.error("AuthContext: Erreur API unread-count status:", response.status);
+        // Ne pas jeter d'erreur ici pour ne pas bloquer l'app, juste logguer
+        return;
+      }
+      const data = await response.json();
+      if (data && typeof data.unreadCount === 'number') {
+        setUnreadNotificationCount(data.unreadCount);
+        console.log("AuthContext: Unread notification count:", data.unreadCount);
+      }
+    } catch (e) {
+      console.error("AuthContext: Erreur fetchUnreadNotificationCount", e);
+    }
+  }, [userToken]); // Dépend de userToken
+
+  // Charger le compte au montage et quand userToken change
+  useEffect(() => {
+    fetchUnreadNotificationCount();
+  }, [fetchUnreadNotificationCount]);
+
+
+  
 
   useEffect(() => {
     const bootstrapAsync = async () => {
@@ -76,9 +117,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   //   // ... ancienne logique de redirection ...
   // }, [userToken, segments, isLoading, router, navigationState]);
 
+  // Optionnel: Mettre à jour le compte après certaines actions
+  // Par exemple, après avoir marqué une notification comme lue dans NotificationsScreen,
+  // cette page pourrait appeler fetchUnreadNotificationCount() du contexte.
+
+ 
 
   const signIn = async (token: string, userData: User) => {
     setIsLoading(true); 
+    setUserToken(token); // Ceci déclenchera l'useEffect pour fetchUnreadNotificationCount
+    setUser(userData);
     try {
       await SecureStore.setItemAsync(TOKEN_KEY, token);
       await SecureStore.setItemAsync(USER_INFO_KEY, JSON.stringify(userData));
@@ -92,9 +140,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
   };
+ 
 
   const signOut = async () => {
     setIsLoading(true);
+    setUserToken(null); // Ceci mettra unreadNotificationCount à 0 via l'useEffect
+    setUser(null);
+    setUnreadNotificationCount(0);
     try {
       await SecureStore.deleteItemAsync(TOKEN_KEY);
       await SecureStore.deleteItemAsync(USER_INFO_KEY);
@@ -109,7 +161,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const authContextValue: AuthContextType = { signIn, signOut, user, userToken, isLoading };
+
+  const authContextValue: AuthContextType = { signIn, signOut, user, userToken, isLoading, unreadNotificationCount, fetchUnreadNotificationCount, };
 
   return <AuthContext.Provider value={authContextValue}>{children}</AuthContext.Provider>;
 }

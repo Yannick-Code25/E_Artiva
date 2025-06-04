@@ -20,8 +20,8 @@ import ProductCard, {
   Product as ProductType,
 } from "../../components/ProductCard";
 import Colors from "../../constants/Colors";
-import { useRouter, Href } from "expo-router";
-// import { useAuth } from '../../context/AuthContext'; // Non utilisé directement ici, mais disponible
+import { useRouter, Href, useFocusEffect } from "expo-router";
+import { useAuth } from '../../context/AuthContext'; // Non utilisé directement ici, mais disponible
 
 // **ATTENTION: REMPLACE 'VOTRE_ADRESSE_IP_LOCALE' PAR TON IP RÉELLE**
 const API_BASE_URL = "http://192.168.248.151:3001/api"; // Exemple, mets la tienne
@@ -45,6 +45,17 @@ export default function TabAccueilScreen() {
   const [featuredProductSections, setFeaturedProductSections] = useState<
     TaggedProductsStore[]
   >([]);
+  const { fetchUnreadNotificationCount } = useAuth();
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log("Écran Accueil/Profil a le focus, mise à jour du compte des notifications.");
+      fetchUnreadNotificationCount();
+      return () => {
+        // Optionnel: nettoyage si besoin quand l'écran perd le focus
+      };
+    }, [fetchUnreadNotificationCount])
+  );
 
   // Configure ici les noms exacts des tags de ta BDD que tu veux afficher
   const FEATURED_TAG_NAMES: string[] = ["Nouveaute", "Populaire", "Pour Vous"]; //Utiliser sa pour afficher choisir les tags qui devront apparait sur la page d'accueil

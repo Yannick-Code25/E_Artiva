@@ -23,4 +23,14 @@ router.put('/:id', authMiddleware, adminMiddleware, userController.updateUserByA
 // DELETE /api/users/:id - Supprimer un utilisateur (Admin)
 router.delete('/:id', authMiddleware, adminMiddleware, userController.deleteUserByAdmin);
 
+
+// GET /api/users/me - Récupérer le profil de l'utilisateur connecté
+router.get('/me', authMiddleware, userController.getCurrentUserProfile);
+
+// PUT /api/users/me - Mettre à jour le profil de l'utilisateur connecté
+router.put('/me', authMiddleware, userController.updateMyProfile); // NOUVELLE ROUTE
+
+
+// PUT /api/users/me/deactivate - Désactiver le compte de l'utilisateur connecté
+router.put('/me/deactivate', authMiddleware, userController.deactivateMyAccount);
 module.exports = router;

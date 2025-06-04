@@ -154,3 +154,100 @@ exports.deleteUserByAdmin = async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur lors de la suppression de l\'utilisateur.' });
   }
 };
+
+// NOUVEAU : Mettre à jour le profil de l'utilisateur actuellement connecté (CLIENT)
+exports.updateMyProfile = async (req, res) => {
+  const userId = req.user.userId; // De authMiddleware
+  const { name, address, phone, current_password, new_password } = req.body; 
+  // On pourrait aussi permettre de changer l'email, mais c'est plus sensible (vérification)
+
+  // Champs modifiables par l'utilisateur lui-même.
+  // Ne pas permettre de changer le rôle ici.
+  const fieldsToUpdate = [];
+  const values = [];
+  let paramIndex = 1;
+
+  if (name !== undefined) { fieldsToUpdate.push(`name = $${paramIndex++}`); values.push(name.trim() === '' ? null : name); }
+  if (address !== undefined) { fieldsToUpdate.push(`address = $${paramIndex++}`); values.push(address.trim() === '' ? null : address); }
+  if (phone !== undefined) { fieldsToUpdate.push(`phone = $${paramIndex++}`); values.push(phone.trim() === '' ? null : phone); }
+
+  // Logique de changement de mot de passe (optionnel ici, peut être une route dédiée)
+  if (new_password && current_password) {
+    try {
+      const userResult = await db.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+      }
+      const user = userResult.rows[0];
+      const isPasswordMatch = await bcrypt.compare(current_password, user.password_hash);
+      if (!isPasswordMatch) {
+        return res.status(401).json({ message: 'Mot de passe actuel incorrect.' });
+      }
+      // Valider la force du nouveau mot de passe ici si besoin
+      const saltRounds = parseInt(process.env.PASSWORD_SALT_ROUNDS || '10');
+      const hashedNewPassword = await bcrypt.hash(new_password, saltRounds);
+      fieldsToUpdate.push(`password_hash = $${paramIndex++}`);
+      values.push(hashedNewPassword);
+    } catch (bcryptError) {
+        console.error("Erreur bcrypt changement mot de passe:", bcryptError);
+        return res.status(500).json({ message: 'Erreur lors de la mise à jour du mot de passe.' });
+    }
+  } else if (new_password && !current_password) {
+    return res.status(400).json({ message: 'Le mot de passe actuel est requis pour définir un nouveau mot de passe.' });
+  }
+
+
+  if (fieldsToUpdate.length === 0) {
+    return res.status(400).json({ message: 'Aucun champ fourni pour la mise à jour.' });
+  }
+
+  fieldsToUpdate.push(`updated_at = CURRENT_TIMESTAMP`);
+
+  const updateQuery = `
+    UPDATE users 
+    SET ${fieldsToUpdate.join(', ')} 
+    WHERE id = $${paramIndex}
+    RETURNING id, name, email, address, phone, role, created_at, updated_at;
+  `;
+  values.push(userId);
+
+  try {
+    // Si l'email est modifiable, ajouter la vérification d'unicité ici
+    const { rows } = await db.query(updateQuery, values);
+    if (rows.length === 0) { // Ne devrait pas arriver si le token est valide
+      return res.status(404).json({ message: 'Utilisateur non trouvé pour la mise à jour.' });
+    }
+    // Renvoyer l'utilisateur mis à jour (sans le hash du mot de passe)
+    const { password_hash, ...updatedUser } = rows[0];
+    res.status(200).json({ message: 'Profil mis à jour avec succès!', user: updatedUser });
+  } catch (error) {
+    console.error(`Erreur lors de la mise à jour du profil utilisateur ${userId}:`, error);
+    res.status(500).json({ message: 'Erreur serveur lors de la mise à jour du profil.' });
+  }
+};
+
+exports.deactivateMyAccount = async (req, res) => {
+  const userId = req.user.userId;
+  try {
+    // On pourrait ajouter une vérification de mot de passe ici pour confirmer la désactivation
+    const updateQuery = `
+      UPDATE users 
+      SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = $1 AND is_active = TRUE 
+      RETURNING id, is_active;`;
+    const result = await db.query(updateQuery, [userId]);
+
+    if (result.rows.length === 0) {
+      // Soit l'utilisateur n'existe pas, soit le compte était déjà désactivé
+      const checkUser = await db.query('SELECT is_active FROM users WHERE id = $1', [userId]);
+      if (checkUser.rows.length > 0 && !checkUser.rows[0].is_active) {
+          return res.status(200).json({ message: 'Compte déjà désactivé.' });
+      }
+      return res.status(404).json({ message: 'Utilisateur non trouvé ou déjà inactif.' });
+    }
+    res.status(200).json({ message: 'Votre compte a été désactivé avec succès.' });
+  } catch (error) {
+    console.error(`Erreur désactivation compte utilisateur ${userId}:`, error);
+    res.status(500).json({ message: 'Erreur serveur lors de la désactivation du compte.' });
+  }
+};

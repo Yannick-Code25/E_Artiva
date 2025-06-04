@@ -10,6 +10,8 @@ CREATE TABLE users (
 );
 ALTER TABLE users
 ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE NOT NULL;
 
 -- Et n'oublie pas le trigger si tu l'as créé :
 CREATE TRIGGER trigger_users_updated_at

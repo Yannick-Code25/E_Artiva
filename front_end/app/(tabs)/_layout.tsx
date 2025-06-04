@@ -19,7 +19,7 @@ function TabBarIcon(props: {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const { userToken, isLoading: isAuthLoading } = useAuth(); // Récupérer le token et l'état de chargement
+  const { userToken, isLoading: isAuthLoading, unreadNotificationCount } = useAuth(); // Récupérer le token et l'état de chargement
 
 
   // Si l'authentification est toujours en cours de vérification, ne rien rendre ou un loader
@@ -80,6 +80,9 @@ export default function TabLayout() {
         options={{
           title: 'Profil',
           tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
+          tabBarBadge: unreadNotificationCount > 0 ? unreadNotificationCount : undefined, // AFFICHE LE BADGE
+          // Si unreadNotificationCount est 0, undefined cache le badge.
+          tabBarBadgeStyle: { backgroundColor: 'red', color: 'white' }
         }}
       />
     </Tabs>

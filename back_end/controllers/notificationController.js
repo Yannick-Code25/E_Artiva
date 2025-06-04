@@ -128,3 +128,16 @@ exports.markAllNotificationsAsRead = async (req, res) => {
         res.status(500).json({ message: 'Erreur serveur lors de la mise à jour des notifications.' });
     }
 };
+
+exports.getUnreadNotificationsCount = async (req, res) => {
+  const userId = req.user.userId;
+  try {
+    const query = 'SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = FALSE;';
+    const result = await db.query(query, [userId]);
+    const count = parseInt(result.rows[0].count, 10);
+    res.status(200).json({ unreadCount: count });
+  } catch (error) {
+    console.error('Erreur récupération nombre notifications non lues:', error);
+    res.status(500).json({ message: 'Erreur serveur.' });
+  }
+};

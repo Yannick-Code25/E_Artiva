@@ -83,8 +83,11 @@ exports.loginUser = async (req, res) => {
       if (userResult.rows.length > 0) {
         userRecord = userResult.rows[0];
         userTable = 'users';
-      }
-    }
+        // VÉRIFICATION SI LE COMPTE CLIENT EST ACTIF
+        if (userRecord.is_active === false) { // Vérifie explicitement false
+          return res.status(403).json({ message: 'Ce compte utilisateur a été désactivé.' });
+        }
+      }}
 
     // 4. Si aucun utilisateur trouvé avec cet email
     if (!userRecord) {

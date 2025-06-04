@@ -24,7 +24,7 @@ interface NotificationItem {
 }
 
 export default function NotificationsPage() {
-  const { userToken } = useAuth();
+  const { userToken, fetchUnreadNotificationCount } = useAuth();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const tintColor = Colors[colorScheme ?? 'light'].tint;
@@ -125,12 +125,17 @@ console.log(`NotificationsScreen: Fetching notifications, page: ${page}, isActio
     setNotifications(prev => 
       prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n)
     );
+    
       try {
         console.log(`Marquage de la notification ${notification.id} comme lue...`);
         const response = await fetch(`${API_BASE_URL}/notifications/${notification.id}/read`, { // Assure-toi que cet endpoint existe
           method: 'PUT',
           headers: { 'Authorization': `Bearer ${userToken}` },
         });
+        if (response.ok && !notification.is_read) { // Si le marquage a réussi
+            setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
+            fetchUnreadNotificationCount(); // Mettre à jour le badge
+          }
         if (!response.ok) {
           // Revert optimistic update if API call fails
         setNotifications(prev => 
@@ -166,54 +171,89 @@ console.log(`NotificationsScreen: Fetching notifications, page: ${page}, isActio
     }
   };
 
-  const handleMarkAllAsRead = async () => {
-    if (!userToken || notifications.filter(n => !n.is_read).length === 0) return;
-    Alert.alert(
-        "Marquer tout comme lu",
-        "Êtes-vous sûr de vouloir marquer toutes les notifications comme lues ?",
-        [
-            { text: "Annuler", style: "cancel" },
-            { text: "Oui", onPress: async () => {
-              // Pas besoin de setIsLoading(true) ici, car on fait une mise à jour optimiste
-          // puis on re-fetch si l'API réussit.
-          const previousNotifications = [...notifications]; // Sauvegarde pour revert
-          // Mise à jour optimiste de l'UI
+  // Dans NotificationsScreen.tsx
+
+const handleMarkAllAsRead = async () => {
+  // 1. Vérifier si l'action est nécessaire ou possible
+  const unreadNotifications = notifications.filter(n => !n.is_read);
+  if (!userToken || unreadNotifications.length === 0) {
+    console.log("handleMarkAllAsRead: Pas de token ou aucune notification non lue.");
+    return; // Sortir si pas de token ou si tout est déjà lu
+  }
+
+  Alert.alert(
+    "Marquer tout comme lu",
+    "Êtes-vous sûr de vouloir marquer toutes les notifications comme lues ?",
+    [
+      {
+        text: "Annuler",
+        style: "cancel"
+      },
+      { 
+        text: "Oui", 
+        onPress: async () => {
+          const previousNotificationsState = [...notifications]; // Sauvegarder l'état actuel pour un revert potentiel
+
+          // 2. Mise à jour optimiste de l'UI
+          // On met toutes les notifications à 'is_read: true' dans l'état local
           setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-                try {
-                    setIsLoading(true); // Ou un loader spécifique
+          console.log("handleMarkAllAsRead: Mise à jour optimiste UI effectuée.");
 
-                    // Mise à jour optimiste de l'UI
-    const previousNotifications = [...notifications];
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+          // On peut mettre un loader spécifique pour cette action si on veut,
+          // mais comme l'UI est déjà mise à jour, ce n'est pas toujours nécessaire.
+          // Si tu veux un loader pendant l'appel API :
+          // setIsLoading(true); // Ou un état de chargement spécifique à cette action
 
-                    const response = await fetch(`${API_BASE_URL}/notifications/read-all`, {
-                        method: 'PUT',
-                        headers: { 'Authorization': `Bearer ${userToken}` },
-                    });
-
-                    if (!response.ok) { // Si l'API échoue, annuler la mise à jour optimiste
-                  setNotifications(previousNotifications);
-                  const errData = await response.json().catch(() => ({message: `HTTP ${response.status}`}));
-                  throw new Error(errData.message || "Échec API Tout Lu");
+          try {
+            // 3. Appel API
+            console.log("handleMarkAllAsRead: Appel API vers /notifications/read-all");
+            const response = await fetch(`${API_BASE_URL}/notifications/read-all`, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${userToken}`,
+                    'Content-Type': 'application/json' // Même si pas de corps, c'est une bonne pratique
+                },
+            });
+            if (response.ok) {
+                setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+                fetchUnreadNotificationCount();
               }
-              const data = await response.json(); // Lire la réponse { message, updatedCount }
-              console.log("Réponse API 'Tout lu':", data); 
-    // Normalement, pas besoin de re-fetch ici si la MàJ optimiste est faite
-              console.log("NotificationsScreen: API 'Tout lu' succès. Les notifications devraient être à jour.");
-              // Optionnel: re-fetch pour confirmer avec le serveur, mais la MàJ optimiste suffit souvent.
-              // Si tu re-fetch, assure-toi que ça ne boucle pas.
-              // fetchNotifications(1, true); // Indiquer que c'est une action, donc un refresh.
-                } catch (e : any) {
-                    console.error("Erreur marquage toutes notifs comme lues:", e);
-                    Alert.alert("Erreur", "Impossible de marquer toutes les notifications comme lues.");
-                    setNotifications(previousNotifications); // Revert en cas d'erreur
-                } finally {
-                    // setIsLoading(false); // fetchNotifications le fera
-                }
-            }}
-        ]
-    );
-  };
+
+            if (!response.ok) {
+              // 4a. Si l'API échoue, annuler la mise à jour optimiste
+              setNotifications(previousNotificationsState); 
+              const errorData = await response.json().catch(() => ({message: `Erreur HTTP ${response.status} lors de la tentative de marquer tout comme lu.`}));
+              console.error("handleMarkAllAsRead: Échec API Tout Lu - Erreur:", errorData.message || `Statut ${response.status}`);
+              Alert.alert("Erreur", errorData.message || "Impossible de marquer toutes les notifications comme lues.");
+              throw new Error(errorData.message || "Échec API Tout Lu"); // Pour que le catch externe le voie
+            }
+            
+            const data = await response.json(); // Lire la réponse { message, updatedCount }
+            console.log("handleMarkAllAsRead: Réponse API 'Tout lu':", data);
+            // La mise à jour optimiste a déjà fait le travail visuel.
+            // Pas besoin de re-fetcher toute la liste ici, sauf si la réponse API
+            // contenait des informations cruciales que la mise à jour optimiste n'a pas.
+            // Si tu veux absolument être synchrone avec le serveur :
+            // console.log("handleMarkAllAsRead: Succès API, re-fetching notifications...");
+            // fetchNotifications(1, true); // 'true' pour indiquer que c'est un refresh/action
+
+          } catch (e: any) {
+            // Ce catch attrape les erreurs réseau de fetch ou l'erreur jetée par le !response.ok
+            console.error("handleMarkAllAsRead: Erreur dans le bloc try/catch API:", e.message);
+            // Si l'erreur n'est pas une alerte, on peut en afficher une générique
+            if (!Alert.alert) { // Vérifier si Alert a déjà été affiché (pas une super méthode)
+                 //Alert.alert("Erreur", e.message || "Une erreur s'est produite.");
+            }
+            // S'assurer de revert si ce n'est pas déjà fait (au cas où l'erreur est avant le !response.ok)
+            setNotifications(previousNotificationsState);
+          } finally {
+            // Si tu avais mis un setIsLoading(true) spécifique pour cette action :
+            // setIsLoading(false);
+          }
+        }}
+    ]
+  );
+};
 
 
   const renderNotificationItem = ({ item }: { item: NotificationItem }) => (

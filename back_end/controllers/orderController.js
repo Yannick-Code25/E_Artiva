@@ -334,6 +334,11 @@ exports.updateOrderStatusAdmin = async (req, res) => {
         notificationMessage = `Nous vous informons que votre commande #${updatedOrder.order_number} a été annulée. Veuillez nous contacter pour plus d'informations.`;
         createNotification = true;
         break;
+      case 'refunded':
+        notificationTitle = 'Votre commande vous sera remboursée.';
+        notificationMessage = `Nous vous informons que votre commande #${updatedOrder.order_number} a été annulée et vous seras rembourser après examen. Veuillez nous contacter pour plus d'informations.`;
+        createNotification = true;
+        break;
       // Ajoute d'autres cas si nécessaire (ex: 'refunded', 'awaiting_payment' si une action est requise)
     }
 

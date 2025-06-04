@@ -12,6 +12,9 @@ router.get('/', authMiddleware, notificationController.getUserNotifications);
 router.put('/:notificationId/read', authMiddleware, notificationController.markNotificationAsRead);
 
 // PUT /api/notifications/read-all - Marquer toutes les notifications comme lues
-router.put('/read-all', authMiddleware, notificationController.markNotificationAsRead); // Utilise la même fonction avec un flag dans le body
+router.put('/read-all', authMiddleware, notificationController.markAllNotificationsAsRead); // Utilise la même fonction avec un flag dans le body
+
+// GET /api/notifications/unread-count
+router.get('/unread-count', authMiddleware, notificationController.getUnreadNotificationsCount);
 
 module.exports = router;
