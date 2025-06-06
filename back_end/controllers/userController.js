@@ -228,27 +228,36 @@ exports.updateMyProfile = async (req, res) => {
 };
 
 exports.deactivateMyAccount = async (req, res) => {
-  const userId = req.user.userId;
+  const userId = req.user.userId; // Récupéré du token JWT
+  console.log(`Backend: Tentative de désactivation pour userId: ${userId}`); // LOG
+
   try {
-    // On pourrait ajouter une vérification de mot de passe ici pour confirmer la désactivation
+    // S'assurer que la table 'users' a 'is_active' et 'updated_at'
     const updateQuery = `
       UPDATE users 
       SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP 
       WHERE id = $1 AND is_active = TRUE 
-      RETURNING id, is_active;`;
+      RETURNING id, name, email, is_active;`; // Retourner plus d'infos peut être utile
+      
     const result = await db.query(updateQuery, [userId]);
 
-    if (result.rows.length === 0) {
-      // Soit l'utilisateur n'existe pas, soit le compte était déjà désactivé
-      const checkUser = await db.query('SELECT is_active FROM users WHERE id = $1', [userId]);
+    if (result.rowCount === 0) {
+      const checkUser = await db.query('SELECT id, is_active FROM users WHERE id = $1', [userId]);
       if (checkUser.rows.length > 0 && !checkUser.rows[0].is_active) {
-          return res.status(200).json({ message: 'Compte déjà désactivé.' });
+        console.log(`Backend: Compte userId: ${userId} déjà désactivé.`);
+        return res.status(200).json({ message: 'Votre compte est déjà désactivé.' });
       }
-      return res.status(404).json({ message: 'Utilisateur non trouvé ou déjà inactif.' });
+      console.log(`Backend: Utilisateur userId: ${userId} non trouvé ou déjà inactif pour la mise à jour.`);
+      return res.status(404).json({ message: 'Utilisateur non trouvé ou action déjà effectuée.' });
     }
-    res.status(200).json({ message: 'Votre compte a été désactivé avec succès.' });
+    
+    console.log(`Backend: Compte userId: ${userId} désactivé avec succès. Utilisateur retourné:`, result.rows[0]);
+    res.status(200).json({ 
+        message: 'Votre compte a été désactivé avec succès. Vous allez être déconnecté.',
+        user: result.rows[0] 
+    });
   } catch (error) {
-    console.error(`Erreur désactivation compte utilisateur ${userId}:`, error);
+    console.error(`Backend: Erreur désactivation compte utilisateur ${userId}:`, error);
     res.status(500).json({ message: 'Erreur serveur lors de la désactivation du compte.' });
   }
 };

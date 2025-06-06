@@ -78,6 +78,7 @@ exports.loginUser = async (req, res) => {
   try {
     let userRecord;
     let userTable = ""; // Pour savoir de quelle table vient l'utilisateur
+     let userIsActive = true; // Supposer actif par défaut
 
     // 2. Essayer de trouver l'utilisateur dans la table 'admin' d'abord
     const adminQuery =
@@ -90,18 +91,19 @@ exports.loginUser = async (req, res) => {
     } else {
       // 3. Si non trouvé dans 'admin', chercher dans la table 'users'
       const userQuery =
-        "SELECT id, email, password_hash, role, name, address, phone FROM users WHERE email = $1";
+        "SELECT id, email, password_hash, role, name, address, phone, is_active FROM users WHERE email = $1";
       const userResult = await db.query(userQuery, [email]);
 
       if (userResult.rows.length > 0) {
         userRecord = userResult.rows[0];
         userTable = "users";
+        userIsActive = userRecord.is_active; // Récupérer le statut is_active de l'utilisateur
         // VÉRIFICATION SI LE COMPTE CLIENT EST ACTIF
         if (userRecord.is_active === false) {
           // Vérifie explicitement false
           return res
             .status(403)
-            .json({ message: "Ce compte utilisateur a été désactivé." });
+            .json({ message: "Veuillez vérifier vos informations de connexion." });
         }
       }
     }
@@ -111,6 +113,12 @@ exports.loginUser = async (req, res) => {
       return res
         .status(401)
         .json({ message: "Email ou mot de passe incorrect." }); // 401 Unauthorized
+    }
+
+    // *** NOUVELLE VÉRIFICATION ***
+    if (!userIsActive) { // Vérifier si le compte est actif
+      console.log(`Tentative de connexion pour le compte désactivé: ${email}`);
+      return res.status(403).json({ message: 'Ce compte n\'existe pas. Veuillez contacter le support ou en créer un nouveau.' }); // 403 Forbidden
     }
 
     // 5. Vérifier le mot de passe
@@ -139,7 +147,7 @@ exports.loginUser = async (req, res) => {
     );
 
     // 7. Renvoyer le token et les informations utilisateur (sans le hash du mot de passe)
-    const { password_hash, ...userDataWithoutPassword } = userRecord; // Exclure le hash du mot de passe
+    const { password_hash, is_active, ...userDataWithoutPassword } = userRecord; // Exclure le hash du mot de passe
 
     if (userRecord && userRecord.is_active === false) {
       // Ou !userRecord.is_active si la colonne existe
@@ -147,7 +155,7 @@ exports.loginUser = async (req, res) => {
         .status(403)
         .json({
           message:
-            "Ce compte n'existe pas. Veuillez contacter le support ou en créer un nouveaau.",
+            "Ce compte n'existe pas. Veuillez contacter le support ou en créer un nouveau.",
         });
     }
 
