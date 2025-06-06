@@ -1,570 +1,1017 @@
-// ARTIVA/front_end/app/(tabs)/ShopScreen.tsx
-import React, { useState, useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  ScrollView,
-  TouchableOpacity,
-  FlatList,
-  ActivityIndicator,
-  TextInput,
-  Button,
-  Alert,
-} from "react-native";
-import { Href, Stack, useRouter } from "expo-router"; // Stack pour le titre, useRouter pour la navigation si besoin
-import Colors from "../../constants/Colors"; // Ajuste le chemin
-import { useColorScheme } from "../../components/useColorScheme"; // Ajuste le chemin
+// // ARTIVA/front_end/app/(tabs)/ShopScreen.tsx
+// import React, { useState, useEffect, useCallback, useMemo } from "react";
+// import {
+//   View,
+//   Text,
+//   StyleSheet,
+//   Image,
+//   ScrollView,
+//   TouchableOpacity,
+//   FlatList,
+//   ActivityIndicator,
+//   TextInput,
+//   Button,
+//   Alert,
+//   Platform,
+// } from "react-native";
+// import { Href, Stack, useRouter } from "expo-router"; // Stack pour le titre, useRouter pour la navigation si besoin
+// import Colors from "../../constants/Colors"; // Ajuste le chemin
+// import { useColorScheme } from "../../components/useColorScheme"; // Ajuste le chemin
+// import { Product as BaseProductType } from '../../components/ProductCard'; // Assure-toi de l'export
 
-// Types (à adapter/importer de tes fichiers de composants ou types globaux)
+
+// // Types (à adapter/importer de tes fichiers de composants ou types globaux)
+// interface Category {
+//   id: string | number;
+//   name: string;
+//   parent_id: string | number | null;
+//   image_url?: string; 
+//   display_order?: number;
+// }
+
+// interface Product {
+//   id: string | number;
+//   name: string;
+//   price: string; // Déjà formaté
+//   imageUrl: string;
+//   category_ids?: (string | number)[]; // IDs des catégories auxquelles ce produit appartient
+//   // Ajoute d'autres champs
+// }
+
+// interface ShopProduct extends BaseProductType {}
+
+
+// // **ATTENTION: METS TON ADRESSE IP LOCALE CORRECTE ICI**
+// const API_BASE_URL = "http://192.168.1.2:3001/api";
+// // Exemple: const API_BASE_URL = 'http://192.168.1.105:3001/api';
+
+// export default function TabShopScreen() {
+//   const colorScheme = useColorScheme();
+//   const router = useRouter();
+
+//   // Définition des couleurs en fonction du colorScheme de l'appareil
+//   const currentAppliedTheme = colorScheme ?? 'light';
+//   const tintColor = Colors[currentAppliedTheme].tint;
+//   const textColor = Colors[currentAppliedTheme].text;
+//   const backgroundColor = Colors[currentAppliedTheme].background;
+//   const cardColor = Colors[currentAppliedTheme].card;
+//   const subtleTextColor = Colors[currentAppliedTheme].tabIconDefault;
+
+//   // États pour les données
+//   const [allCategories, setAllCategories] = useState<Category[]>([]);
+//   const [allProducts, setAllProducts] = useState<Product[]>([]);
+
+//   // États pour la navigation interne de la page
+//   const [selectedMainCategoryId, setSelectedMainCategoryId] = useState<
+//     string | number | null
+//   >(null);
+//   const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<
+//     string | number | null
+//   >(null);
+
+//   // États pour l'UI
+//   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+//   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+//   const [error, setError] = useState<string | null>(null);
+//   const [searchTerm, setSearchTerm] = useState("");
+//   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+
+//   // Charger toutes les catégories et tous les produits au montage
+//   const fetchData = useCallback(async () => {
+//     console.log("ShopScreen: Appel de fetchData (catégories et produits)");
+//     setIsLoadingCategories(true);
+//     setIsLoadingProducts(true);
+//     setError(null);
+//     try {
+//       const [catResponse, prodResponse] = await Promise.all([
+//         fetch(`${API_BASE_URL}/categories`),
+//         fetch(`${API_BASE_URL}/products`), // Suppose que ça renvoie les produits publiés
+//       ]);
+
+//       if (!catResponse.ok)
+//         throw new Error(`Erreur catégories (${catResponse.status})`);
+//       const catData = await catResponse.json();
+//       // Adapter si besoin les noms de champs (id, name, parent_id sont attendus)
+//       setAllCategories(
+//         catData.map((c: any) => ({
+//           ...c,
+//           id: String(c.id),
+//           parent_id: c.parent_id ? String(c.parent_id) : null,
+//         }))
+//       );
+//       console.log("ShopScreen: Catégories chargées:", catData.length);
+
+//       if (!prodResponse.ok)
+//         throw new Error(`Erreur produits (${prodResponse.status})`);
+//       const prodDataWrapper = await prodResponse.json(); // Renommer en prodDataWrapper pour clarté
+//       console.log(
+//         "ShopScreen: Données brutes Produits (wrapper):",
+//         JSON.stringify(prodDataWrapper, null, 2)
+//       );
+//       // Adapter si besoin (id, name, price, imageUrl, category_ids sont attendus)
+//       // Assure-toi que 'price' est formaté si ce n'est pas déjà fait par l'API
+//       if (!prodDataWrapper || !Array.isArray(prodDataWrapper.products)) {
+//         console.error(
+//           "Erreur: prodDataWrapper.products n'est pas un tableau!",
+//           prodDataWrapper
+//         );
+//         throw new Error(
+//           "Format de données produits inattendu du serveur (ShopScreen)."
+//         );
+//       }
+//       const productsArray = prodDataWrapper.products; // Extraire le tableau de produits
+//       setAllProducts(
+//         productsArray.map((p: any) => ({
+//           id: String(p.id),
+//           name: p.name || "Produit Inconnu",
+//           price: `${
+//             p.price !== undefined && p.price !== null ? String(p.price) : "N/A"
+//           } FCFA`,
+//           imageUrl:
+//             p.image_url ||
+//             `https://via.placeholder.com/150x150/?text=${encodeURIComponent(
+//               p.name || "Prod"
+//             )}`, // ESSENTIEL
+//           category_ids: (p.category_ids || []).map((id: any) => String(id)), // S'assurer que les IDs sont des chaînes pour la comparaison          categories_names: p.categories_names || [],
+//           // Les champs suivants doivent être dans ton type Product si tu les utilises dans renderProductItem
+//           categories_names: p.categories_names || [],
+//           tags_names: p.tags_names || [],
+//           stock: p.stock, // Assure-toi que BaseProductType (importé de ProductCard) a 'stock'
+//           description: p.description, // et 'description'
+//         }))
+//       );
+//       console.log("ShopScreen: Produits chargés:", productsArray.length);
+//     } catch (err: any) {
+//       console.error("ShopScreen: Erreur fetchData:", err);
+//       setError(err.message || "Erreur de chargement des données.");
+//       setAllCategories([]);
+//       setAllProducts([]);
+//     } finally {
+//       setIsLoadingCategories(false);
+//       setIsLoadingProducts(false);
+//     }
+//   }, []); // API_BASE_URL est une constante hors du composant
+
+//   useEffect(() => {
+//     fetchData();
+//   }, [fetchData]);
+
+//   // --- Fonctions de filtrage pour l'affichage ---
+//   const getMainCategories = (): Category[] => {
+//     return allCategories.filter((cat) => cat.parent_id === null);
+//   };
+
+//   const getSubCategories = (): Category[] => {
+//     if (!selectedMainCategoryId) return [];
+//     return allCategories.filter(
+//       (cat) => String(cat.parent_id) === String(selectedMainCategoryId)
+//     );
+//   };
+
+//   const getProductsToDisplay = (): Product[] => {
+//     let productsToFilter = allProducts; // Commence avec tous les produits
+
+//     if (selectedSubCategoryId) {
+//       console.log(`Filtrage pour sous-catégorie ID: ${selectedSubCategoryId}`);
+//       productsToFilter = allProducts.filter(
+//         (prod) =>
+//           prod.category_ids &&
+//           prod.category_ids
+//             .map((id) => String(id))
+//             .includes(String(selectedSubCategoryId))
+//       );
+//       console.log(
+//         `Produits trouvés pour sous-cat ${selectedSubCategoryId}:`,
+//         productsToFilter.length
+//       );
+//     } else if (selectedMainCategoryId) {
+//       const subs = getSubCategories(); // getSubCategories doit être défini et fonctionner
+//       if (subs.length === 0) {
+//         // Si la catégorie principale n'a pas de sous-catégories
+//         console.log(
+//           `Filtrage pour catégorie principale SANS sous-cat ID: ${selectedMainCategoryId}`
+//         );
+//         productsToFilter = allProducts.filter(
+//           (prod) =>
+//             prod.category_ids &&
+//             prod.category_ids
+//               .map((id) => String(id))
+//               .includes(String(selectedMainCategoryId))
+//         );
+//         console.log(
+//           `Produits trouvés pour cat principale ${selectedMainCategoryId}:`,
+//           productsToFilter.length
+//         );
+//       } else {
+//         productsToFilter = []; // Aucune sous-catégorie sélectionnée, donc pas de produits affichés pour l'instant
+//         console.log(
+//           "Catégorie principale sélectionnée, mais en attente de sélection de sous-catégorie."
+//         );
+//       }
+//     } else {
+//       // Si rien n'est sélectionné, tu peux choisir de ne rien afficher ou tous les produits (potentiellement limité)
+//       // productsToFilter = allProducts.slice(0,10); // Exemple: les 10 premiers
+//       productsToFilter = []; // Ou rien par défaut
+//       console.log(
+//         "Aucune catégorie sélectionnée pour l'affichage des produits."
+//       );
+//     }
+
+//     if (searchTerm.trim() !== "") {
+//       const lowerSearchTerm = searchTerm.toLowerCase();
+//       productsToFilter = productsToFilter.filter((prod) =>
+//         prod.name.toLowerCase().includes(lowerSearchTerm)
+//       );
+//       console.log(
+//         `Produits après recherche "${searchTerm}":`,
+//         productsToFilter.length
+//       );
+//     }
+//     return productsToFilter;
+//   };
+
+//   // --- Gestionnaires d'événements ---
+//   const handleSelectMainCategory = (categoryId: string | number | null) => {
+//     console.log("Main category selected:", categoryId);
+//     setSelectedMainCategoryId(categoryId);
+//     setSelectedSubCategoryId(null); // Réinitialise la sous-catégorie
+//     setSearchTerm(""); // Réinitialise la recherche
+//   };
+
+//   const handleSelectSubCategory = (subCategoryId: string | number | null) => {
+//     console.log("Sub category selected:", subCategoryId);
+//     setSelectedSubCategoryId(subCategoryId);
+//     setSearchTerm(""); // Réinitialise la recherche
+//   };
+
+//   const handleProductPress = (productId: string | number) => {
+//     // productId est l'ID du produit cliqué
+//     console.log("Tentative de navigation vers le produit ID:", productId); // Log pour déboguer
+//     const path = `/product/${String(productId)}` as Href; // Construit le chemin et le caste en Href
+//     try {
+//       router.push(path);
+//       console.log(`Navigation vers ${path} demandée.`);
+//     } catch (e) {
+//       console.error("Erreur lors de router.push:", e);
+//       Alert.alert(
+//         "Erreur de Navigation",
+//         "Impossible d'ouvrir la page du produit."
+//       );
+//     }
+//   };
+
+//   // --- Rendu des éléments de liste ---
+//   const renderMainCategoryItem = ({ item }: { item: Category }) => (
+//     <TouchableOpacity
+//       style={[
+//         styles.mainCategoryItem,
+//         item.id === selectedMainCategoryId && styles.mainCategoryItemSelected,
+//       ]}
+//       onPress={() => handleSelectMainCategory(item.id)}
+//     >
+//       <Text
+//         style={[
+//           styles.mainCategoryText,
+//           item.id === selectedMainCategoryId && styles.mainCategoryTextSelected,
+//         ]}
+//       >
+//         {item.name}
+//       </Text>
+//     </TouchableOpacity>
+//   );
+
+//   const renderSubCategoryItem = ({ item }: { item: Category }) => (
+//     <TouchableOpacity
+//       style={[
+//         styles.subCategoryItem,
+//         item.id === selectedSubCategoryId && styles.subCategoryItemSelected,
+//       ]}
+//       onPress={() => handleSelectSubCategory(item.id)}
+//     >
+//       <Text
+//         style={[
+//           styles.subCategoryText,
+//           item.id === selectedSubCategoryId && styles.subCategoryTextSelected,
+//         ]}
+//       >
+//         {item.name}
+//       </Text>
+//       {/* Tu pourrais ajouter une image pour la sous-catégorie ici */}
+//     </TouchableOpacity>
+//   );
+
+//   const renderProductItem = ({ item }: { item: Product }) => (
+//     <TouchableOpacity
+//       style={styles.productItem}
+//       onPress={() => handleProductPress(item.id)}
+//     >
+//       {/* Si tu affiches l'image directement ici, l'import de Image est crucial DANS CE FICHIER */}
+//       <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
+//       {/* <View style={styles.productImagePlaceholder}><Text style={{color: 'grey', fontSize:10}}>Image</Text></View> */}
+//       <Text style={styles.productName} numberOfLines={2}>
+//         {item.name}
+//       </Text>
+//       <Text style={styles.productPrice}>{item.price}</Text>
+//     </TouchableOpacity>
+//   );
+
+//   // --- Affichage principal ---
+//   if (isLoadingCategories) {
+//     // Loader initial pour les catégories
+//     return (
+//       <View style={styles.centered}>
+//         <ActivityIndicator
+//           size="large"
+//           color={Colors[colorScheme ?? "light"].tint}
+//         />
+//         <Text
+//           style={{ marginTop: 10, color: Colors[colorScheme ?? "light"].text }}
+//         >
+//           Chargement des catégories...
+//         </Text>
+//       </View>
+//     );
+//   }
+
+//   if (error) {
+//     return (
+//       <View style={styles.centered}>
+//         <Text style={{ color: "red", marginBottom: 10 }}>{error}</Text>
+//         <Button
+//           title="Réessayer"
+//           onPress={fetchData}
+//           color={Colors[colorScheme ?? "light"].tint}
+//         />
+//       </View>
+//     );
+//   }
+
+//   const mainCategories = getMainCategories();
+//   const subCategories = getSubCategories();
+//   const productsToDisplay = getProductsToDisplay();
+
+//   return (
+//     <View style={styles.screenContainer}>
+//       {/* Configurer l'en-tête de la page */}
+//       <Stack.Screen options={{ title: "Boutique Artiva" }} />
+
+//       <TextInput
+//         style={styles.searchBar}
+//         placeholder="Rechercher des produits..."
+//         value={searchTerm}
+//         onChangeText={setSearchTerm}
+//       />
+
+//       <View style={styles.contentContainer}>
+//         {/* Volet Gauche: Catégories Principales */}
+//         <View style={styles.leftPane}>
+//           <FlatList
+//             data={mainCategories}
+//             renderItem={renderMainCategoryItem}
+//             keyExtractor={(item) => item.id.toString()}
+//             showsVerticalScrollIndicator={false}
+//           />
+//         </View>
+
+//         {/* Volet Droit: Sous-catégories OU Produits */}
+//         <View style={styles.rightPane}>
+//           {selectedMainCategoryId &&
+//             subCategories.length > 0 &&
+//             !selectedSubCategoryId && (
+//               <>
+//                 <Text style={styles.sectionTitle}>Sous-catégories</Text>
+//                 <FlatList
+//                   data={subCategories}
+//                   renderItem={renderSubCategoryItem}
+//                   keyExtractor={(item) => item.id.toString()}
+//                   numColumns={3} // Afficher en grille
+//                   columnWrapperStyle={styles.subCategoryRow}
+//                 />
+//               </>
+//             )}
+
+//           {/* Afficher les produits si une sous-catégorie est sélectionnée, OU si une catégorie principale est sélectionnée et n'a pas de sous-catégories */}
+//           {(selectedSubCategoryId ||
+//             (selectedMainCategoryId && subCategories.length === 0)) && (
+//             <>
+//               <Text style={styles.sectionTitle}>
+//                 {selectedSubCategoryId
+//                   ? allCategories.find((c) => c.id === selectedSubCategoryId)
+//                       ?.name
+//                   : allCategories.find((c) => c.id === selectedMainCategoryId)
+//                       ?.name}
+//               </Text>
+//               {isLoadingProducts ? (
+//                 <ActivityIndicator
+//                   style={{ marginTop: 20 }}
+//                   size="large"
+//                   color={Colors[colorScheme ?? "light"].tint}
+//                 />
+//               ) : productsToDisplay.length > 0 ? (
+//                 <FlatList
+//                   data={productsToDisplay}
+//                   renderItem={renderProductItem}
+//                   keyExtractor={(item) => item.id.toString()}
+//                   numColumns={2} // Afficher les produits en 2 colonnes
+//                   contentContainerStyle={styles.productList}
+//                 />
+//               ) : (
+//                 <Text style={styles.noProductsText}>
+//                   {searchTerm
+//                     ? "Aucun produit ne correspond à votre recherche."
+//                     : "Aucun produit dans cette catégorie."}
+//                 </Text>
+//               )}
+//             </>
+//           )}
+
+//           {/* Message si aucune catégorie principale n'est sélectionnée ou si elle a des sous-catégories mais aucune n'est sélectionnée */}
+//           {!selectedMainCategoryId && (
+//             <Text style={styles.placeholderText}>
+//               Sélectionnez une catégorie à gauche.
+//             </Text>
+//           )}
+//           {selectedMainCategoryId &&
+//             subCategories.length > 0 &&
+//             !selectedSubCategoryId &&
+//             productsToDisplay.length === 0 && (
+//               <Text style={styles.placeholderText}>
+//                 Sélectionnez une sous-catégorie pour voir les produits.
+//               </Text>
+//             )}
+//         </View>
+//       </View>
+//     </View>
+//   );
+// }
+
+// // Styles (à affiner considérablement)
+// const styles = StyleSheet.create({
+//   screenContainer: {
+//     flex: 1,
+//     backgroundColor: "#fff", // Ou Colors[colorScheme].background
+//   },
+//   searchBar: {
+//     padding: 12,
+//     margin: 10,
+//     backgroundColor: "#f0f0f0",
+//     borderRadius: 8,
+//     fontSize: 16,
+//   },
+//   contentContainer: {
+//     flex: 1,
+//     flexDirection: "row", // Layout à deux colonnes
+//   },
+//   leftPane: {
+//     width: 120, // Largeur du volet des catégories principales
+//     backgroundColor: "#f8f8f8", // Couleur de fond pour le volet gauche
+//     borderRightWidth: 1,
+//     borderRightColor: "#e0e0e0",
+//   },
+//   mainCategoryItem: {
+//     paddingVertical: 15,
+//     paddingHorizontal: 10,
+//     borderBottomWidth: 1,
+//     borderBottomColor: "#e0e0e0",
+//   },
+//   mainCategoryItemSelected: {
+//     backgroundColor: "tomato", // Couleur pour l'élément sélectionné
+//   },
+//   mainCategoryText: {
+//     fontSize: 14,
+//     fontWeight: "500",
+//   },
+//   mainCategoryTextSelected: {
+//     color: "white",
+//     fontWeight: "bold",
+//   },
+//   rightPane: {
+//     flex: 1, // Prend l'espace restant
+//     padding: 10,
+//   },
+//   sectionTitle: {
+//     fontSize: 18,
+//     fontWeight: "bold",
+//     marginBottom: 10,
+//     paddingHorizontal: 5,
+//   },
+//   subCategoryItem: {
+//     backgroundColor: "#f0f0f0",
+//     padding: 10,
+//     borderRadius: 5,
+//     margin: 5,
+//     alignItems: "center",
+//     justifyContent: "center",
+//     minHeight: 60, // Hauteur minimale pour les cartes de sous-catégories
+//     flex: 1, // Pour que les items se répartissent dans numColumns
+//   },
+//   subCategoryItemSelected: {
+//     backgroundColor: "tomato",
+//     borderColor: "#cc503e",
+//     borderWidth: 2,
+//   },
+//   subCategoryText: {
+//     fontSize: 12,
+//     textAlign: "center",
+//   },
+//   subCategoryTextSelected: {
+//     color: "white",
+//     fontWeight: "600",
+//   },
+//   subCategoryRow: {
+//     justifyContent: "space-between", // Pour espacer les sous-catégories sur la ligne
+//   },
+//   productList: {
+//     // paddingBottom: 20, // Espace en bas de la liste des produits
+//   },
+//   productItem: {
+//     flex: 0.5, // Pour 2 colonnes, chaque item prend la moitié de l'espace (moins les marges)
+//     margin: 5,
+//     padding: 10,
+//     backgroundColor: "#ffffff",
+//     borderRadius: 8,
+//     alignItems: "center",
+//     shadowColor: "#000",
+//     shadowOffset: { width: 0, height: 1 },
+//     shadowOpacity: 0.2,
+//     shadowRadius: 1.41,
+//     elevation: 2,
+//   },
+//   productImagePlaceholder: {
+//     width: "100%",
+//     aspectRatio: 1, // Pour une image carrée
+//     backgroundColor: "#e0e0e0",
+//     borderRadius: 6,
+//     marginBottom: 8,
+//     justifyContent: "center",
+//     alignItems: "center",
+//   },
+//   productImage: {
+//     // Si tu utilises une vraie image
+//     width: "100%",
+//     aspectRatio: 1,
+//     borderRadius: 6,
+//     marginBottom: 8,
+//     backgroundColor: "#e0e0e0",
+//   },
+//   productName: {
+//     fontSize: 13,
+//     fontWeight: "600",
+//     textAlign: "center",
+//     marginBottom: 4,
+//     minHeight: 30, // Pour 2 lignes de texte
+//   },
+//   productPrice: {
+//     fontSize: 14,
+//     fontWeight: "bold",
+//     color: "green",
+//   },
+//   centered: {
+//     flex: 1,
+//     justifyContent: "center",
+//     alignItems: "center",
+//   },
+//   noProductsText: {
+//     textAlign: "center",
+//     marginTop: 30,
+//     fontSize: 16,
+//     color: "#777",
+//   },
+//   placeholderText: {
+//     textAlign: "center",
+//     marginTop: 50,
+//     fontSize: 16,
+//     color: "#aaa",
+//   },
+// });
+
+
+
+
+
+
+
+// ARTIVA/front_end/app/(tabs)/ShopScreen.tsx
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { 
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, 
+  FlatList, ActivityIndicator, TextInput, Image, Button, Platform 
+} from 'react-native';
+import { Stack, useRouter, Href } from 'expo-router';
+import Colors from '../../constants/Colors';
+import { useColorScheme } from '../../components/useColorScheme';
+import { Product as BaseProductType } from '../../components/ProductCard'; // Assure-toi de l'export
+
 interface Category {
   id: string | number;
   name: string;
   parent_id: string | number | null;
-  // Ajoute d'autres champs si nécessaire (image_url, slug etc.)
+  image_url?: string; 
+  display_order?: number;
 }
 
-interface Product {
-  id: string | number;
-  name: string;
-  price: string; // Déjà formaté
-  imageUrl: string;
-  category_ids?: (string | number)[]; // IDs des catégories auxquelles ce produit appartient
-  // Ajoute d'autres champs
+interface ShopProduct extends BaseProductType {}
+
+// Interface pour les éléments visibles dans FlatList
+interface ViewableItemInfo<T> {
+  item: T; key: string; index: number | null; isViewable: boolean;
 }
 
-// **ATTENTION: METS TON ADRESSE IP LOCALE CORRECTE ICI**
-const API_BASE_URL = "http://192.168.248.151:3001/api";
-// Exemple: const API_BASE_URL = 'http://192.168.1.105:3001/api';
+const API_BASE_URL = "http://192.168.1.2:3001/api"; // **VÉIRIFIE TON IP**
 
 export default function TabShopScreen() {
-  const colorScheme = useColorScheme();
+  const deviceColorScheme = useColorScheme(); // Hook de react-native (ou ton custom)
+  const colorScheme = useColorScheme(); // Hook de react-native, pas de useAuth ici pour le thème pour l'instant
   const router = useRouter();
+  
+  // Définition des couleurs en fonction du colorScheme de l'appareil
+  const currentAppliedTheme = colorScheme ?? 'light';
+  const tintColor = Colors[currentAppliedTheme].tint;
+  const textColor = Colors[currentAppliedTheme].text;
+  const backgroundColor = Colors[currentAppliedTheme].background;
+  const cardColor = Colors[currentAppliedTheme].card;
+  const subtleTextColor = Colors[currentAppliedTheme].tabIconDefault;
+  const borderColor = Colors[currentAppliedTheme].cardBorder || Colors[currentAppliedTheme].tabIconDefault;
 
-  // États pour les données
   const [allCategories, setAllCategories] = useState<Category[]>([]);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<ShopProduct[]>([]);
+  
+  const [selectedMainCategoryId, setSelectedMainCategoryId] = useState<string | number | null>(null);
+  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string | number | null>(null);
 
-  // États pour la navigation interne de la page
-  const [selectedMainCategoryId, setSelectedMainCategoryId] = useState<
-    string | number | null
-  >(null);
-  const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<
-    string | number | null
-  >(null);
-
-  // États pour l'UI
-  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  // Charger toutes les catégories et tous les produits au montage
+
   const fetchData = useCallback(async () => {
     console.log("ShopScreen: Appel de fetchData (catégories et produits)");
-    setIsLoadingCategories(true);
-    setIsLoadingProducts(true);
+    setIsLoading(true);
     setError(null);
     try {
       const [catResponse, prodResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/categories`),
-        fetch(`${API_BASE_URL}/products`), // Suppose que ça renvoie les produits publiés
+        fetch(`${API_BASE_URL}/products`) 
       ]);
 
-      if (!catResponse.ok)
-        throw new Error(`Erreur catégories (${catResponse.status})`);
+      if (!catResponse.ok) {
+        const errText = await catResponse.text().catch(() => `Erreur HTTP ${catResponse.status}`);
+        throw new Error(`Erreur chargement catégories (${catResponse.status}): ${errText}`);
+      }
       const catData = await catResponse.json();
-      // Adapter si besoin les noms de champs (id, name, parent_id sont attendus)
-      setAllCategories(
-        catData.map((c: any) => ({
-          ...c,
-          id: String(c.id),
-          parent_id: c.parent_id ? String(c.parent_id) : null,
-        }))
-      );
+      setAllCategories(catData.map((c: any) => ({ 
+        id: String(c.id), 
+        name: c.name || "Catégorie",
+        parent_id: c.parent_id ? String(c.parent_id) : null,
+        image_url: c.image_url,
+        display_order: c.display_order
+      })));
       console.log("ShopScreen: Catégories chargées:", catData.length);
 
-      if (!prodResponse.ok)
-        throw new Error(`Erreur produits (${prodResponse.status})`);
-      const prodDataWrapper = await prodResponse.json(); // Renommer en prodDataWrapper pour clarté
-      console.log(
-        "ShopScreen: Données brutes Produits (wrapper):",
-        JSON.stringify(prodDataWrapper, null, 2)
-      );
-      // Adapter si besoin (id, name, price, imageUrl, category_ids sont attendus)
-      // Assure-toi que 'price' est formaté si ce n'est pas déjà fait par l'API
-      if (!prodDataWrapper || !Array.isArray(prodDataWrapper.products)) {
-        console.error(
-          "Erreur: prodDataWrapper.products n'est pas un tableau!",
-          prodDataWrapper
-        );
-        throw new Error(
-          "Format de données produits inattendu du serveur (ShopScreen)."
-        );
+      if (!prodResponse.ok) {
+        const errText = await prodResponse.text().catch(() => `Erreur HTTP ${prodResponse.status}`);
+        throw new Error(`Erreur chargement produits (${prodResponse.status}): ${errText}`);
       }
-      const productsArray = prodDataWrapper.products; // Extraire le tableau de produits
+      const prodDataWrapper = await prodResponse.json(); 
+      console.log("ShopScreen: Données brutes Produits (wrapper):", JSON.stringify(prodDataWrapper, null, 2));
+      
+      if (!prodDataWrapper || !Array.isArray(prodDataWrapper.products)) { // <<< CORRECTION CLÉ
+        console.error("Erreur: prodDataWrapper.products n'est pas un tableau!", prodDataWrapper);
+        throw new Error("Format de données produits inattendu du serveur (ShopScreen).");
+      }
+      const productsArray = prodDataWrapper.products; // <<< CORRECTION CLÉ
+
       setAllProducts(
-        productsArray.map((p: any) => ({
+        productsArray.map((p: any) => ({ // <<< UTILISER productsArray.map()
           id: String(p.id),
           name: p.name || "Produit Inconnu",
           price: `${
-            p.price !== undefined && p.price !== null ? String(p.price) : "N/A"
+            p.price !== undefined && p.price !== null ? parseFloat(String(p.price)).toFixed(2) : "N/A"
           } FCFA`,
           imageUrl:
             p.image_url ||
-            `https://via.placeholder.com/150x150/?text=${encodeURIComponent(
+            `https://via.placeholder.com/150x150/E0E0E0/909090?text=${encodeURIComponent(
               p.name || "Prod"
-            )}`, // ESSENTIEL
-          category_ids: (p.category_ids || []).map((id: any) => String(id)), // S'assurer que les IDs sont des chaînes pour la comparaison          categories_names: p.categories_names || [],
-          // Les champs suivants doivent être dans ton type Product si tu les utilises dans renderProductItem
-          categories_names: p.categories_names || [],
-          tags_names: p.tags_names || [],
-          stock: p.stock, // Assure-toi que BaseProductType (importé de ProductCard) a 'stock'
-          description: p.description, // et 'description'
+            )}`,
+          stock: p.stock,
+          category_ids: (p.category_ids || []).map((id: any) => String(id)),
+          description: p.description, 
+          sku: p.sku,                
+          is_published: p.is_published, 
+          categories_names: p.categories_names || [], 
+          tags_names: p.tags_names || []           
         }))
       );
-      console.log("ShopScreen: Produits chargés:", productsArray.length);
+      console.log("ShopScreen: Produits chargés et adaptés:", productsArray.length);
+
     } catch (err: any) {
-      console.error("ShopScreen: Erreur fetchData:", err);
+      console.error("ShopScreen: Erreur fetchData:", err.message, err);
       setError(err.message || "Erreur de chargement des données.");
       setAllCategories([]);
       setAllProducts([]);
     } finally {
-      setIsLoadingCategories(false);
-      setIsLoadingProducts(false);
+      setIsLoading(false);
+      setInitialLoadComplete(true);
     }
-  }, []); // API_BASE_URL est une constante hors du composant
+  }, []);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // --- Fonctions de filtrage pour l'affichage ---
-  const getMainCategories = (): Category[] => {
-    return allCategories.filter((cat) => cat.parent_id === null);
-  };
+  const mainCategories = useMemo(() => 
+    allCategories.filter(cat => cat.parent_id === null)
+    .sort((a,b) => (a.display_order || 0) - (b.display_order || 0) || a.name.localeCompare(b.name)),
+    [allCategories]
+  );
 
-  const getSubCategories = (): Category[] => {
+  const subCategories = useMemo(() => {
     if (!selectedMainCategoryId) return [];
-    return allCategories.filter(
-      (cat) => String(cat.parent_id) === String(selectedMainCategoryId)
-    );
-  };
+    return allCategories.filter(cat => String(cat.parent_id) === String(selectedMainCategoryId))
+           .sort((a,b) => (a.display_order || 0) - (b.display_order || 0) || a.name.localeCompare(b.name));
+  }, [allCategories, selectedMainCategoryId]);
 
-  const getProductsToDisplay = (): Product[] => {
-    let productsToFilter = allProducts; // Commence avec tous les produits
+  const productsToDisplay = useMemo(() => {
+    let filtered = allProducts;
+    const targetCategoryId = selectedSubCategoryId || (selectedMainCategoryId && subCategories.length === 0 ? selectedMainCategoryId : null);
 
-    if (selectedSubCategoryId) {
-      console.log(`Filtrage pour sous-catégorie ID: ${selectedSubCategoryId}`);
-      productsToFilter = allProducts.filter(
-        (prod) =>
-          prod.category_ids &&
-          prod.category_ids
-            .map((id) => String(id))
-            .includes(String(selectedSubCategoryId))
+    if (targetCategoryId) {
+      filtered = allProducts.filter(prod => 
+        prod.category_ids && prod.category_ids.includes(String(targetCategoryId))
       );
-      console.log(
-        `Produits trouvés pour sous-cat ${selectedSubCategoryId}:`,
-        productsToFilter.length
-      );
-    } else if (selectedMainCategoryId) {
-      const subs = getSubCategories(); // getSubCategories doit être défini et fonctionner
-      if (subs.length === 0) {
-        // Si la catégorie principale n'a pas de sous-catégories
-        console.log(
-          `Filtrage pour catégorie principale SANS sous-cat ID: ${selectedMainCategoryId}`
-        );
-        productsToFilter = allProducts.filter(
-          (prod) =>
-            prod.category_ids &&
-            prod.category_ids
-              .map((id) => String(id))
-              .includes(String(selectedMainCategoryId))
-        );
-        console.log(
-          `Produits trouvés pour cat principale ${selectedMainCategoryId}:`,
-          productsToFilter.length
-        );
-      } else {
-        productsToFilter = []; // Aucune sous-catégorie sélectionnée, donc pas de produits affichés pour l'instant
-        console.log(
-          "Catégorie principale sélectionnée, mais en attente de sélection de sous-catégorie."
-        );
-      }
-    } else {
-      // Si rien n'est sélectionné, tu peux choisir de ne rien afficher ou tous les produits (potentiellement limité)
-      // productsToFilter = allProducts.slice(0,10); // Exemple: les 10 premiers
-      productsToFilter = []; // Ou rien par défaut
-      console.log(
-        "Aucune catégorie sélectionnée pour l'affichage des produits."
-      );
+    } else if (selectedMainCategoryId && subCategories.length > 0) {
+      return []; 
+    } else if (!selectedMainCategoryId) {
+        return []; 
     }
 
-    if (searchTerm.trim() !== "") {
+    if (searchTerm.trim() !== '') {
       const lowerSearchTerm = searchTerm.toLowerCase();
-      productsToFilter = productsToFilter.filter((prod) =>
+      filtered = filtered.filter(prod => 
         prod.name.toLowerCase().includes(lowerSearchTerm)
       );
-      console.log(
-        `Produits après recherche "${searchTerm}":`,
-        productsToFilter.length
-      );
     }
-    return productsToFilter;
-  };
+    return filtered;
+  }, [allProducts, selectedMainCategoryId, selectedSubCategoryId, searchTerm, subCategories]);
 
-  // --- Gestionnaires d'événements ---
-  const handleSelectMainCategory = (categoryId: string | number | null) => {
-    console.log("Main category selected:", categoryId);
-    setSelectedMainCategoryId(categoryId);
-    setSelectedSubCategoryId(null); // Réinitialise la sous-catégorie
-    setSearchTerm(""); // Réinitialise la recherche
-  };
 
-  const handleSelectSubCategory = (subCategoryId: string | number | null) => {
-    console.log("Sub category selected:", subCategoryId);
-    setSelectedSubCategoryId(subCategoryId);
-    setSearchTerm(""); // Réinitialise la recherche
-  };
+  const handleSelectMainCategory = (categoryId: string | number | null) => { setSelectedMainCategoryId(categoryId); setSelectedSubCategoryId(null); setSearchTerm(''); };
+  const handleSelectSubCategory = (subCategoryId: string | number | null) => { setSelectedSubCategoryId(subCategoryId); setSearchTerm(''); };
+  const handleProductPress = (productId: string | number) => { const path = `/product/${String(productId)}` as Href; router.push(path); };
 
-  const handleProductPress = (productId: string | number) => {
-    // productId est l'ID du produit cliqué
-    console.log("Tentative de navigation vers le produit ID:", productId); // Log pour déboguer
-    const path = `/product/${String(productId)}` as Href; // Construit le chemin et le caste en Href
-    try {
-      router.push(path);
-      console.log(`Navigation vers ${path} demandée.`);
-    } catch (e) {
-      console.error("Erreur lors de router.push:", e);
-      Alert.alert(
-        "Erreur de Navigation",
-        "Impossible d'ouvrir la page du produit."
-      );
-    }
-  };
-
-  // --- Rendu des éléments de liste ---
-  const renderMainCategoryItem = ({ item }: { item: Category }) => (
-    <TouchableOpacity
-      style={[
-        styles.mainCategoryItem,
-        item.id === selectedMainCategoryId && styles.mainCategoryItemSelected,
-      ]}
-      onPress={() => handleSelectMainCategory(item.id)}
-    >
-      <Text
-        style={[
-          styles.mainCategoryText,
-          item.id === selectedMainCategoryId && styles.mainCategoryTextSelected,
-        ]}
-      >
-        {item.name}
-      </Text>
-    </TouchableOpacity>
-  );
-
-  const renderSubCategoryItem = ({ item }: { item: Category }) => (
-    <TouchableOpacity
-      style={[
-        styles.subCategoryItem,
-        item.id === selectedSubCategoryId && styles.subCategoryItemSelected,
-      ]}
-      onPress={() => handleSelectSubCategory(item.id)}
-    >
-      <Text
-        style={[
-          styles.subCategoryText,
-          item.id === selectedSubCategoryId && styles.subCategoryTextSelected,
-        ]}
-      >
-        {item.name}
-      </Text>
-      {/* Tu pourrais ajouter une image pour la sous-catégorie ici */}
-    </TouchableOpacity>
-  );
-
-  const renderProductItem = ({ item }: { item: Product }) => (
-    <TouchableOpacity
-      style={styles.productItem}
-      onPress={() => handleProductPress(item.id)}
-    >
-      {/* Si tu affiches l'image directement ici, l'import de Image est crucial DANS CE FICHIER */}
-      <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
-      {/* <View style={styles.productImagePlaceholder}><Text style={{color: 'grey', fontSize:10}}>Image</Text></View> */}
-      <Text style={styles.productName} numberOfLines={2}>
-        {item.name}
-      </Text>
-      <Text style={styles.productPrice}>{item.price}</Text>
-    </TouchableOpacity>
-  );
-
-  // --- Affichage principal ---
-  if (isLoadingCategories) {
-    // Loader initial pour les catégories
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator
-          size="large"
-          color={Colors[colorScheme ?? "light"].tint}
-        />
-        <Text
-          style={{ marginTop: 10, color: Colors[colorScheme ?? "light"].text }}
-        >
-          Chargement des catégories...
-        </Text>
-      </View>
-    );
+  if (isLoading && !initialLoadComplete) {
+    return ( <View style={[styles.centered, {backgroundColor}]}><ActivityIndicator size="large" color={tintColor} /><Text style={{marginTop: 10, color: textColor}}>Chargement...</Text></View> );
   }
-
-  if (error) {
-    return (
-      <View style={styles.centered}>
-        <Text style={{ color: "red", marginBottom: 10 }}>{error}</Text>
-        <Button
-          title="Réessayer"
-          onPress={fetchData}
-          color={Colors[colorScheme ?? "light"].tint}
-        />
-      </View>
-    );
+  
+  if (error && allCategories.length === 0 && allProducts.length === 0) {
+    return ( <View style={[styles.centered, {backgroundColor}]}><Text style={{color: 'red', marginBottom:10, textAlign:'center'}}>{error}</Text><Button title="Réessayer" onPress={fetchData} color={tintColor}/></View> );
   }
-
-  const mainCategories = getMainCategories();
-  const subCategories = getSubCategories();
-  const productsToDisplay = getProductsToDisplay();
 
   return (
-    <View style={styles.screenContainer}>
-      {/* Configurer l'en-tête de la page */}
-      <Stack.Screen options={{ title: "Boutique Artiva" }} />
-
+    <View style={[styles.screenContainer, {backgroundColor}]}>
+      <Stack.Screen options={{ title: 'Boutique', headerShown: false }} /> 
+      
       <TextInput
-        style={styles.searchBar}
+        style={[styles.searchBar, {backgroundColor: cardColor, color: textColor, borderColor: borderColor}]}
         placeholder="Rechercher des produits..."
+        placeholderTextColor={subtleTextColor}
         value={searchTerm}
         onChangeText={setSearchTerm}
       />
 
       <View style={styles.contentContainer}>
-        {/* Volet Gauche: Catégories Principales */}
-        <View style={styles.leftPane}>
-          <FlatList
-            data={mainCategories}
-            renderItem={renderMainCategoryItem}
-            keyExtractor={(item) => item.id.toString()}
-            showsVerticalScrollIndicator={false}
-          />
+        <View style={[styles.leftPane, {backgroundColor: Platform.OS === 'ios' ? cardColor : (backgroundColor === Colors.dark.background ? Colors.dark.card : '#f0f0f0') , borderRightColor: borderColor}]}>          
+          {mainCategories.length > 0 ? (
+            <FlatList
+              data={mainCategories}
+              renderItem={({ item }) => (
+                <TouchableOpacity 
+                  style={[styles.mainCategoryItem, item.id === selectedMainCategoryId && { backgroundColor: tintColor } ]} 
+                  onPress={() => handleSelectMainCategory(item.id)}
+                >
+                  <Text style={[styles.mainCategoryText, {color: item.id === selectedMainCategoryId ? 'white' : textColor}]}>{item.name}</Text>
+                </TouchableOpacity>
+              )}
+              keyExtractor={(item) => item.id.toString()}
+              showsVerticalScrollIndicator={false}
+            />
+          ) : !isLoading ? <Text style={[styles.noDataText, {color: textColor}]}>Aucune catégorie.</Text> : null}
         </View>
 
-        {/* Volet Droit: Sous-catégories OU Produits */}
         <View style={styles.rightPane}>
-          {selectedMainCategoryId &&
-            subCategories.length > 0 &&
-            !selectedSubCategoryId && (
-              <>
-                <Text style={styles.sectionTitle}>Sous-catégories</Text>
-                <FlatList
-                  data={subCategories}
-                  renderItem={renderSubCategoryItem}
-                  keyExtractor={(item) => item.id.toString()}
-                  numColumns={3} // Afficher en grille
-                  columnWrapperStyle={styles.subCategoryRow}
-                />
-              </>
-            )}
+          {isLoading && productsToDisplay.length === 0 && selectedMainCategoryId && <ActivityIndicator color={tintColor} style={{marginTop: 20}} />}
 
-          {/* Afficher les produits si une sous-catégorie est sélectionnée, OU si une catégorie principale est sélectionnée et n'a pas de sous-catégories */}
-          {(selectedSubCategoryId ||
-            (selectedMainCategoryId && subCategories.length === 0)) && (
+          {selectedMainCategoryId && subCategories.length > 0 && !selectedSubCategoryId && (
             <>
-              <Text style={styles.sectionTitle}>
-                {selectedSubCategoryId
-                  ? allCategories.find((c) => c.id === selectedSubCategoryId)
-                      ?.name
-                  : allCategories.find((c) => c.id === selectedMainCategoryId)
-                      ?.name}
+              <Text style={[styles.sectionTitle, {color: textColor}]}>
+                {allCategories.find(c=>c.id === selectedMainCategoryId)?.name || 'Sous-catégories'}
               </Text>
-              {isLoadingProducts ? (
-                <ActivityIndicator
-                  style={{ marginTop: 20 }}
-                  size="large"
-                  color={Colors[colorScheme ?? "light"].tint}
-                />
-              ) : productsToDisplay.length > 0 ? (
-                <FlatList
-                  data={productsToDisplay}
-                  renderItem={renderProductItem}
-                  keyExtractor={(item) => item.id.toString()}
-                  numColumns={2} // Afficher les produits en 2 colonnes
-                  contentContainerStyle={styles.productList}
-                />
-              ) : (
-                <Text style={styles.noProductsText}>
-                  {searchTerm
-                    ? "Aucun produit ne correspond à votre recherche."
-                    : "Aucun produit dans cette catégorie."}
-                </Text>
-              )}
+              <FlatList
+                data={subCategories}
+                renderItem={({ item }) => (
+                    <TouchableOpacity 
+                        style={[
+                            styles.subCategoryItem, 
+                            {backgroundColor: cardColor, borderColor: borderColor}, 
+                            item.id === selectedSubCategoryId && { backgroundColor: tintColor, borderColor: tintColor }
+                        ]} 
+                        onPress={() => handleSelectSubCategory(item.id)} >
+                        {item.image_url && <Image source={{uri: item.image_url}} style={styles.subCategoryImage} />}
+                        <Text style={[styles.subCategoryText, {color: item.id === selectedSubCategoryId ? 'white' : textColor}]}>{item.name}</Text>
+                    </TouchableOpacity>
+                )}
+                keyExtractor={(item) => item.id.toString()}
+                numColumns={2} 
+                columnWrapperStyle={styles.subCategoryRow}
+              />
             </>
           )}
 
-          {/* Message si aucune catégorie principale n'est sélectionnée ou si elle a des sous-catégories mais aucune n'est sélectionnée */}
-          {!selectedMainCategoryId && (
-            <Text style={styles.placeholderText}>
-              Sélectionnez une catégorie à gauche.
-            </Text>
-          )}
-          {selectedMainCategoryId &&
-            subCategories.length > 0 &&
-            !selectedSubCategoryId &&
-            productsToDisplay.length === 0 && (
-              <Text style={styles.placeholderText}>
-                Sélectionnez une sous-catégorie pour voir les produits.
+          {(selectedSubCategoryId || (selectedMainCategoryId && subCategories.length === 0)) && (
+            <>
+              <Text style={[styles.sectionTitle, {color: textColor}]}>
+                Produits de "{selectedSubCategoryId 
+                    ? allCategories.find(c=>c.id === selectedSubCategoryId)?.name 
+                    : allCategories.find(c=>c.id === selectedMainCategoryId)?.name}"
               </Text>
-            )}
+              {productsToDisplay.length > 0 ? (
+                <FlatList
+                  data={productsToDisplay}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity style={[styles.productItem, {backgroundColor: cardColor, borderColor: borderColor}]} onPress={() => handleProductPress(item.id)}>
+                      <Image source={{ uri: item.imageUrl }} style={styles.productImage} />
+                      <Text style={[styles.productName, {color: textColor}]} numberOfLines={2}>{item.name}</Text>
+                      <Text style={[styles.productPrice, {color: tintColor}]}>{item.price}</Text>
+                    </TouchableOpacity>
+                  )}
+                  keyExtractor={(item) => item.id.toString()}
+                  numColumns={2}
+                  contentContainerStyle={styles.productList}
+                  showsVerticalScrollIndicator={false}
+                />
+              ) : !isLoading ? ( 
+                <View style={styles.placeholderContainer}>
+                    <Text style={[styles.noProductsText, {color: textColor}]}>
+                        {searchTerm ? "Aucun produit ne correspond à votre recherche." : "Aucun produit dans cette sélection."}
+                    </Text>
+                </View>
+              ) : null}
+            </>
+          )}
+          
+          {!selectedMainCategoryId && ( <View style={styles.placeholderContainer}><Text style={[styles.placeholderText, {color: subtleTextColor}]}>Sélectionnez une catégorie.</Text></View> )}
+          {selectedMainCategoryId && subCategories.length > 0 && !selectedSubCategoryId && productsToDisplay.length === 0 && !isLoading && (
+            <View style={styles.placeholderContainer}><Text style={[styles.placeholderText, {color: subtleTextColor}]}>Sélectionnez une sous-catégorie.</Text></View>
+          )}
         </View>
       </View>
     </View>
   );
 }
 
-// Styles (à affiner considérablement)
+
+// Styles (ceux que tu avais, avec les modifications pour le thème)
 const styles = StyleSheet.create({
-  screenContainer: {
-    flex: 1,
-    backgroundColor: "#fff", // Ou Colors[colorScheme].background
+  screenContainer: { flex: 1, paddingTop: Platform.OS === 'android' ? 25 : 0 },
+  searchBar: { 
+    height: 45, 
+    paddingHorizontal: 20, 
+    marginHorizontal: 10,
+    marginTop: 10,
+    marginBottom: 5,
+    borderRadius: 25, 
+    borderWidth: 1, 
+    fontSize: 16, 
+    // backgroundColor, color, borderColor sont appliqués dynamiquement
   },
-  searchBar: {
-    padding: 12,
-    margin: 10,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 8,
-    fontSize: 16,
+  contentContainer: { flex: 1, flexDirection: 'row' },
+  leftPane: { 
+    width: 110, 
+    //borderRightWidth: 1, 
+    // backgroundColor, borderRightColor sont appliqués dynamiquement
   },
-  contentContainer: {
-    flex: 1,
-    flexDirection: "row", // Layout à deux colonnes
+  mainCategoryItem: { 
+    paddingVertical: 18, 
+    paddingHorizontal: 10, 
+    borderBottomWidth: 1, 
+    // borderBottomColor est appliqué dynamiquement (ou une couleur fixe si tu préfères un séparateur constant)
+    alignItems: 'center' 
   },
-  leftPane: {
-    width: 120, // Largeur du volet des catégories principales
-    backgroundColor: "#f8f8f8", // Couleur de fond pour le volet gauche
-    borderRightWidth: 1,
-    borderRightColor: "#e0e0e0",
+  // mainCategoryItemSelected n'est plus une clé de style, c'est appliqué en ligne
+  mainCategoryText: { 
+    fontSize: 13, 
+    fontWeight: '500', 
+    textAlign: 'center' 
+    // color est appliqué dynamiquement
   },
-  mainCategoryItem: {
-    paddingVertical: 15,
-    paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+  rightPane: { 
+    flex: 1, 
+    paddingVertical: 10, 
+    paddingHorizontal: 5 
   },
-  mainCategoryItemSelected: {
-    backgroundColor: "tomato", // Couleur pour l'élément sélectionné
+  sectionTitle: { 
+    fontSize: 17, 
+    fontWeight: '600', 
+    marginBottom: 12, 
+    paddingHorizontal: 10 
+    // color est appliqué dynamiquement
   },
-  mainCategoryText: {
-    fontSize: 14,
-    fontWeight: "500",
+  subCategoryItem: { 
+    flex: 1, 
+    margin: 4, 
+    padding: 8, 
+    borderRadius: 8, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    minHeight: 80, 
+    elevation: 1, 
+    // shadowOpacity:0.05, // Les ombres en React Native sont souvent gérées par 'elevation' (Android) ou des props shadowXxx (iOS)
+    borderWidth: 1, 
+    // backgroundColor et borderColor sont appliqués dynamiquement
   },
-  mainCategoryTextSelected: {
-    color: "white",
-    fontWeight: "bold",
+  // subCategoryItemSelected n'est plus une clé de style
+  subCategoryText: { 
+    fontSize: 11, 
+    textAlign: 'center', 
+    fontWeight: '500' 
+    // color est appliqué dynamiquement
   },
-  rightPane: {
-    flex: 1, // Prend l'espace restant
-    padding: 10,
+  subCategoryImage: {
+    width: 35, 
+    height: 35, 
+    marginBottom: 5, 
+    borderRadius: 4, 
+    resizeMode: 'contain'
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-    paddingHorizontal: 5,
+  subCategoryRow: { 
+    marginHorizontal: 5 
   },
-  subCategoryItem: {
-    backgroundColor: "#f0f0f0",
-    padding: 10,
-    borderRadius: 5,
-    margin: 5,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 60, // Hauteur minimale pour les cartes de sous-catégories
-    flex: 1, // Pour que les items se répartissent dans numColumns
+  productList: { 
+    paddingHorizontal: 5 
   },
-  subCategoryItemSelected: {
-    backgroundColor: "tomato",
-    borderColor: "#cc503e",
-    borderWidth: 2,
+  productItem: { 
+    flex: 0.5, 
+    margin: 4, 
+    padding: 8, 
+    borderRadius: 8, 
+    elevation: 1.5, 
+    // shadowColor: '#000', // Pour iOS si tu veux des ombres plus custom
+    // shadowOffset: { width: 0, height: 1 }, 
+    // shadowOpacity: 0.1, 
+    // shadowRadius: 2, 
+    // backgroundColor et borderColor sont appliqués dynamiquement
   },
-  subCategoryText: {
-    fontSize: 12,
-    textAlign: "center",
+  productImage: { 
+    width: '100%', 
+    aspectRatio: 1, 
+    borderRadius: 6, 
+    marginBottom: 8, 
+    backgroundColor: '#e0e0e0' // Placeholder si l'image ne charge pas (peut être thémé)
   },
-  subCategoryTextSelected: {
-    color: "white",
-    fontWeight: "600",
+  productName: { 
+    fontSize: 13, 
+    fontWeight: '600', 
+    textAlign: 'left', 
+    marginBottom: 4, 
+    height: 36 /* Approx 2 lignes */ 
+    // color est appliqué dynamiquement
   },
-  subCategoryRow: {
-    justifyContent: "space-between", // Pour espacer les sous-catégories sur la ligne
+  productPrice: { 
+    fontSize: 14, 
+    fontWeight: 'bold', 
+    textAlign: 'left' 
+    // color est appliqué dynamiquement
   },
-  productList: {
-    // paddingBottom: 20, // Espace en bas de la liste des produits
+  centered: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    padding: 20 
   },
-  productItem: {
-    flex: 0.5, // Pour 2 colonnes, chaque item prend la moitié de l'espace (moins les marges)
-    margin: 5,
-    padding: 10,
-    backgroundColor: "#ffffff",
-    borderRadius: 8,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    elevation: 2,
+  noProductsText: { 
+    textAlign: 'center', 
+    marginTop: 30, 
+    fontSize: 16, 
+    // color est appliqué dynamiquement
   },
-  productImagePlaceholder: {
-    width: "100%",
-    aspectRatio: 1, // Pour une image carrée
-    backgroundColor: "#e0e0e0",
-    borderRadius: 6,
-    marginBottom: 8,
-    justifyContent: "center",
-    alignItems: "center",
+  noDataText: { // Style ajouté pour les messages "Aucune catégorie/produit"
+    textAlign: 'center', 
+    marginVertical: 20, 
+    fontSize: 15, 
+    fontStyle: 'italic',
+    // color sera appliqué dynamiquement
   },
-  productImage: {
-    // Si tu utilises une vraie image
-    width: "100%",
-    aspectRatio: 1,
-    borderRadius: 6,
-    marginBottom: 8,
-    backgroundColor: "#e0e0e0",
+  placeholderContainer: {
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    padding: 20
   },
-  productName: {
-    fontSize: 13,
-    fontWeight: "600",
-    textAlign: "center",
-    marginBottom: 4,
-    minHeight: 30, // Pour 2 lignes de texte
-  },
-  productPrice: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "green",
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  noProductsText: {
-    textAlign: "center",
-    marginTop: 30,
-    fontSize: 16,
-    color: "#777",
-  },
-  placeholderText: {
-    textAlign: "center",
-    marginTop: 50,
-    fontSize: 16,
-    color: "#aaa",
+  placeholderText: { 
+    textAlign: 'center', 
+    marginTop: 50, 
+    fontSize: 16, 
+    // color est appliqué dynamiquement
   },
 });

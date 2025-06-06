@@ -1,6 +1,7 @@
 // ARTIVA/back_end/controllers/userController.js
 const db = require('../config/db');
 // bcrypt sera nécessaire si on permet à l'admin de réinitialiser un mot de passe (non recommandé directement)
+const bcrypt = require('bcryptjs'); 
 
 // --- Récupérer le profil de l'utilisateur actuellement connecté ---
 exports.getCurrentUserProfile = async (req, res) => {
@@ -249,5 +250,57 @@ exports.deactivateMyAccount = async (req, res) => {
   } catch (error) {
     console.error(`Erreur désactivation compte utilisateur ${userId}:`, error);
     res.status(500).json({ message: 'Erreur serveur lors de la désactivation du compte.' });
+  }
+};
+// AJOUTER CETTE FONCTION DANS userController.js si elle manque :
+exports.changePassword = async (req, res) => {
+  const userId = req.user.userId;
+  const userRole = req.user.role; // Pour savoir quelle table interroger (users ou admin)
+  const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+  if (!currentPassword || !newPassword || !confirmNewPassword) {
+    return res.status(400).json({ message: 'Veuillez fournir le mot de passe actuel, le nouveau mot de passe et la confirmation.' });
+  }
+  if (newPassword !== confirmNewPassword) {
+    return res.status(400).json({ message: 'Le nouveau mot de passe et sa confirmation ne correspondent pas.' });
+  }
+  if (newPassword.length < 6) { 
+    return res.status(400).json({ message: 'Le nouveau mot de passe doit contenir au moins 6 caractères.' });
+  }
+  if (newPassword === currentPassword) {
+    return res.status(400).json({ message: 'Le nouveau mot de passe doit être différent du mot de passe actuel.' });
+  }
+
+  let userRecord;
+  let tableName = userRole === 'admin' || userRole === 'super_admin' ? 'admin' : 'users';
+
+  try {
+    const userResult = await db.query(`SELECT id, password_hash FROM ${tableName} WHERE id = $1`, [userId]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+    }
+    userRecord = userResult.rows[0];
+
+    const isCurrentPasswordMatch = await bcrypt.compare(currentPassword, userRecord.password_hash);
+    if (!isCurrentPasswordMatch) {
+      return res.status(401).json({ message: 'Le mot de passe actuel est incorrect.' });
+    }
+
+    const saltRounds = parseInt(process.env.PASSWORD_SALT_ROUNDS || '10');
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Assure-toi que tes tables users et admin ont bien updated_at
+    const updatePasswordQuery = `
+      UPDATE ${tableName} 
+      SET password_hash = $1, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = $2;
+    `;
+    await db.query(updatePasswordQuery, [hashedNewPassword, userId]);
+
+    res.status(200).json({ message: 'Mot de passe mis à jour avec succès !' });
+
+  } catch (error) {
+    console.error('Erreur lors du changement de mot de passe:', error);
+    res.status(500).json({ message: 'Erreur serveur lors du changement de mot de passe.' });
   }
 };

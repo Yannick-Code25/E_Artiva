@@ -49,7 +49,7 @@ interface ProductDetail extends BaseProductType {
 }
 
 // **ATTENTION: METS TON ADRESSE IP LOCALE CORRECTE ICI**
-const API_BASE_URL = "http://192.168.248.151:3001/api"; // Exemple, mets la tienne
+const API_BASE_URL = "http://192.168.1.2:3001/api"; // Exemple, mets la tienne
 const { width: screenWidth } = Dimensions.get("window");
 
 // Fonction utilitaire pour formater le prix (peut être déplacée dans un fichier utils/)

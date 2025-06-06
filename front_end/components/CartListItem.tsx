@@ -8,9 +8,16 @@ import { useColorScheme } from './useColorScheme'; // Ajuste le chemin
 
 interface CartListItemProps {
   item: CartItem;
+  onUpdateQuantity: (productId: string | number, newQuantity: number) => void;
+  onRemoveItem: (productId: string | number) => void;
 }
 
-const CartListItem: React.FC<CartListItemProps> = ({ item }) => {
+const CartListItem: React.FC<CartListItemProps> = React.memo(({ 
+  item, 
+  onUpdateQuantity, 
+  onRemoveItem 
+  // Récupère les couleurs du thème ici via useAuth si nécessaire, ou passe-les en props
+}) => {
   const { updateQuantity, removeFromCart } = useCart();
   const colorScheme = useColorScheme();
   const tintColor = Colors[colorScheme ?? 'light'].tint;
@@ -59,7 +66,7 @@ const CartListItem: React.FC<CartListItemProps> = ({ item }) => {
       </View>
     </View>
   );
-};
+});
 
 // Styles pour CartListItem (copie ceux de CartScreen pour itemContainer, etc.)
 const styles = StyleSheet.create({

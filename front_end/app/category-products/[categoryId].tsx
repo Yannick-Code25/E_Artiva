@@ -16,7 +16,7 @@ import ProductCard, {
 import Colors from "../../constants/Colors";
 import { useColorScheme } from "../../components/useColorScheme";
 
-const API_BASE_URL = "http://192.168.248.151:3001/api"; // **TON IP**
+const API_BASE_URL = "http://192.168.1.2:3001/api"; // **TON IP**
 
 export default function CategoryProductsScreen() {
   const { categoryId, categoryName } = useLocalSearchParams<{

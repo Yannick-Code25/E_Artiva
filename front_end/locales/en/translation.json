@@ -1,0 +1,27 @@
+{
+  "welcome": "Welcome to Artiva!",
+  "greeting": "Hello, {{name}}",
+  "tabHeaders": {
+    "home": "Home",
+    "shop": "Shop",
+    "wishlist": "Wishlist",
+    "cart": "Cart",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "settingsScreen": {
+    "title": "My Settings",
+    "editProfile": "Edit Profile",
+    "changePassword": "Change Password",
+    "preferences": "Display Preferences",
+    "language": "Language",
+    "deactivateAccount": "Deactivate my account"
+  },
+  "productDetail": {
+    "addToCart": "Add to Cart",
+    "unavailable": "Unavailable",
+    "quantity": "Quantity",
+    "stockAvailable": "Stock available: {{count}}"
+  }
+  
+}

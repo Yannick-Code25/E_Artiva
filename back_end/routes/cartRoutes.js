@@ -16,7 +16,7 @@ router.post('/items', authMiddleware, cartController.addItemToCart);
 router.delete('/items/:cartItemId', authMiddleware, cartController.removeItemFromCart);
 
 // DELETE /api/cart - Vider tout le panier de l'utilisateur
-router.delete('/', authMiddleware, cartController.clearUserCart);
+router.delete('/clear', authMiddleware, cartController.clearUserCart);
 
 
 module.exports = router;

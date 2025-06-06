@@ -5,7 +5,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import ScrollSection from './ScrollSection';
 import { useWishlist } from '../context/WishlistContext'; // Importer le hook
 import { Product as ProductType } from './ProductCard'; // S'assurer que ProductType est bien exporté
-
+import { useAuth } from '../context/AuthContext'; // <<< AJOUTER
+import Colors from '../constants/Colors';
 
 // Type pour les props d'une carte de produit
 export interface Product { // Exporté pour l'écran d'accueil
@@ -30,6 +31,13 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ item, onPress }) => {
+  const { effectiveAppColorScheme } = useAuth(); // <<< OBTENIR LE THÈME
+  const cardBackgroundColor = Colors[effectiveAppColorScheme].card;
+  const nameTextColor = Colors[effectiveAppColorScheme].text;
+  const priceTextColor = Colors[effectiveAppColorScheme].tint; // Ou une autre couleur de 'Colors'
+  const iconColor = Colors[effectiveAppColorScheme].tabIconDefault;
+  const iconActiveColor = Colors[effectiveAppColorScheme].tint;
+
   const { addToWishlist, removeFromWishlist, isProductInWishlist } = useWishlist();
   const isInWishlist = isProductInWishlist(item.id);
 
@@ -41,18 +49,18 @@ const ProductCard: React.FC<ProductCardProps> = ({ item, onPress }) => {
     }
   };
   return (
-    <TouchableOpacity onPress={() => onPress(item.id)} style={styles.container}>
+    <TouchableOpacity onPress={() => onPress(item.id)} style={[styles.container, {backgroundColor: cardBackgroundColor}]}>
       <Image source={{ uri: item.imageUrl }} style={styles.image} />
       <TouchableOpacity onPress={handleWishlistToggle} style={styles.wishlistIconContainer}>
         <FontAwesome 
           name={isInWishlist ? "heart" : "heart-o"} 
           size={22} 
-          color={isInWishlist ? "tomato" : "grey"} 
+          color={isInWishlist ? iconActiveColor : iconColor} 
         />
       </TouchableOpacity>
       <View style={styles.infoContainer}>
         <Text style={styles.nameText} numberOfLines={2}>{item.name}</Text>
-        <Text style={styles.priceText}>{item.price}</Text>
+        <Text style={[styles.priceText, {color: priceTextColor}]}>{item.price}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -63,14 +71,14 @@ const styles = StyleSheet.create({
   container: {
     width: 150, // Largeur de la carte produit
     marginRight: 12,
-    backgroundColor: 'white', // Fond blanc pour la carte
+    //backgroundColor: 'white', // Fond blanc pour la carte
     borderRadius: 8,
     elevation: 2, // Ombre pour Android
     shadowColor: '#000', // Ombre pour iOS
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.20,
     shadowRadius: 1.41,
-    overflow: 'hidden', // Pour que l'ombre ne soit pas coupée par l'image si elle a un borderRadius
+    //overflow: 'hidden', // Pour que l'ombre ne soit pas coupée par l'image si elle a un borderRadius
     marginBottom: 10,
   },
   image: {
@@ -102,7 +110,7 @@ const styles = StyleSheet.create({
   priceText: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: 'green', // Ou ta couleur de prix
+    //color: 'green', // Ou ta couleur de prix
   },
 });
 

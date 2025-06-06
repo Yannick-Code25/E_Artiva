@@ -13,7 +13,7 @@ import { useAuth } from "./AuthContext"; // Pour le token et l'état d'authentif
 import { Alert } from "react-native"; // Pour les messages d'erreur à l'utilisateur
 
 // **ATTENTION: REMPLACE 'VOTRE_ADRESSE_IP_LOCALE' PAR TON IP RÉELLE**
-const API_BASE_URL = "http://192.168.248.151:3001/api"; // Exemple, mets la tienne
+const API_BASE_URL = "http://192.168.1.2:3001/api"; // Exemple, mets la tienne
 
 // Interface pour un article dans le panier
 export interface CartItem extends BaseProductType {
@@ -397,7 +397,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (userToken && user) {
       setIsLoadingCart(true);
       try {
-        const response = await fetch(`${API_BASE_URL}/cart`, {
+        const response = await fetch(`${API_BASE_URL}/cart/clear`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${userToken}` },
         });

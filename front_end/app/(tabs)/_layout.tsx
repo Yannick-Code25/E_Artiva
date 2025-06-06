@@ -8,6 +8,8 @@ import { useColorScheme } from '../../components/useColorScheme';
 import { useClientOnlyValue } from '../../components/useClientOnlyValue';
 import { Pressable } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next'; // <<< AJOUTER L'IMPORT
+
 
 
 function TabBarIcon(props: {
@@ -20,7 +22,7 @@ function TabBarIcon(props: {
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { userToken, isLoading: isAuthLoading, unreadNotificationCount } = useAuth(); // Récupérer le token et l'état de chargement
-
+  const { t } = useTranslation(); // <<< AJOUTER CETTE LIGNE
 
   // Si l'authentification est toujours en cours de vérification, ne rien rendre ou un loader
   // Cela évite un flash du contenu des onglets avant une potentielle redirection
@@ -50,35 +52,35 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index" // Correspond à app/(tabs)/index.tsx (Accueil)
         options={{
-          title: 'Accueil',
+          title: t('tabHeaders.home'), // <<< TRADUCTION,
           tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
         }}
       />
       <Tabs.Screen
         name="ShopScreen" // Doit correspondre au nom de fichier: ShopScreen.tsx
         options={{
-          title: 'Boutique',
+          title: t('tabHeaders.shop'), // <<< TRADUCTION,
           tabBarIcon: ({ color }) => <TabBarIcon name="shopping-bag" color={color} />,
         }}
       />
       <Tabs.Screen
          name="WishlistScreen" // DOIT ÊTRE CE NOM EXACT
         options={{
-          title: 'Souhaits',    
+          title: t('tabHeaders.wishlist'), // <<< TRADUCTION  
           tabBarIcon: ({ color }) => <TabBarIcon name="heart" color={color} />, 
         }}
       />
       <Tabs.Screen
         name="CartScreen" // Doit correspondre au nom de fichier: CartScreen.tsx
         options={{
-          title: 'Panier',
+          title: t('tabHeaders.cart'), // <<< TRADUCTION
           tabBarIcon: ({ color }) => <TabBarIcon name="shopping-cart" color={color} />,
         }}
       />
       <Tabs.Screen
         name="ProfileScreen" // Doit correspondre au nom de fichier: ProfileScreen.tsx
         options={{
-          title: 'Profil',
+          title: t('tabHeaders.profile'), // <<< TRADUCTION
           tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
           tabBarBadge: unreadNotificationCount > 0 ? unreadNotificationCount : undefined, // AFFICHE LE BADGE
           // Si unreadNotificationCount est 0, undefined cache le badge.

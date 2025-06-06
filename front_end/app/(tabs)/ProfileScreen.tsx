@@ -99,7 +99,7 @@
 // ];
 
 // // URL de base de ton API
-// const API_BASE_URL = "http://192.168.248.151:3001/api"; // **ASSURE-TOI QUE C'EST TON IP**
+// const API_BASE_URL = "http://192.168.1.2:3001/api"; // **ASSURE-TOI QUE C'EST TON IP**
 
 // export default function TabProfileScreen() {
 //   const { user, userToken, signOut, isLoading: isAuthLoading, unreadNotificationCount, fetchUnreadNotificationCount } = useAuth();
@@ -779,7 +779,7 @@ const menuItemsBaseConfig: {
   },
 ];
 
-const API_BASE_URL = "http://192.168.248.151:3001/api"; // TON IP
+const API_BASE_URL = "http://192.168.1.2:3001/api"; // TON IP
 
 export default function TabProfileScreen() {
   const {
@@ -798,7 +798,6 @@ export default function TabProfileScreen() {
   const subtleTextColor = Colors[colorScheme ?? "light"].tabIconDefault;
   const backgroundColor = Colors[colorScheme ?? "light"].background;
 
-  
   const [orders, setOrders] = useState<Order[]>([]);
   const [isOrdersModalVisible, setIsOrdersModalVisible] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false); // Pour fetchUserOrders

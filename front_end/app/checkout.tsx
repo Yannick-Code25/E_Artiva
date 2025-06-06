@@ -21,7 +21,7 @@ import { Picker } from "@react-native-picker/picker"; // Pour le sélecteur de m
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // **ATTENTION: METS TON ADRESSE IP LOCALE CORRECTE ICI**
-const API_BASE_URL = "http://192.168.248.151:3001/api";
+const API_BASE_URL = "http://192.168.1.2:3001/api";
 // Exemple: const API_BASE_URL = 'http://192.168.1.105:3001/api';
 
 // Types pour les données du formulaire
