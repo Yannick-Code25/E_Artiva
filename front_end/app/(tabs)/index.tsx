@@ -13,8 +13,12 @@ import {
   Platform,
 } from "react-native";
 import ScrollSection from "../../components/ScrollSection";
-import CategoryCard, { Category as CategoryType } from "../../components/CategoryCard";
-import ProductCard, { Product as ProductType } from "../../components/ProductCard";
+import CategoryCard, {
+  Category as CategoryType,
+} from "../../components/CategoryCard";
+import ProductCard, {
+  Product as ProductType,
+} from "../../components/ProductCard";
 import Colors from "../../constants/Colors";
 import { useRouter, Href, Stack } from "expo-router"; // Stack ajouté pour l'en-tête
 import { useAuth } from "../../context/AuthContext";
@@ -34,7 +38,7 @@ export default function TabAccueilScreen() {
   const { effectiveAppColorScheme } = useAuth(); // Source principale pour le thème
 
   // Déterminer les couleurs basées sur le thème effectif
-  const currentScheme = effectiveAppColorScheme ?? 'light';
+  const currentScheme = effectiveAppColorScheme ?? "light";
   const siteNameColor = Colors[currentScheme].text;
   const pageBackgroundColor = Colors[currentScheme].background;
   const textColor = Colors[currentScheme].text;
@@ -45,14 +49,22 @@ export default function TabAccueilScreen() {
   const cardBorderColor = Colors[currentScheme].cardBorder;
 
   const [mainCategories, setMainCategories] = useState<CategoryType[]>([]);
-  const [featuredProductSections, setFeaturedProductSections] = useState<TaggedProductsStore[]>([]);
-  
+  const [featuredProductSections, setFeaturedProductSections] = useState<
+    TaggedProductsStore[]
+  >([]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   // Configure ici les noms exacts des tags de ta BDD que tu veux afficher
-  const FEATURED_TAG_NAMES: string[] = ["Nouveaute", "Populaire", "Pour Vous"];
+  const FEATURED_TAG_NAMES: string[] = [
+    "Nouveauté",
+    "Populaire",
+    "Pour Vous",
+    "Meilleures Ventes",
+    "Promotion",
+  ];
   const PRODUCTS_PER_TAG_SECTION = 5;
 
   const fetchData = useCallback(async () => {
@@ -66,11 +78,18 @@ export default function TabAccueilScreen() {
       console.log("TabAccueilScreen: fetchCategories (toutes)...");
       const catResponse = await fetch(`${API_BASE_URL}/categories`);
       if (!catResponse.ok) {
-        const errorText = await catResponse.text().catch(() => "Impossible de lire le corps de l'erreur catégorie");
-        throw new Error(`Erreur catégories (${catResponse.status}): ${errorText}`);
+        const errorText = await catResponse
+          .text()
+          .catch(() => "Impossible de lire le corps de l'erreur catégorie");
+        throw new Error(
+          `Erreur catégories (${catResponse.status}): ${errorText}`
+        );
       }
       const allCatData = await catResponse.json();
-      console.log("TabAccueilScreen: Toutes les catégories brutes:", allCatData.length);
+      console.log(
+        "TabAccueilScreen: Toutes les catégories brutes:",
+        allCatData.length
+      );
 
       const mainCats = allCatData
         .filter((cat: any) => cat.parent_id === null)
@@ -79,66 +98,110 @@ export default function TabAccueilScreen() {
           return {
             id: String(cat.id),
             name: categoryName,
-            imageUrl: cat.image_url || `https://via.placeholder.com/100x100/E2E8F0/4A5568?text=${encodeURIComponent(categoryName.substring(0, 3))}`,
+            imageUrl:
+              cat.image_url ||
+              `https://via.placeholder.com/100x100/E2E8F0/4A5568?text=${encodeURIComponent(
+                categoryName.substring(0, 3)
+              )}`,
           };
         });
       setMainCategories(mainCats);
-      console.log("TabAccueilScreen: Catégories principales traitées:", mainCats.length);
+      console.log(
+        "TabAccueilScreen: Catégories principales traitées:",
+        mainCats.length
+      );
 
       // 2. Pour chaque tag à mettre en avant, charger quelques produits aléatoires
       const productSectionsPromises = FEATURED_TAG_NAMES.map(
         async (tagName) => {
-          console.log(`TabAccueilScreen: fetchProducts pour tag "${tagName}"...`);
+          console.log(
+            `TabAccueilScreen: fetchProducts pour tag "${tagName}"...`
+          );
           // La logique pour setFeaturedProductSections a été déplacée en dehors de ce map
           const prodResponse = await fetch(
-            `${API_BASE_URL}/products?tag_name=${encodeURIComponent(tagName)}&limit=${PRODUCTS_PER_TAG_SECTION}&random=true`
+            `${API_BASE_URL}/products?tag_name=${encodeURIComponent(
+              tagName
+            )}&limit=${PRODUCTS_PER_TAG_SECTION}&random=true`
           );
           if (!prodResponse.ok) {
-            console.warn(`Erreur produits pour tag "${tagName}" (${prodResponse.status}), section ignorée.`);
-            return null; 
+            console.warn(
+              `Erreur produits pour tag "${tagName}" (${prodResponse.status}), section ignorée.`
+            );
+            return null;
           }
           const productsForTagData = await prodResponse.json(); // Doit être un objet { products: [] } ou un tableau
-          
+
           let actualProductArray = [];
-          if (Array.isArray(productsForTagData)) { // Si l'API renvoie directement un tableau de produits
+          if (Array.isArray(productsForTagData)) {
+            // Si l'API renvoie directement un tableau de produits
             actualProductArray = productsForTagData;
-          } else if (productsForTagData && Array.isArray(productsForTagData.products)) { // Si l'API renvoie un objet de pagination
+          } else if (
+            productsForTagData &&
+            Array.isArray(productsForTagData.products)
+          ) {
+            // Si l'API renvoie un objet de pagination
             actualProductArray = productsForTagData.products;
           } else {
-            console.warn(`Format de données produits inattendu pour tag "${tagName}", section ignorée.`);
+            console.warn(
+              `Format de données produits inattendu pour tag "${tagName}", section ignorée.`
+            );
             return null;
           }
 
           const adaptedProducts = actualProductArray.map((prod: any) => {
             const productName = prod.name || "Produit";
-            const productPrice = prod.price !== undefined && prod.price !== null ? String(prod.price) : "N/A";
+            const productPrice =
+              prod.price !== undefined && prod.price !== null
+                ? String(prod.price)
+                : "N/A";
             return {
               id: String(prod.id),
               name: productName,
               price: `${productPrice} FCFA`,
-              imageUrl: prod.image_url || `https://via.placeholder.com/150x150/BFDBFE/000?text=${encodeURIComponent(productName.substring(0, 3))}`,
+              imageUrl:
+                prod.image_url ||
+                `https://via.placeholder.com/150x150/BFDBFE/000?text=${encodeURIComponent(
+                  productName.substring(0, 3)
+                )}`,
               stock: prod.stock,
               description: prod.description,
-              category_ids: (prod.category_ids || []).map((id: any) => String(id)),
+              category_ids: (prod.category_ids || []).map((id: any) =>
+                String(id)
+              ),
               categories_names: prod.categories_names || [],
               tag_ids: prod.tag_ids || [],
               tags_names: prod.tags_names || [],
               is_published: prod.is_published,
             };
           });
-          return { tagId: tagName, tagName: tagName, products: adaptedProducts };
+          return {
+            tagId: tagName,
+            tagName: tagName,
+            products: adaptedProducts,
+          };
         }
       );
-      
-      // Attendre que toutes les promesses de fetch par tag soient résolues
-      const resolvedSectionsFromAPI = (await Promise.all(productSectionsPromises))
-                                        .filter(section => section !== null && section.products.length > 0) as TaggedProductsStore[];
-      setFeaturedProductSections(resolvedSectionsFromAPI); // Mettre à jour l'état UNE SEULE FOIS avec toutes les sections
-      console.log("TabAccueilScreen: Sections de produits par tag chargées:", resolvedSectionsFromAPI.length);
 
+      // Attendre que toutes les promesses de fetch par tag soient résolues
+      const resolvedSectionsFromAPI = (
+        await Promise.all(productSectionsPromises)
+      ).filter(
+        (section) => section !== null && section.products.length > 0
+      ) as TaggedProductsStore[];
+      setFeaturedProductSections(resolvedSectionsFromAPI); // Mettre à jour l'état UNE SEULE FOIS avec toutes les sections
+      console.log(
+        "TabAccueilScreen: Sections de produits par tag chargées:",
+        resolvedSectionsFromAPI.length
+      );
     } catch (err: any) {
-      console.error("TabAccueilScreen: Erreur fetchData global:", err.message, err);
-      setError(err.message || "Une erreur est survenue lors du chargement des données.");
+      console.error(
+        "TabAccueilScreen: Erreur fetchData global:",
+        err.message,
+        err
+      );
+      setError(
+        err.message || "Une erreur est survenue lors du chargement des données."
+      );
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -176,19 +239,32 @@ export default function TabAccueilScreen() {
     // Naviguer vers la page listant tous les produits de ce tag
     // Le nom du fichier est app/tag/[tag].tsx
     // On passe le tagName encodé comme paramètre de route.
-    const path = `/tag/${encodeURIComponent(tagName)}` as Href; 
+    const path = `/tag/${encodeURIComponent(tagName)}` as Href;
     try {
       router.push(path);
       console.log(`Accueil: Navigation vers ${path}`);
     } catch (e) {
       console.error("Accueil: Erreur router.push pour tag:", e);
-      Alert.alert("Erreur Navigation", "Impossible d'afficher les produits de ce tag.");
+      Alert.alert(
+        "Erreur Navigation",
+        "Impossible d'afficher les produits de ce tag."
+      );
     }
   };
 
-  if (isLoading && mainCategories.length === 0 && featuredProductSections.length === 0 && !refreshing) {
+  if (
+    isLoading &&
+    mainCategories.length === 0 &&
+    featuredProductSections.length === 0 &&
+    !refreshing
+  ) {
     return (
-      <View style={[styles.centeredLoader, { backgroundColor: pageBackgroundColor }]}>
+      <View
+        style={[
+          styles.centeredLoader,
+          { backgroundColor: pageBackgroundColor },
+        ]}
+      >
         <ActivityIndicator size="large" color={tintColor} />
         <DefaultText style={{ marginTop: 10, color: textColor }}>
           {t("loadingData", "Chargement des données...")}
@@ -201,19 +277,41 @@ export default function TabAccueilScreen() {
     <ScrollView
       style={[styles.container, { backgroundColor: pageBackgroundColor }]}
       showsVerticalScrollIndicator={false}
-      refreshControl={ <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tintColor} /> }
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={tintColor}
+        />
+      }
     >
       {/* Utiliser Stack.Screen ici pour configurer le titre de l'onglet Accueil */}
-      <Stack.Screen options={{ title: t('tabHeaders.home', 'Accueil') }} />
-      
-      <View style={[styles.headerContainer, { borderBottomColor: cardBorderColor }]}>
-        <DefaultText style={[styles.siteName, { color: siteNameColor }]}>Artiva</DefaultText>
-        <DefaultText style={{ color: textColor, marginTop: 5 }}>{t("welcome")}</DefaultText>
+      <Stack.Screen options={{ title: t("tabHeaders.home", "Accueil") }} />
+
+      <View
+        style={[styles.headerContainer, { borderBottomColor: cardBorderColor }]}
+      >
+        <DefaultText style={[styles.siteName, { color: siteNameColor }]}>
+          Artiva
+        </DefaultText>
+        <DefaultText style={{ color: textColor, marginTop: 5 }}>
+          {t("welcome")}
+        </DefaultText>
       </View>
 
       {error && !isLoading && (
-        <View style={[styles.errorContainer, { backgroundColor: errorBgColor, borderColor: errorTextColor + '80' }]}>
-          <DefaultText style={[styles.errorText, { color: errorTextColor }]}>{error}</DefaultText>
+        <View
+          style={[
+            styles.errorContainer,
+            {
+              backgroundColor: errorBgColor,
+              borderColor: errorTextColor + "80",
+            },
+          ]}
+        >
+          <DefaultText style={[styles.errorText, { color: errorTextColor }]}>
+            {error}
+          </DefaultText>
           <Button title="Réessayer" onPress={onRefresh} color={tintColor} />
         </View>
       )}
@@ -222,28 +320,47 @@ export default function TabAccueilScreen() {
         <ScrollSection<CategoryType>
           title={t("homePage.sections.categories", "Catégories")} // Clé de traduction pour le titre
           data={mainCategories}
-          renderItem={({ item }) => ( <CategoryCard item={item} onPress={() => handleCategoryPress(item.id, item.name)} /> )}
+          renderItem={({ item }) => (
+            <CategoryCard
+              item={item}
+              onPress={() => handleCategoryPress(item.id, item.name)}
+            />
+          )}
           keyExtractor={(item) => item.id.toString()}
         />
       )}
       {!isLoading && !error && mainCategories.length === 0 && (
-        <DefaultText style={[styles.noDataText, {color: noDataTextColor}]}>Aucune catégorie à afficher.</DefaultText>
+        <DefaultText style={[styles.noDataText, { color: noDataTextColor }]}>
+          Aucune catégorie à afficher.
+        </DefaultText>
       )}
 
       {featuredProductSections.map((section) => (
         <ScrollSection<ProductType>
           key={section.tagId.toString()}
-          title={t(`homePage.sections.tag_${section.tagName.toLowerCase().replace(/\s+/g, '')}`, section.tagName)} // Clé de trad. dynamique pour le tag
+          title={t(
+            `homePage.sections.tag_${section.tagName
+              .toLowerCase()
+              .replace(/\s+/g, "")}`,
+            section.tagName
+          )} // Clé de trad. dynamique pour le tag
           data={section.products}
-          renderItem={({ item }) => ( <ProductCard item={item} onPress={handleProductPress} /> )}
+          renderItem={({ item }) => (
+            <ProductCard item={item} onPress={handleProductPress} />
+          )}
           keyExtractor={(item) => item.id.toString()}
           onSeeAllPress={() => handleSeeAllTagProducts(section.tagName)}
         />
       ))}
 
-      {!isLoading && !error && featuredProductSections.length === 0 && mainCategories.length > 0 && (
-        <DefaultText style={[styles.noDataText, {color: noDataTextColor}]}>Découvrez bientôt nos sélections spéciales !</DefaultText>
-      )}
+      {!isLoading &&
+        !error &&
+        featuredProductSections.length === 0 &&
+        mainCategories.length > 0 && (
+          <DefaultText style={[styles.noDataText, { color: noDataTextColor }]}>
+            Découvrez bientôt nos sélections spéciales !
+          </DefaultText>
+        )}
 
       <View style={{ height: 30 }} />
     </ScrollView>

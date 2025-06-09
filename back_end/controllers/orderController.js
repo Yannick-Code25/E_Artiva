@@ -370,3 +370,51 @@ exports.updateOrderStatusAdmin = async (req, res) => {
   }
 };
 
+// NOUVEAU : Récupérer les détails d'UNE commande spécifique pour l'UTILISATEUR CONNECTÉ
+exports.getUserOrderDetail = async (req, res) => {
+  const userId = req.user.userId; // De authMiddleware
+  const { orderId } = req.params;
+
+  try {
+    const orderQuery = `
+      SELECT 
+        o.id as "orderId", o.order_number, 
+        o.status, o.total_amount as total, o.currency, 
+        o.shipping_address, o.billing_address, o.notes,
+        o.shipping_method, o.shipping_cost,
+        o.created_at as "createdAt", o.updated_at as "updatedAt"
+      FROM orders o
+      WHERE o.id = $1 AND o.user_id = $2; -- S'ASSURER QUE LA COMMANDE APPARTIENT À L'UTILISATEUR
+    `;
+    const orderResult = await db.query(orderQuery, [orderId, userId]);
+
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Commande non trouvée ou non accessible.' });
+    }
+    const orderDetails = orderResult.rows[0];
+
+    // Récupérer les items de la commande
+    const itemsQuery = `
+      SELECT 
+        oi.id as "itemId", oi.product_id, oi.product_name, oi.sku,
+        oi.quantity, oi.unit_price, oi.subtotal
+        -- Optionnel: joindre products pour avoir l'image actuelle du produit si besoin
+        -- , p.image_url as "productImageUrl" 
+        -- FROM order_items oi JOIN products p ON oi.product_id = p.id
+      FROM order_items oi
+      WHERE oi.order_id = $1 ORDER BY oi.id;
+    `;
+    const itemsResult = await db.query(itemsQuery, [orderId]);
+    orderDetails.items = itemsResult.rows.map(item => ({
+        ...item,
+        // Si tu veux formater le prix ici (sinon le frontend le fera)
+        // unit_price: parseFloat(item.unit_price).toFixed(2),
+        // subtotal: parseFloat(item.subtotal).toFixed(2),
+    }));
+
+    res.status(200).json(orderDetails);
+  } catch (error) {
+    console.error(`Erreur récupération détail commande ${orderId} pour utilisateur ${userId}:`, error);
+    res.status(500).json({ message: 'Erreur serveur lors de la récupération des détails de la commande.' });
+  }
+};

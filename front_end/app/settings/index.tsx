@@ -72,64 +72,74 @@ export default function SettingsMainScreen() {
 
   const handleDeactivateAccount = () => {
     // Traduction des messages (exemple, adapte tes clés)
-    const confirmTitle = /* t('settings.deactivate.confirmTitle', */ "Désactiver le compte" /*)*/;
-    const confirmMessage = /* t('settings.deactivate.confirmMessage', */ "Êtes-vous sûr ? Après désactivation, vous devrez contacter le support pour réactiver votre compte. Vous serez déconnecté." /*)*/;
-    const cancelButton = /* t('common.cancel', */ "Annuler" /*)*/;
-    const deactivateButtonText = /* t('common.deactivate', */ "Désactiver" /*)*/;
-    const successTitle = /* t('settings.deactivate.successTitle', */ "Compte désactivé" /*)*/;
-    const errorTitle = /* t('common.error', */ "Erreur" /*)*/;
-    const genericErrorMessage = /* t('settings.deactivate.genericError', */ "Impossible de désactiver le compte." /*)*/;
+    const confirmTitle =
+      /* t('settings.deactivate.confirmTitle', */ "Désactiver le compte"; /*)*/
+    const confirmMessage =
+      /* t('settings.deactivate.confirmMessage', */ "Êtes-vous sûr ? Après désactivation, vous devrez contacter le support pour réactiver votre compte. Vous serez déconnecté."; /*)*/
+    const cancelButton = /* t('common.cancel', */ "Annuler"; /*)*/
+    const deactivateButtonText =
+      /* t('common.deactivate', */ "Désactiver"; /*)*/
+    const successTitle =
+      /* t('settings.deactivate.successTitle', */ "Compte désactivé"; /*)*/
+    const errorTitle = /* t('common.error', */ "Erreur"; /*)*/
+    const genericErrorMessage =
+      /* t('settings.deactivate.genericError', */ "Impossible de désactiver le compte."; /*)*/
 
+    Alert.alert(confirmTitle, confirmMessage, [
+      { text: cancelButton, style: "cancel" },
+      {
+        text: deactivateButtonText,
+        style: "destructive",
+        onPress: async () => {
+          if (!userToken) {
+            // Sécurité supplémentaire
+            Alert.alert(errorTitle, "Vous n'êtes pas connecté.");
+            return;
+          }
+          setIsLoadingDeactivate(true); // Active le loader du bouton
+          try {
+            console.log("Frontend: Tentative de désactivation du compte...");
+            const response = await fetch(
+              `${API_BASE_URL}/users/me/deactivate`,
+              {
+                method: "PUT",
+                headers: {
+                  Authorization: `Bearer ${userToken}`,
+                  "Content-Type": "application/json", // Même si pas de corps, c'est une bonne pratique
+                },
+              }
+            );
 
-    Alert.alert(
-        confirmTitle,
-        confirmMessage,
-        [
-            { text: cancelButton, style: "cancel" },
-            { 
-                text: deactivateButtonText, 
-                style: "destructive", 
-                onPress: async () => {
-                    if (!userToken) { // Sécurité supplémentaire
-                        Alert.alert(errorTitle, "Vous n'êtes pas connecté.");
-                        return;
-                    }
-                    setIsLoadingDeactivate(true); // Active le loader du bouton
-                    try {
-                        console.log("Frontend: Tentative de désactivation du compte...");
-                        const response = await fetch(`${API_BASE_URL}/users/me/deactivate`, {
-                            method: 'PUT',
-                            headers: { 
-                                'Authorization': `Bearer ${userToken}`,
-                                'Content-Type': 'application/json' // Même si pas de corps, c'est une bonne pratique
-                            }
-                        });
+            const data = await response.json(); // Toujours essayer de parser la réponse
 
-                        const data = await response.json(); // Toujours essayer de parser la réponse
-
-                        if (!response.ok) {
-                            console.error("Frontend: Erreur API désactivation:", response.status, data);
-                            throw new Error(data.message || `Erreur serveur (${response.status})`);
-                        }
-                        
-                        console.log("Frontend: Réponse API désactivation:", data);
-                        Alert.alert(
-                            successTitle, 
-                            data.message || "Votre compte a été désactivé. Vous allez être déconnecté."
-                        );
-                        await signOut(); // Déconnecte l'utilisateur du frontend (efface token local, etc.)
-                        router.replace('/login'); // Redirige vers login (utilise replace pour vider l'historique)
-
-                    } catch (e: any) {
-                        console.error("Frontend: Erreur dans handleDeactivateAccount:", e);
-                        Alert.alert(errorTitle, e.message || genericErrorMessage);
-                    } finally {
-                        setIsLoadingDeactivate(false); // Désactive le loader du bouton
-                    }
-                }
+            if (!response.ok) {
+              console.error(
+                "Frontend: Erreur API désactivation:",
+                response.status,
+                data
+              );
+              throw new Error(
+                data.message || `Erreur serveur (${response.status})`
+              );
             }
-        ]
-    );
+
+            console.log("Frontend: Réponse API désactivation:", data);
+            Alert.alert(
+              successTitle,
+              data.message ||
+                "Votre compte a été désactivé. Vous allez être déconnecté."
+            );
+            await signOut(); // Déconnecte l'utilisateur du frontend (efface token local, etc.)
+            router.replace("/login"); // Redirige vers login (utilise replace pour vider l'historique)
+          } catch (e: any) {
+            console.error("Frontend: Erreur dans handleDeactivateAccount:", e);
+            Alert.alert(errorTitle, e.message || genericErrorMessage);
+          } finally {
+            setIsLoadingDeactivate(false); // Désactive le loader du bouton
+          }
+        },
+      },
+    ]);
   };
 
   const settingsOptions = [
@@ -181,7 +191,9 @@ export default function SettingsMainScreen() {
             title={opt.title}
             onPress={opt.onPress}
             color={opt.isDestructive ? Colors.light.errorBackground : tintColor} // Couleur différente pour désactiver
-            textColor={opt.isDestructive ? Colors.light.errorBackground : textColor}
+            textColor={
+              opt.isDestructive ? Colors.light.errorBackground : textColor
+            }
           />
         ))}
       </View>

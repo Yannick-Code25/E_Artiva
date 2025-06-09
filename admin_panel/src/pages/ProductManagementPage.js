@@ -1,29 +1,24 @@
 // admin_panel/src/pages/ProductManagementPage.js
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom'; // useNavigate est importé mais pas utilisé directement ici, peut l'être plus tard
-import ProductFormModal from '../components/ProductFormModal'; // Assure-toi que le chemin est correct
-import './ProductManagementPage.css'; // Assure-toi que ce fichier CSS existe et est stylé
+import { Link, useNavigate } from 'react-router-dom';
+import ProductFormModal from '../components/ProductFormModal';
+import './ProductManagementPage.css';
 
-const API_BASE_URL = 'http://localhost:3001/api'; // URL de ton backend
+const API_BASE_URL = 'http://localhost:3001/api';
 
 function ProductManagementPage() {
-  const [allProducts, setAllProducts] = useState([]); // Stocke tous les produits récupérés de l'API
-  const [isLoading, setIsLoading] = useState(false); // Pour le chargement initial et les actions
+  const [allProducts, setAllProducts] = useState([]);
+  const [allCategories, setAllCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
-  const [isModalOpen, setIsModalOpen] = useState(false); // État pour l'ouverture/fermeture du modal
-  const [selectedProduct, setSelectedProduct] = useState(null); // Produit à modifier, ou null pour ajout
-
-  const [searchTerm, setSearchTerm] = useState(''); // État pour le terme de recherche
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const adminToken = localStorage.getItem('adminToken');
-  // const navigate = useNavigate(); // Si tu as besoin de naviguer programmement
 
-  // Fonction pour récupérer tous les produits
   const fetchProducts = useCallback(async () => {
     if (!adminToken) {
-      // Idéalement, ProtectedRoute gère cela, mais une sécurité en plus
       console.error("Admin non authentifié, impossible de charger les produits.");
       setError("Authentification requise.");
       return;
@@ -31,31 +26,32 @@ function ProductManagementPage() {
     setIsLoading(true);
     setError('');
     try {
-      // Idéalement, cette route devrait permettre à un admin de voir TOUS les produits (publiés ou non)
-      // Tu pourrais avoir une route /api/admin/products ou passer un query param
-      const response = await axios.get(`${API_BASE_URL}/products/admin/all`, { 
-         headers: { 'Authorization': `Bearer ${adminToken}` } // Décommente si GET /products est protégé
-      });
-      setAllProducts(response.data.products || []);
-      console.log("Produits chargés pour l'admin:", response.data.length);
+      const [prodResponse, catResponse] = await Promise.all([
+        axios.get(`${API_BASE_URL}/products/admin/all`, { headers: { 'Authorization': `Bearer ${adminToken}` } }),
+        axios.get(`${API_BASE_URL}/categories`, {})
+      ]);
+
+      setAllProducts(prodResponse.data.products || []);
+      setAllCategories(catResponse.data || []);
+      console.log("Produits chargés pour l'admin:", prodResponse.data.products?.length);
+      console.log("Catégories chargées pour l'admin:", catResponse.data?.length);
     } catch (err) {
       console.error("Erreur chargement produits (admin):", err);
-      setError(err.response?.data?.message || 'Impossible de charger les produits.');
+      setError(err.response?.data?.message || 'Impossible de charger les produits et/ou catégories.');
       setAllProducts([]);
+      setAllCategories([]);
     } finally {
       setIsLoading(false);
     }
   }, [adminToken]);
 
-  // Charger les produits au montage du composant
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
 
-  // Filtrer les produits basés sur le terme de recherche
   const filteredProducts = useMemo(() => {
     if (!searchTerm.trim()) {
-      return allProducts; // Retourne tous les produits si la recherche est vide
+      return allProducts;
     }
     const lowerSearchTerm = searchTerm.toLowerCase();
     return allProducts.filter(product =>
@@ -65,49 +61,40 @@ function ProductManagementPage() {
     );
   }, [allProducts, searchTerm]);
 
-  // Ouvre le modal pour ajouter un nouveau produit
   const handleOpenModalForAdd = () => {
-    setSelectedProduct(null); // Aucun produit sélectionné signifie mode "ajout"
+    setSelectedProduct(null);
     setIsModalOpen(true);
   };
 
-  // Ouvre le modal pour modifier un produit existant
   const handleOpenModalForEdit = (product) => {
-    console.log("Ouverture du modal pour édition avec le produit:", product); // Log pour déboguer
-    setSelectedProduct(product); // Le produit sélectionné est passé au modal
+    setSelectedProduct(product);
     setIsModalOpen(true);
   };
 
-  // Ferme le modal
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setSelectedProduct(null); // Réinitialise le produit sélectionné
+    setSelectedProduct(null);
   };
 
-  // Appelé après qu'un produit a été sauvegardé (ajouté ou modifié) via le modal
   const handleSaveProduct = () => {
-    fetchProducts(); // Recharge la liste des produits pour refléter les changements
-    handleCloseModal(); // Ferme le modal
+    fetchProducts();
+    handleCloseModal();
   };
 
-  // Gère la publication/dépublication (soft delete/toggle active) d'un produit
   const handleTogglePublishStatus = async (productId, currentStatus) => {
     const newStatus = !currentStatus;
     const action = newStatus ? "publier" : "masquer";
     if (window.confirm(`Voulez-vous vraiment ${action} ce produit ?`)) {
-      setIsLoading(true); // Indiquer une action en cours sur la page principale
+      setIsLoading(true);
       setError('');
       try {
-        await axios.put(`${API_BASE_URL}/products/${productId}`, 
-          { is_published: newStatus }, // Ne met à jour que le statut de publication
+        await axios.put(`${API_BASE_URL}/products/${productId}`,
+          { is_published: newStatus },
           { headers: { 'Authorization': `Bearer ${adminToken}` } }
         );
-        // Mettre à jour la liste locale pour un retour visuel immédiat ou re-fetcher
-        // fetchProducts(); // Re-fetcher est plus simple pour garantir la fraîcheur des données
-         setAllProducts(prevProducts => 
-            prevProducts.map(p => p.id === productId ? { ...p, is_published: newStatus } : p)
+        setAllProducts(prevProducts =>
+          prevProducts.map(p => p.id === productId ? { ...p, is_published: newStatus } : p)
         );
-
       } catch (err) {
         console.error(`Erreur lors de la tentative de ${action} le produit:`, err);
         setError(err.response?.data?.message || `Erreur lors de la mise à jour du statut du produit.`);
@@ -116,12 +103,7 @@ function ProductManagementPage() {
       }
     }
   };
-  
-  // Pour une vraie suppression (si tu l'implémentes)
-  // const handleDeleteProduct = async (productId) => { ... };
 
-
-  // Affichage pendant le chargement initial
   if (isLoading && allProducts.length === 0) {
     return (
       <div className="product-management-page">
@@ -150,12 +132,10 @@ function ProductManagementPage() {
       </div>
 
       {error && <p className="error-message">{error}</p>}
-      {isLoading && searchTerm && <p className="loading-indicator">Recherche en cours...</p>} {/* Si la recherche était asynchrone */}
-      {/* L'indicateur isLoading est global, il s'affichera aussi pendant le toggle de publication */}
+      {isLoading && searchTerm && <p className="loading-indicator">Recherche en cours...</p>}
       {isLoading && <p className="loading-indicator">Opération en cours...</p>}
 
-
-      <div className="table-responsive"> {/* Pour le scroll horizontal sur petits écrans */}
+      <div className="table-responsive">
         <table className="products-table">
           <thead>
             <tr>
@@ -175,9 +155,9 @@ function ProductManagementPage() {
               <tr key={product.id}>
                 <td>{product.id}</td>
                 <td>
-                  <img 
-                    src={product.image_url || 'https://via.placeholder.com/50?text=N/A'} 
-                    alt={product.name || 'Produit'} 
+                  <img
+                    src={product.image_url || 'https://via.placeholder.com/50?text=N/A'}
+                    alt={product.name || 'Produit'}
                     className="product-thumbnail"
                   />
                 </td>
@@ -187,10 +167,10 @@ function ProductManagementPage() {
                 <td>{(product.categories_names || []).join(', ') || '-'}</td>
                 <td>{(product.tags_names || []).join(', ') || '-'}</td>
                 <td>
-                  <span 
+                  <span
                     className={product.is_published ? 'status-active' : 'status-inactive'}
-                    onClick={() => handleTogglePublishStatus(product.id, product.is_published)} // Rendre le statut cliquable
-                    style={{cursor: 'pointer', padding: '3px 6px', borderRadius: '3px', display: 'inline-block'}} // Style pour indiquer que c'est cliquable
+                    onClick={() => handleTogglePublishStatus(product.id, product.is_published)}
+                    style={{ cursor: 'pointer', padding: '3px 6px', borderRadius: '3px', display: 'inline-block' }}
                     title={product.is_published ? "Publié (cliquer pour masquer)" : "Masqué (cliquer pour publier)"}
                   >
                     {product.is_published ? 'Publié' : 'Masqué'}
@@ -198,13 +178,11 @@ function ProductManagementPage() {
                 </td>
                 <td className="actions-cell">
                   <button onClick={() => handleOpenModalForEdit(product)} className="action-btn edit-btn" title="Modifier">✎</button>
-                  {/* Tu peux ajouter un bouton de suppression définitive si besoin */}
-                  {/* <button onClick={() => handleDeleteProduct(product.id)} className="action-btn delete-btn" title="Supprimer">🗑️</button> */}
                 </td>
               </tr>
             )) : (
               <tr>
-                <td colSpan="9" style={{textAlign: 'center', padding: '20px'}}>
+                <td colSpan="9" style={{ textAlign: 'center', padding: '20px' }}>
                   {searchTerm ? "Aucun produit ne correspond à votre recherche." : "Aucun produit à afficher. Cliquez sur '+ Ajouter Produit' pour commencer."}
                 </td>
               </tr>
@@ -213,15 +191,15 @@ function ProductManagementPage() {
         </table>
       </div>
 
-      {/* Le Modal pour ajouter/modifier un produit */}
       {isModalOpen && (
         <ProductFormModal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           onSave={handleSaveProduct}
-          productToEdit={selectedProduct} // Renommé pour plus de clarté
+          productToEdit={selectedProduct}
           apiBaseUrl={API_BASE_URL}
           adminToken={adminToken}
+          allCategories={allCategories} // Passer toutes les catégories
         />
       )}
     </div>

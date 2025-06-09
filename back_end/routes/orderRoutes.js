@@ -11,6 +11,9 @@ router.get('/', authMiddleware, orderController.getUserOrders);
 // POST /api/orders - Créer une nouvelle commande (CLIENT) - À IMPLÉMENTER PLUS TARD
  router.post('/', authMiddleware, orderController.createOrder);
 
+ // NOUVELLE ROUTE CLIENT pour voir le détail d'une de ses commandes
+router.get('/:orderId', authMiddleware, orderController.getUserOrderDetail);
+
 
 // --- Routes pour les Administrateurs ---
 // GET /api/orders/admin/all - Lister toutes les commandes (ADMIN)

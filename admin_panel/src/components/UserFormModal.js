@@ -1,41 +1,58 @@
 // admin_panel/src/components/UserFormModal.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-// Réutiliser les styles du modal existant si possible, ou créer UserFormModal.css
-import './ProductFormModal.css'; // Supposons qu'on réutilise la base
+import './ProductFormModal.css'; // Gardons le même style pour l'instant
 
 function UserFormModal({ isOpen, onClose, onSave, userToEdit, apiBaseUrl, adminToken }) {
+  // Utilisation d'un seul useState pour les données et pour s'assurer de la cohérence
   const [formData, setFormData] = useState({
+    id: null, // Important pour savoir si on est en mode ajout ou édition
     name: '',
     email: '',
     address: '',
     phone: '',
-    role: 'customer', // Rôle par défaut
+    role: 'customer',
+    is_active: true,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  // Rôles disponibles (tu peux les charger depuis une API si tu veux plus de flexibilité)
-  const availableRoles = ['customer', 'vendor', 'editor']; // Ajoute les rôles que tu utilises
+  const availableRoles = ['customer', 'vendor', 'editor'];
 
+  // Charger les données de l'utilisateur à éditer (ou réinitialiser le formulaire)
   useEffect(() => {
-    if (userToEdit && userToEdit.id) {
+    if (isOpen && userToEdit) {
+      // Si on ouvre le modal en mode édition, on clone l'objet userToEdit
+      // pour ne pas modifier l'état de UserManagementPage directement
       setFormData({
+        id: userToEdit.id,
         name: userToEdit.name || '',
         email: userToEdit.email || '',
         address: userToEdit.address || '',
         phone: userToEdit.phone || '',
         role: userToEdit.role || 'customer',
+        is_active: userToEdit.is_active !== undefined ? userToEdit.is_active : true,
       });
     } else {
-      // Mode ajout n'est pas géré par ce modal, mais on garde une initialisation
-      setFormData({ name: '', email: '', address: '', phone: '', role: 'customer' });
+      // Si on ferme le modal ou si on est en mode ajout, on réinitialise
+      setFormData({
+        id: null,
+        name: '',
+        email: '',
+        address: '',
+        phone: '',
+        role: 'customer',
+        is_active: true,
+      });
     }
-  }, [userToEdit, isOpen]);
+  }, [userToEdit, isOpen]); // Dépendances: userToEdit et isOpen
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, type, value, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -43,39 +60,37 @@ function UserFormModal({ isOpen, onClose, onSave, userToEdit, apiBaseUrl, adminT
     setError('');
     setIsSubmitting(true);
 
-    // Ne pas envoyer les champs que l'admin ne devrait pas modifier directement (comme password)
-    // Le backend updateUserByAdmin ne prend que name, email, address, phone, role
-    const payload = { 
-        name: formData.name,
-        email: formData.email,
-        address: formData.address,
-        phone: formData.phone,
-        role: formData.role
+    const payload = {
+      name: formData.name,
+      email: formData.email,
+      address: formData.address,
+      phone: formData.phone,
+      role: formData.role,
+      is_active: formData.is_active,
     };
-    // Retirer les clés avec des valeurs vides si on ne veut pas les envoyer pour écraser avec vide
-    // Object.keys(payload).forEach(key => (payload[key] === '' || payload[key] === null) && delete payload[key]);
-
 
     try {
-      if (userToEdit && userToEdit.id) {
-        await axios.put(`${apiBaseUrl}/users/${userToEdit.id}`, payload, {
+      if (formData.id) { // Mode édition
+        const response = await axios.put(`${apiBaseUrl}/users/${formData.id}`, payload, {
           headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
         });
+         // Si la requête réussit, appeler onSave avec les données mises à jour
+        onSave(response.data.user);
       } else {
-        // Ce modal est principalement pour l'édition. L'ajout d'utilisateur se fait via le register client.
-        setError("Ce formulaire est pour la modification uniquement.");
+        setError("Ce formulaire est uniquement pour la modification.");
         setIsSubmitting(false);
         return;
       }
-      onSave(); // Appelle la fonction pour recharger la liste et fermer
+      onClose(); // Ferme le modal en cas de succès
     } catch (err) {
-      console.error("Erreur sauvegarde utilisateur:", err);
-      setError(err.response?.data?.message || 'Erreur lors de la sauvegarde de l\'utilisateur.');
+      console.error("Erreur lors de la sauvegarde de l'utilisateur:", err);
+      setError(err.response?.data?.message || "Erreur lors de la sauvegarde de l'utilisateur.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Si le modal est fermé, on ne retourne rien
   if (!isOpen) return null;
 
   return (
@@ -101,20 +116,32 @@ function UserFormModal({ isOpen, onClose, onSave, userToEdit, apiBaseUrl, adminT
           </div>
           <div className="form-group">
             <label htmlFor="user-role">Rôle :</label>
-            <select 
-                name="role" 
-                id="user-role" 
-                value={formData.role} 
-                onChange={handleChange}
-                style={{width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '1em'}}
+            <select
+              name="role"
+              id="user-role"
+              value={formData.role}
+              onChange={handleChange}
+              style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '1em' }}
             >
-                {availableRoles.map(r => (
-                    <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
-                ))}
+              {availableRoles.map(r => (
+                <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+              ))}
             </select>
           </div>
 
-          {error && <p className="error-message-form" style={{color: 'red', marginBottom: '10px'}}>{error}</p>}
+          {/* Actif/Désactivé */}
+          <div className="form-group checkbox-item">
+            <input
+              type="checkbox"
+              name="is_active"
+              id="user-is_active"
+              checked={formData.is_active}
+              onChange={handleChange}
+            />
+            <label htmlFor="user-is_active">Compte Actif ?</label>
+          </div>
+
+          {error && <p className="error-message-form">{error}</p>}
           <div className="form-actions">
             <button type="submit" disabled={isSubmitting} className="save-btn">
               {isSubmitting ? 'Sauvegarde...' : 'Mettre à Jour Utilisateur'}

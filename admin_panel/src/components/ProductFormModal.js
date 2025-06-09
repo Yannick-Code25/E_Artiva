@@ -254,9 +254,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import './ProductFormModal.css';
 
-function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, adminToken }) {
+function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, adminToken, allCategories }) {
   const initialImageState = { image_url: '', alt_text: '', is_primary: false, display_order: 0 };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   const getInitialFormData = useCallback(() => {
     if (productToEdit && productToEdit.id) {
       return {
@@ -267,42 +267,71 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
         image_url: productToEdit.image_url || '',
         sku: productToEdit.sku || '',
         is_published: productToEdit.is_published || false,
-        category_ids: productToEdit.category_ids || [], 
+        category_ids: productToEdit.category_ids || [],
         tag_ids: productToEdit.tag_ids || [],
-        images: (productToEdit.images || []).map((img, index) => ({ ...initialImageState, ...img, temp_id: `img-${index}-${Date.now()}` })) 
+        images: (productToEdit.images || []).map((img, index) => ({ ...initialImageState, ...img, temp_id: `img-${index}-${Date.now()}` }))
       };
     } else {
       console.log("ProductFormModal: Remplissage pour AJOUT (vide)");
       return {
         name: '', description: '', price: '', stock: '', image_url: '',
         sku: '', is_published: false, category_ids: [], tag_ids: [],
-        images: [{ ...initialImageState, temp_id: `img-0-${Date.now()}` }] // Commence avec un champ image
+        images: [{ ...initialImageState, temp_id: `img-0-${Date.now()}` }]
       };
     }
   }, [productToEdit]);
 
   const [formData, setFormData] = useState(getInitialFormData());
-  const [allCategories, setAllCategories] = useState([]);
   const [allTags, setAllTags] = useState([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [relevantCategories, setRelevantCategories] = useState([]);
 
   useEffect(() => {
     console.log("ProductFormModal: useEffect pour productToEdit/isOpen. productToEdit:", productToEdit);
     setFormData(getInitialFormData());
-  }, [productToEdit, isOpen, getInitialFormData]); 
+  }, [productToEdit, isOpen, getInitialFormData]);
 
-  // Gérer les changements pour les champs d'images multiples
+  useEffect(() => {
+    const relevantCategories = () => {
+      const subCats = allCategories.filter(cat => cat.parent_id);
+      const mainCatsWithoutSubs = allCategories.filter(cat => {
+        if (cat.parent_id) return false;
+        return !allCategories.some(subCat => subCat.parent_id === cat.id);
+      });
+      return [...subCats, ...mainCatsWithoutSubs];
+    }
+    setRelevantCategories(relevantCategories());
+
+  }, [allCategories]);
+
+  const fetchTags = useCallback(async () => {
+    setIsLoadingOptions(true);
+    try {
+      const tagRes = await axios.get(`${apiBaseUrl}/product-tags`, { headers: { 'Authorization': `Bearer ${adminToken}` } });
+      setAllTags(tagRes.data || []);
+    } catch (err) {
+      console.error("ProductFormModal: Erreur chargement des tags:", err);
+      setError("Impossible de charger les tags.");
+      setAllTags([]);
+    } finally {
+      setIsLoadingOptions(false);
+    }
+  }, [apiBaseUrl, adminToken]);
+
+  useEffect(() => {
+    fetchTags();
+  }, [fetchTags]);
+
   const handleImageChange = (index, field, value, type = 'text') => {
     const newImages = [...formData.images];
     newImages[index] = { ...newImages[index], [field]: type === 'checkbox' ? !newImages[index][field] : value };
-    
-    // S'assurer qu'une seule image est primaire
+
     if (field === 'is_primary' && value === true) {
-        newImages.forEach((img, i) => {
-            if (i !== index) img.is_primary = false;
-        });
+      newImages.forEach((img, i) => {
+        if (i !== index) img.is_primary = false;
+      });
     }
     setFormData(prev => ({ ...prev, images: newImages }));
   };
@@ -320,33 +349,6 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
       images: prev.images.filter((_, i) => i !== index)
     }));
   };
-
-  const fetchOptions = useCallback(async () => {
-    if (!isOpen) return;
-    console.log("ProductFormModal: Chargement des options (catégories/tags)");
-    setIsLoadingOptions(true); 
-    setError(''); 
-    try {
-      const [catRes, tagRes] = await Promise.all([
-        axios.get(`${apiBaseUrl}/categories`, { headers: { 'Authorization': `Bearer ${adminToken}` } }),
-        axios.get(`${apiBaseUrl}/product-tags`, { headers: { 'Authorization': `Bearer ${adminToken}` } })
-      ]);
-      setAllCategories(catRes.data || []);
-      setAllTags(tagRes.data || []);
-      console.log("ProductFormModal: Options chargées.", {categories: catRes.data.length, tags: tagRes.data.length});
-    } catch (err) {
-      console.error("ProductFormModal: Erreur chargement options:", err);
-      setError("Impossible de charger les options de catégories/tags.");
-      setAllCategories([]);
-      setAllTags([]);
-    } finally {
-      setIsLoadingOptions(false);
-    }
-  }, [apiBaseUrl, adminToken, isOpen]); 
-
-  useEffect(() => {
-    fetchOptions();
-  }, [fetchOptions]); 
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -375,62 +377,57 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
     setError('');
     setIsSubmitting(true);
 
-    // Préparer le payload, en s'assurant que les images ont les bons champs
     const payload = {
       ...formData,
       price: parseFloat(formData.price) || 0,
       stock: parseInt(formData.stock, 10) || 0,
-      images: formData.images.map(({ temp_id, ...imgData }) => ({ // Retirer temp_id
+      images: formData.images.map(({ temp_id, ...imgData }) => ({
         image_url: imgData.image_url,
         alt_text: imgData.alt_text || null,
         is_primary: Boolean(imgData.is_primary),
         display_order: parseInt(String(imgData.display_order), 10) || 0
-      })).filter(img => img.image_url && img.image_url.trim() !== ''), // Ne pas envoyer d'images avec URL vide
+      })).filter(img => img.image_url && img.image_url.trim() !== ''),
     };
-    
+
     if (payload.sku === '') delete payload.sku;
-    // L'image principale est gérée par payload.image_url pour la table products.
-    // Si tu veux que la première image 'is_primary' de payload.images devienne aussi payload.image_url:
     const primaryImage = payload.images.find(img => img.is_primary);
     if (primaryImage) {
-        payload.image_url = primaryImage.image_url;
+      payload.image_url = primaryImage.image_url;
     } else if (payload.images.length > 0 && !payload.image_url) {
-        // Si aucune n'est primaire, prend la première image du tableau comme image_url principale
-        payload.image_url = payload.images[0].image_url;
+      payload.image_url = payload.images[0].image_url;
     }
 
     try {
-      if (productToEdit && productToEdit.id) { 
+      if (productToEdit && productToEdit.id) {
         console.log(`ProductFormModal: Envoi MAJ pour produit ID ${productToEdit.id}`, payload);
         await axios.put(`${apiBaseUrl}/products/${productToEdit.id}`, payload, {
           headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
         });
-      } else { 
+      } else {
         console.log("ProductFormModal: Envoi AJOUT nouveau produit", payload);
         await axios.post(`${apiBaseUrl}/products`, payload, {
           headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
         });
       }
-      onSave(); 
+      onSave();
     } catch (err) {
       console.error("ProductFormModal: Erreur sauvegarde produit:", err);
       setError(err.response?.data?.message || 'Erreur lors de la sauvegarde du produit.');
     } finally {
       setIsSubmitting(false);
     }
-  }; // <<< L'ACCOLADE FERMANTE DE handleSubmit DOIT ÊTRE ICI
+  };
 
-  // Le 'return' principal du composant ProductFormModal commence ici
-  if (!isOpen) return null; 
+  if (!isOpen) return null;
 
   return (
     <div className="modal-overlay">
       <div className="modal-content">
         <h2>{productToEdit ? 'Modifier le Produit' : 'Ajouter un Nouveau Produit'}</h2>
-        
+
         {isLoadingOptions && <p>Chargement des options...</p>}
-        {!isLoadingOptions && error && !isSubmitting && <p className="error-message-form">{error}</p>} 
-        
+        {!isLoadingOptions && error && !isSubmitting && <p className="error-message-form">{error}</p>}
+
         {!isLoadingOptions && (
           <form onSubmit={handleSubmit}>
             {/* Nom */}
@@ -444,25 +441,25 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
               <textarea name="description" id="modal-description" value={formData.description} onChange={handleChange} />
             </div>
             {/* Prix & Stock */}
-            <div style={{display: 'flex', gap: '10px'}}>
-              <div className="form-group" style={{flex:1}}>
-                  <label htmlFor="modal-price">Prix (FCFA) :</label>
-                  <input type="number" name="price" id="modal-price" value={formData.price} onChange={handleChange} required/>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label htmlFor="modal-price">Prix (FCFA) :</label>
+                <input type="number" name="price" id="modal-price" value={formData.price} onChange={handleChange} required />
               </div>
-              <div className="form-group" style={{flex:1}}>
-                  <label htmlFor="modal-stock">Stock :</label>
-                  <input type="number" name="stock" id="modal-stock" value={formData.stock} onChange={handleChange} required/>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label htmlFor="modal-stock">Stock :</label>
+                <input type="number" name="stock" id="modal-stock" value={formData.stock} onChange={handleChange} required />
               </div>
             </div>
             {/* SKU & Image URL */}
-            <div style={{display: 'flex', gap: '10px'}}>
-              <div className="form-group" style={{flex:1}}>
-                  <label htmlFor="modal-sku">SKU :</label>
-                  <input type="text" name="sku" id="modal-sku" value={formData.sku} onChange={handleChange} />
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label htmlFor="modal-sku">SKU :</label>
+                <input type="text" name="sku" id="modal-sku" value={formData.sku} onChange={handleChange} />
               </div>
-              <div className="form-group" style={{flex:1}}>
-                  <label htmlFor="modal-image_url">URL Image :</label>
-                  <input type="text" name="image_url" id="modal-image_url" value={formData.image_url} onChange={handleChange} />
+              <div className="form-group" style={{ flex: 1 }}>
+                <label htmlFor="modal-image_url">URL Image :</label>
+                <input type="text" name="image_url" id="modal-image_url" value={formData.image_url} onChange={handleChange} />
               </div>
             </div>
 
@@ -470,43 +467,43 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
             <div className="form-group">
               <label>Galerie d'Images (optionnel) :</label>
               {formData.images.map((img, index) => (
-                <div key={img.temp_id || index} className="image-entry" style={{border: '1px dashed #ccc', padding: '10px', marginBottom: '10px', borderRadius: '4px'}}>
+                <div key={img.temp_id || index} className="image-entry" style={{ border: '1px dashed #ccc', padding: '10px', marginBottom: '10px', borderRadius: '4px' }}>
                   <div className="form-group">
                     <label htmlFor={`img-url-${index}`}>URL Image {index + 1} :</label>
-                    <input type="text" id={`img-url-${index}`} value={img.image_url} onChange={(e) => handleImageChange(index, 'image_url', e.target.value)} placeholder="https://example.com/image.jpg"/>
+                    <input type="text" id={`img-url-${index}`} value={img.image_url} onChange={(e) => handleImageChange(index, 'image_url', e.target.value)} placeholder="https://example.com/image.jpg" />
                   </div>
                   <div className="form-group">
                     <label htmlFor={`img-alt-${index}`}>Texte Alternatif :</label>
                     <input type="text" id={`img-alt-${index}`} value={img.alt_text} onChange={(e) => handleImageChange(index, 'alt_text', e.target.value)} />
                   </div>
-                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div className="checkbox-item">
                       <input type="checkbox" id={`img-primary-${index}`} checked={img.is_primary} onChange={(e) => handleImageChange(index, 'is_primary', e.target.checked, 'checkbox')} />
                       <label htmlFor={`img-primary-${index}`}>Image Principale ?</label>
                     </div>
-                    <div className="form-group" style={{width: '100px'}}>
-                        <label htmlFor={`img-order-${index}`}>Ordre:</label>
-                        <input type="number" id={`img-order-${index}`} value={img.display_order} onChange={(e) => handleImageChange(index, 'display_order', e.target.value)} style={{padding: '5px'}}/>
+                    <div className="form-group" style={{ width: '100px' }}>
+                      <label htmlFor={`img-order-${index}`}>Ordre:</label>
+                      <input type="number" id={`img-order-${index}`} value={img.display_order} onChange={(e) => handleImageChange(index, 'display_order', e.target.value)} style={{ padding: '5px' }} />
                     </div>
                     {formData.images.length > 1 && (
-                      <button type="button" onClick={() => removeImageField(index)} style={{color: 'red', background: 'none', border: 'none', cursor: 'pointer'}}>Supprimer</button>
+                      <button type="button" onClick={() => removeImageField(index)} style={{ color: 'red', background: 'none', border: 'none', cursor: 'pointer' }}>Supprimer</button>
                     )}
                   </div>
                 </div>
               ))}
-              <button type="button" onClick={addImageField} style={{marginTop: '5px', padding: '8px', fontSize: '0.9em'}}>+ Ajouter une autre image</button>
+              <button type="button" onClick={addImageField} style={{ marginTop: '5px', padding: '8px', fontSize: '0.9em'}}>+ Ajouter une autre image</button>
             </div>
 
             {/* Catégories */}
             <div className="form-group">
               <label>Catégories :</label>
               <div className="checkbox-group">
-                {allCategories.length > 0 ? allCategories.map(cat => (
+                {relevantCategories.length > 0 ? relevantCategories.map(cat => (
                   <div key={`cat-opt-${cat.id}`} className="checkbox-item">
-                    <input 
-                      type="checkbox" 
-                      id={`modal-cat-${cat.id}`} 
-                      value={cat.id} 
+                    <input
+                      type="checkbox"
+                      id={`modal-cat-${cat.id}`}
+                      value={cat.id}
                       checked={formData.category_ids.includes(cat.id)}
                       onChange={() => handleMultiSelectChange('category', cat.id)}
                     />
@@ -522,10 +519,10 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
               <div className="checkbox-group">
                 {allTags.length > 0 ? allTags.map(tag => (
                   <div key={`tag-opt-${tag.id}`} className="checkbox-item">
-                    <input 
-                      type="checkbox" 
-                      id={`modal-tag-${tag.id}`} 
-                      value={tag.id} 
+                    <input
+                      type="checkbox"
+                      id={`modal-tag-${tag.id}`}
+                      value={tag.id}
                       checked={formData.tag_ids.includes(tag.id)}
                       onChange={() => handleMultiSelectChange('tag', tag.id)}
                     />
@@ -534,14 +531,14 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
                 )) : <p>Aucun tag disponible.</p>}
               </div>
             </div>
-            
+
             {/* Publié */}
-            <div className="form-group checkbox-item" style={{marginTop: '10px'}}>
+            <div className="form-group checkbox-item" style={{ marginTop: '10px' }}>
               <input type="checkbox" name="is_published" id="modal-is_published" checked={formData.is_published} onChange={handleChange} />
               <label htmlFor="modal-is_published">Publier ce produit ?</label>
             </div>
 
-            {error && isSubmitting && <p className="error-message-form">{error}</p>} 
+            {error && isSubmitting && <p className="error-message-form">{error}</p>}
             <div className="form-actions">
               <button type="submit" disabled={isSubmitting || isLoadingOptions} className="save-btn">
                 {isSubmitting ? 'Sauvegarde...' : (productToEdit ? 'Mettre à Jour' : 'Ajouter Produit')}
@@ -553,6 +550,6 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
       </div>
     </div>
   );
-} // <<< L'ACCOLADE FERMANTE DE ProductFormModal DOIT ÊTRE ICI
+}
 
 export default ProductFormModal;

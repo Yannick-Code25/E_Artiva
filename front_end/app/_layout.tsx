@@ -170,6 +170,7 @@ function AppNavigationStack() {
         <Stack.Screen name="product/[id]" options={{ title: 'Détail du Produit' }} />
         <Stack.Screen name="checkout" options={{ title: 'Validation Commande', presentation: 'modal' }} />
         <Stack.Screen name="tag/[tag]" options={{ title: 'Produits par Tag' }} />
+        <Stack.Screen name="orders/[orderId]" options={{ title: 'Détails Commande' }} />
       </Stack>
     </ThemeProvider>
   );

@@ -64,13 +64,13 @@ exports.getUserById = async (req, res) => {
   }
 };
 
-// --- NOUVEAU (Admin) : Mettre à jour un utilisateur (ex: rôle, adresse, téléphone) ---
+// --- NOUVEAU (Admin) : Mettre à jour un utilisateur (ex: rôle, adresse, téléphone, is_active) ---
 exports.updateUserByAdmin = async (req, res) => {
   const { id } = req.params; // ID de l'utilisateur à mettre à jour
-  const { name, email, address, phone, role } = req.body; // Champs modifiables par l'admin
+  const { name, email, address, phone, role, is_active } = req.body; // Champs modifiables par l'admin, y compris is_active
 
   // Validation : Au moins un champ doit être fourni pour la mise à jour
-  if (name === undefined && email === undefined && address === undefined && phone === undefined && role === undefined) {
+  if (name === undefined && email === undefined && address === undefined && phone === undefined && role === undefined && is_active === undefined) {
     return res.status(400).json({ message: 'Aucun champ fourni pour la mise à jour.' });
   }
 
@@ -90,6 +90,11 @@ exports.updateUserByAdmin = async (req, res) => {
     }
     fieldsToUpdate.push(`role = $${paramIndex++}`); values.push(role); 
   }
+  // Ajout : Gérer le champ is_active
+  if (is_active !== undefined) {
+    fieldsToUpdate.push(`is_active = $${paramIndex++}`);
+    values.push(is_active); // Pas de validation ici, on suppose que c'est un booléen
+  }
 
   if (fieldsToUpdate.length === 0) { // Devrait être attrapé par la validation précédente, mais par sécurité
     return res.status(400).json({ message: 'Aucun champ valide fourni pour la mise à jour.' });
@@ -101,7 +106,7 @@ exports.updateUserByAdmin = async (req, res) => {
     UPDATE users 
     SET ${fieldsToUpdate.join(', ')} 
     WHERE id = $${paramIndex}
-    RETURNING id, name, email, address, phone, role, created_at, updated_at;
+    RETURNING id, name, email, address, phone, role, is_active, created_at, updated_at;
   `;
   values.push(id);
 

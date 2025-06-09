@@ -1,19 +1,29 @@
-// ARTIVA/front_end/app/tag/[tag].tsx
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Button, Platform } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter, Href } from 'expo-router';
-import ProductCard, { Product as ProductType } from '../../components/ProductCard';
-import Colors from '../../constants/Colors';
-import { useColorScheme } from '../../components/useColorScheme'; // Ou de useAuth
-// import { useAuth } from '../../context/AuthContext'; // Si besoin du token pour une raison
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  Button,
+  Platform,
+  Dimensions, // Import Dimensions
+} from "react-native";
+import { Stack, useLocalSearchParams, useRouter, Href } from "expo-router";
+import ProductCard, {
+  Product as ProductType,
+} from "../../components/ProductCard";
+import Colors from "../../constants/Colors";
+import { useColorScheme } from "../../components/useColorScheme";
 
-const API_BASE_URL = 'http://192.168.1.2:3001/api'; // **TON IP**
+const API_BASE_URL = "http://192.168.1.2:3001/api"; // **TON IP**
+const screenWidth = Dimensions.get('window').width; // Récupérer la largeur de l'écran
 
 export default function ProductsByTagScreen() {
-  const { tag } = useLocalSearchParams<{ tag: string }>(); // Récupère le nom du tag depuis l'URL
+  const { tag } = useLocalSearchParams<{ tag: string }>();
   const router = useRouter();
-  const colorScheme = useColorScheme(); // Ou effectiveAppColorScheme de useAuth
-  const currentScheme = colorScheme ?? 'light';
+  const colorScheme = useColorScheme();
+  const currentScheme = colorScheme ?? "light";
   const tintColor = Colors[currentScheme].tint;
   const textColor = Colors[currentScheme].text;
   const backgroundColor = Colors[currentScheme].background;
@@ -21,7 +31,9 @@ export default function ProductsByTagScreen() {
   const [products, setProducts] = useState<ProductType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pageTitle, setPageTitle] = useState(tag ? `Produits : ${decodeURIComponent(tag)}` : 'Produits par Tag');
+  const [pageTitle, setPageTitle] = useState(
+    tag ? `Produits : ${decodeURIComponent(tag)}` : "Produits par Tag"
+  );
 
   const fetchProductsByTag = useCallback(async () => {
     if (!tag) {
@@ -33,11 +45,17 @@ export default function ProductsByTagScreen() {
     setIsLoading(true);
     setError(null);
     try {
-      // L'API GET /api/products accepte déjà un filtre tag_name
-      const response = await fetch(`${API_BASE_URL}/products?tag_name=${encodeURIComponent(tag)}&limit=50`); // Limite pour ne pas tout charger
+      const response = await fetch(
+        `${API_BASE_URL}/products?tag_name=${encodeURIComponent(tag)}&limit=50`
+      );
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({message: `Erreur HTTP ${response.status}`}));
-        throw new Error(errorData.message || `Erreur chargement produits pour tag (${response.status})`);
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: `Erreur HTTP ${response.status}` }));
+        throw new Error(
+          errorData.message ||
+            `Erreur chargement produits pour tag (${response.status})`
+        );
       }
       const dataWrapper = await response.json();
       if (!dataWrapper || !Array.isArray(dataWrapper.products)) {
@@ -71,7 +89,9 @@ export default function ProductsByTagScreen() {
       setProducts(adaptedProducts);
     } catch (err: any) {
       console.error("ProductsByTagScreen: Erreur fetchProductsByTag:", err);
-      setError(err.message || 'Impossible de charger les produits pour ce tag.');
+      setError(
+        err.message || "Impossible de charger les produits pour ce tag."
+      );
       setProducts([]);
     } finally {
       setIsLoading(false);
@@ -81,46 +101,52 @@ export default function ProductsByTagScreen() {
   useEffect(() => {
     fetchProductsByTag();
   }, [fetchProductsByTag]);
-  
-  useEffect(() => { // Mettre à jour le titre si 'tag' change après le premier rendu
+
+  useEffect(() => {
+    // Mettre à jour le titre si 'tag' change après le premier rendu
     if (tag) setPageTitle(`${decodeURIComponent(tag)}`);
   }, [tag]);
 
-
   const handleProductPress = (productId: string | number) => {
-      const path = `/product/${String(productId)}` as Href;
-      router.push(path);
-    };
+    const path = `/product/${String(productId)}` as Href;
+    router.push(path);
+  };
 
   if (isLoading) {
-      return (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={tintColor} />
-        </View>
-      );
-    }
-    if (error) {
-      return (
-        <View style={styles.centered}>
-          <Text style={{ color: "red" }}>{error}</Text>
-          <Button
-            title="Réessayer"
-            onPress={fetchProductsByTag}
-            color={tintColor}
-          />
-        </View>
-      );
-    }
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={tintColor} />
+      </View>
+    );
+  }
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text style={{ color: "red" }}>{error}</Text>
+        <Button
+          title="Réessayer"
+          onPress={fetchProductsByTag}
+          color={tintColor}
+        />
+      </View>
+    );
+  }
 
   return (
-    <View style={[styles.screenContainer, {backgroundColor}]}>
+    <View style={[styles.screenContainer, { backgroundColor }]}>
       <Stack.Screen options={{ title: pageTitle }} />
       {products.length === 0 ? (
-        <View style={styles.centered}><Text style={{color: textColor}}>Aucun produit trouvé pour "{decodeURIComponent(tag || '')}".</Text></View>
+        <View style={styles.centered}>
+          <Text style={{ color: textColor }}>
+            Aucun produit trouvé pour "{decodeURIComponent(tag || "")}".
+          </Text>
+        </View>
       ) : (
         <FlatList
           data={products}
-          renderItem={({ item }) => <ProductCard item={item} onPress={handleProductPress} />}
+          renderItem={({ item }) => (
+            <ProductCard item={item} onPress={handleProductPress} />
+          )}
           keyExtractor={(item) => item.id.toString()}
           numColumns={2}
           contentContainerStyle={styles.listContainer}
@@ -139,4 +165,9 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   listContainer: { paddingHorizontal: 5, paddingTop: 10, paddingBottom: 20 },
+  // Style pour ProductCard pour occuper la moitié de l'écran moins le padding
+  productCard: {
+    width: (screenWidth / 2) - 10, // La moitié de l'écran moins le padding
+    marginHorizontal: 5, // Ajuster pour que la somme des margins ne soit pas trop grande
+  },
 });

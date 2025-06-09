@@ -41,9 +41,7 @@ interface AuthContextType {
   unreadNotificationCount: number;
   fetchUnreadNotificationCount: () => Promise<void>;
   appColorSchemePreference: AppColorSchemePreference;
-  setColorSchemePreference: (
-    scheme: AppColorSchemePreference
-  ) => Promise<void>;
+  setColorSchemePreference: (scheme: AppColorSchemePreference) => Promise<void>;
   effectiveAppColorScheme: "light" | "dark";
   updateUserInContext: (newUserData: Partial<User>) => void;
 }
@@ -187,13 +185,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []); // S'exécute une seule fois au montage pour configurer le thème initialement
 
-  const setColorSchemePreferenceInternal = async (scheme: AppColorSchemePreference) => {
-    console.log("AuthContext: Changement de préférence de thème demandé:", scheme);
+  const setColorSchemePreferenceInternal = async (
+    scheme: AppColorSchemePreference
+  ) => {
+    console.log(
+      "AuthContext: Changement de préférence de thème demandé:",
+      scheme
+    );
     try {
       await AsyncStorage.setItem(THEME_PREFERENCE_KEY, scheme);
       setAppColorSchemePreferenceState(scheme);
       if (scheme === "system") {
-        setEffectiveAppColorScheme(Appearance.getColorScheme() ?? 'light');
+        setEffectiveAppColorScheme(Appearance.getColorScheme() ?? "light");
       } else {
         // 'light' or 'dark'
         setEffectiveAppColorScheme(scheme);
