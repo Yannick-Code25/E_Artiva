@@ -15,7 +15,7 @@ import {
 import { Link, useRouter } from "expo-router";
 import { FontAwesome } from "@expo/vector-icons";
 
-const API_BASE_URL = "http://192.168.1.2:3001/api"; // EXEMPLE: 'http://192.168.1.105:3001/api'
+const API_BASE_URL = "http://192.168.248.151:3001/api"; // EXEMPLE: 'http://192.168.1.105:3001/api'
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -305,3 +305,147 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
 });
+
+
+
+
+
+
+
+// import React, { useState } from 'react';
+// import { View, Text, TextInput, TouchableOpacity, StyleSheet, useColorScheme } from 'react-native';
+// import axios from 'axios';
+// import Colors from '../../constants/Colors';
+
+// const RegisterScreen = () => {
+//   const colorScheme = useColorScheme();
+//   const themeColors = Colors[colorScheme || 'light'];
+
+//   const [form, setForm] = useState({
+//     name: '',
+//     email: '',
+//     password: '',
+//     address: '',
+//     phone: '',
+//   });
+
+//   const [feedback, setFeedback] = useState({ message: '', type: '' });
+
+//   const handleChange = (field, value) => {
+//     setForm({ ...form, [field]: value });
+//   };
+
+//   const handleRegister = async () => {
+//     setFeedback({ message: '', type: '' });
+//     try {
+//       const res = await axios.post('http://localhost:3000/api/auth/register', form);
+//       setFeedback({ message: res.data.message, type: 'success' });
+//       setForm({ name: '', email: '', password: '', address: '', phone: '' });
+//     } catch (err) {
+//       const msg = err?.response?.data?.message || "Une erreur s'est produite.";
+//       setFeedback({ message: msg, type: 'error' });
+//     }
+//   };
+
+//   return (
+//     <View style={[styles.container, { backgroundColor: themeColors.background }]}>      
+//       <Text style={[styles.title, { color: themeColors.text }]}>Créer un compte</Text>
+
+//       <TextInput
+//         style={[styles.input, { backgroundColor: themeColors.inputBackground, borderColor: themeColors.inputBorder, color: themeColors.text }]}
+//         placeholder="Nom"
+//         placeholderTextColor={themeColors.subtleText}
+//         onChangeText={(text) => handleChange('name', text)}
+//         value={form.name}
+//       />
+
+//       <TextInput
+//         style={[styles.input, { backgroundColor: themeColors.inputBackground, borderColor: themeColors.inputBorder, color: themeColors.text }]}
+//         placeholder="Email"
+//         placeholderTextColor={themeColors.subtleText}
+//         onChangeText={(text) => handleChange('email', text)}
+//         value={form.email}
+//         keyboardType="email-address"
+//       />
+
+//       <TextInput
+//         style={[styles.input, { backgroundColor: themeColors.inputBackground, borderColor: themeColors.inputBorder, color: themeColors.text }]}
+//         placeholder="Mot de passe"
+//         placeholderTextColor={themeColors.subtleText}
+//         onChangeText={(text) => handleChange('password', text)}
+//         value={form.password}
+//         secureTextEntry
+//       />
+
+//       <TextInput
+//         style={[styles.input, { backgroundColor: themeColors.inputBackground, borderColor: themeColors.inputBorder, color: themeColors.text }]}
+//         placeholder="Adresse (facultatif)"
+//         placeholderTextColor={themeColors.subtleText}
+//         onChangeText={(text) => handleChange('address', text)}
+//         value={form.address}
+//       />
+
+//       <TextInput
+//         style={[styles.input, { backgroundColor: themeColors.inputBackground, borderColor: themeColors.inputBorder, color: themeColors.text }]}
+//         placeholder="Téléphone (facultatif)"
+//         placeholderTextColor={themeColors.subtleText}
+//         onChangeText={(text) => handleChange('phone', text)}
+//         value={form.phone}
+//         keyboardType="phone-pad"
+//       />
+
+//       {feedback.message.length > 0 && (
+//         <Text
+//           style={{
+//             color: feedback.type === 'success' ? themeColors.successText : themeColors.errorText,
+//             marginBottom: 10,
+//             textAlign: 'center',
+//             fontWeight: '500',
+//           }}
+//         >
+//           {feedback.message}
+//         </Text>
+//       )}
+
+//       <TouchableOpacity
+//         style={[styles.button, { backgroundColor: themeColors.primary }]}
+//         onPress={handleRegister}
+//       >
+//         <Text style={[styles.buttonText, { color: '#fff' }]}>S'inscrire</Text>
+//       </TouchableOpacity>
+//     </View>
+//   );
+// };
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     paddingHorizontal: 20,
+//     justifyContent: 'center',
+//   },
+//   title: {
+//     fontSize: 24,
+//     fontWeight: 'bold',
+//     marginBottom: 20,
+//     textAlign: 'center',
+//   },
+//   input: {
+//     borderWidth: 1,
+//     borderRadius: 8,
+//     paddingHorizontal: 12,
+//     paddingVertical: 10,
+//     marginBottom: 12,
+//     fontSize: 16,
+//   },
+//   button: {
+//     paddingVertical: 12,
+//     borderRadius: 8,
+//     alignItems: 'center',
+//   },
+//   buttonText: {
+//     fontSize: 16,
+//     fontWeight: 'bold',
+//   },
+// });
+
+// export default RegisterScreen;

@@ -8,6 +8,8 @@ import CategoryManagementPage from './pages/CategoryManagementPage';
 import UserManagementPage from './pages/UserManagementPage';
 import OrderManagementPage from './pages/OrderManagementPage';
 import ReportsPage from './pages/ReportsPage';
+import ScanOrderPage from './pages/ScanOrderPage'; // <--- NOUVEL IMPORT
+import { ScanLine as ScanIcon } from 'lucide-react'; // <--- Icône pour le scanner
 
 import ProductTagsPage from './pages/ProductTagsPage';
 
@@ -35,7 +37,8 @@ const Sidebar = ({ handleLogout }) => {
     { path: "/product-tags", label: "Tags Produits", Icon: Tag },
     { path: "/users", label: "Utilisateurs", Icon: Users },
     { path: "/orders", label: "Commandes", Icon: ListOrdered },
-    { path: "/reports", label: "Reports", Icon: BarChart2 }
+    { path: "/reports", label: "Reports", Icon: BarChart2 },
+    { path: "/scan-order", label: "Scanner Commande", Icon: ScanIcon },
     // { path: "/settings", label: "Paramètres", Icon: Settings },
   ];
 
@@ -52,8 +55,10 @@ const Sidebar = ({ handleLogout }) => {
               <Link 
                 to={item.path} 
                 className={
-                  (location.pathname === item.path || (location.pathname.startsWith(item.path) && item.path !== "/dashboard")) ||
-                  (location.pathname === "/" && item.path === "/dashboard") 
+                  // Logique de classe active améliorée pour mieux gérer les sous-routes
+                  location.pathname === item.path || 
+                  (item.path !== "/" && item.path !== "/dashboard" && location.pathname.startsWith(item.path + "/")) ||
+                  (location.pathname === "/" && item.path === "/dashboard")
                   ? "active" 
                   : ""
                 }
@@ -105,7 +110,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        
+        <Route path="/scan-order" element={<ProtectedRoute><ScanOrderPage /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/products" element={<ProtectedRoute><ProductManagementPage /></ProtectedRoute>} />
         <Route path="/product-tags" element={<ProtectedRoute><ProductTagsPage /></ProtectedRoute>} />
