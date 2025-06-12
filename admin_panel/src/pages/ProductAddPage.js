@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 // Tu pourrais créer un fichier CSS pour cette page aussi: import './ProductAddPage.css';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+ = 'http://localhost:3001/api';
 
 function ProductAddPage() {
   const navigate = useNavigate();

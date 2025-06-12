@@ -1,8 +1,9 @@
 // ARTIVA/front_end/i18n.ts
-import i18n, { Module, InitOptions } from 'i18next'; // Importer InitOptions pour typer l'objet d'init
+import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Localization from 'expo-localization';
+import { Platform, NativeModules } from 'react-native';
 
 // Importer tes fichiers de traduction
 // Assure-toi que ces fichiers existent et sont des JSON valides
@@ -100,7 +101,7 @@ const languageDetectorPlugin = {
 };
 
 // Configuration d'initialisation pour i18next
-const i18nOptions: InitOptions = {
+const i18nOptions = {
   // compatibilityJSON: 'v3', // Souvent plus nécessaire, essaie sans d'abord. Si erreur, essaie 'v4'.
   resources: resources,
   fallbackLng: 'en',     
@@ -125,7 +126,7 @@ const i18nOptions: InitOptions = {
 };
 
 i18n
-  .use(languageDetectorPlugin as Module) // Caster le plugin en Module pour satisfaire i18next
+  .use(languageDetectorPlugin as any) // Caster le plugin en Module pour satisfaire i18next
   .use(initReactI18next)
   .init(i18nOptions); // Utiliser l'objet d'options typé
 

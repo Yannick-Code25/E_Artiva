@@ -3,11 +3,12 @@ const db = require('../config/db');
 const { v4: uuidv4 } = require('uuid'); // Pour générer des order_number uniques si besoin
 
 // --- Créer une nouvelle commande (CLIENT) ---
+// Version mise à jour pour inclure la création d'un enregistrement de paiement.
 exports.createOrder = async (req, res) => {
   const userId = req.user.userId; // Récupéré du token JWT via authMiddleware
-  const { cart_items, shipping_address, billing_address, shipping_method, shipping_cost, notes, currency } = req.body;
-  // cart_items devrait être un tableau d'objets : [{ product_id, quantity }, ...]
-  // shipping_address et billing_address devraient être des objets
+  
+  // On récupère 'payment_method' qui est maintenant envoyé par le frontend
+  const { cart_items, shipping_address, payment_method, notes, currency } = req.body;
 
   if (!cart_items || !Array.isArray(cart_items) || cart_items.length === 0) {
     return res.status(400).json({ message: 'Le panier ne peut pas être vide pour créer une commande.' });
@@ -15,21 +16,24 @@ exports.createOrder = async (req, res) => {
   if (!shipping_address || typeof shipping_address !== 'object') {
     return res.status(400).json({ message: 'L\'adresse de livraison est requise.' });
   }
+  if (!payment_method) {
+    return res.status(400).json({ message: 'La méthode de paiement est requise.' });
+  }
 
   const client = await db.pool.connect();
   try {
+    // DÉBUT DE LA TRANSACTION : Tout ou rien.
     await client.query('BEGIN');
 
     let totalAmount = 0;
     const orderItemsData = [];
 
-    // Vérifier le stock et calculer le total
+    // 1. VÉRIFIER LE STOCK ET CALCULER LE TOTAL
     for (const item of cart_items) {
       if (!item.product_id || !item.quantity || parseInt(item.quantity, 10) <= 0) {
         throw new Error(`Données d'article de panier invalides pour product_id: ${item.product_id}`);
       }
       const productResult = await client.query('SELECT name, price, stock, sku FROM products WHERE id = $1 FOR UPDATE', [item.product_id]);
-      // 'FOR UPDATE' verrouille la ligne pour éviter les conditions de concurrence sur le stock
       
       if (productResult.rows.length === 0) {
         throw new Error(`Produit avec ID ${item.product_id} non trouvé.`);
@@ -41,7 +45,7 @@ exports.createOrder = async (req, res) => {
         throw new Error(`Stock insuffisant pour le produit: ${product.name} (demandé: ${quantity}, disponible: ${product.stock})`);
       }
 
-      // Mettre à jour le stock
+      // 2. METTRE À JOUR LE STOCK DU PRODUIT
       await client.query('UPDATE products SET stock = stock - $1 WHERE id = $2', [quantity, item.product_id]);
       
       const unitPrice = parseFloat(product.price);
@@ -50,42 +54,37 @@ exports.createOrder = async (req, res) => {
 
       orderItemsData.push({
         product_id: item.product_id,
-        product_name: product.name, // Stocker le nom au moment de la commande
-        sku: product.sku,           // Stocker le SKU au moment de la commande
+        product_name: product.name,
+        sku: product.sku,
         quantity: quantity,
         unit_price: unitPrice,
         subtotal: subtotal,
       });
     }
 
-    // Ajouter les frais de port si présents
-    const finalShippingCost = parseFloat(shipping_cost) || 0;
+    // Pour l'instant, frais de port à 0, mais la logique est là
+    const finalShippingCost = 0; 
     totalAmount += finalShippingCost;
 
-    // Générer un numéro de commande unique
-    // Format simple : ORD-TIMESTAMP-RANDOM (tu peux améliorer ça)
+    // 3. CRÉER LA COMMANDE
     const orderNumber = `ORD-${Date.now()}-${uuidv4().substring(0, 6).toUpperCase()}`;
-
-    // Insérer la commande
     const orderQuery = `
       INSERT INTO orders (
         order_number, user_id, status, total_amount, currency, 
-        shipping_address, billing_address, shipping_method, shipping_cost, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        shipping_address, shipping_cost, notes
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING id, order_number, status, total_amount, created_at;
     `;
     const orderResult = await client.query(orderQuery, [
-      orderNumber, userId, 'pending', // Statut initial
-      totalAmount.toFixed(2), currency || 'XOF', // S'assurer de 2 décimales pour le montant
-      JSON.stringify(shipping_address), // Stocker l'objet adresse en JSONB
-      billing_address ? JSON.stringify(billing_address) : null,
-      shipping_method || null,
+      orderNumber, userId, 'pending', // Statut initial de la commande
+      totalAmount.toFixed(2), currency || 'FCFA',
+      JSON.stringify(shipping_address),
       finalShippingCost.toFixed(2),
       notes || null
     ]);
     const createdOrder = orderResult.rows[0];
 
-    // Insérer les articles de la commande
+    // 4. INSÉRER LES ARTICLES DE LA COMMANDE
     const orderItemsPromises = orderItemsData.map(item => {
       const itemQuery = `
         INSERT INTO order_items (
@@ -99,46 +98,59 @@ exports.createOrder = async (req, res) => {
     });
     await Promise.all(orderItemsPromises);
 
+    // 5. CRÉER L'ENREGISTREMENT DE PAIEMENT ASSOCIÉ
+    const paymentQuery = `
+      INSERT INTO payments (
+        order_id, payment_method, amount, currency, status
+      ) VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, status;
+    `;
+    // Pour un paiement à la livraison, le statut est 'pending' car l'argent n'est pas encore reçu.
+    const paymentStatus = (payment_method === 'cod') ? 'pending' : 'awaiting_payment';
+      
+    const paymentResult = await client.query(paymentQuery, [
+      createdOrder.id,
+      payment_method,
+      totalAmount.toFixed(2),
+      currency || 'FCFA',
+      paymentStatus
+    ]);
+    console.log(`Paiement #${paymentResult.rows[0].id} enregistré avec statut '${paymentResult.rows[0].status}' pour la commande ${createdOrder.id}`);
+    
+    // 6. CRÉER UNE NOTIFICATION POUR L'UTILISATEUR
     const notificationTitle = 'Votre commande a été reçue !';
-const notificationMessage = `Merci pour votre commande #${createdOrder.order_number}. Nous la traitons actuellement.`;
-const linkUrl = `/orders/${createdOrder.id}`; // Lien vers le détail de la commande
-const notificationType = 'order_placed'; // Un nouveau type de notification
+    const notificationMessage = `Merci pour votre commande #${createdOrder.order_number}. Nous la traitons actuellement.`;
+    const linkUrl = `/orders/${createdOrder.id}`;
+    const notificationQuery = `
+      INSERT INTO notifications (user_id, type, title, message, link_url)
+      VALUES ($1, 'order_placed', $2, $3, $4)
+    `;
+    await client.query(notificationQuery, [userId, notificationTitle, notificationMessage, linkUrl]);
+    console.log(`Notification de création de commande envoyée pour la commande ${createdOrder.id}`);
 
-const notificationQuery = `
-  INSERT INTO notifications (user_id, type, title, message, link_url)
-  VALUES ($1, $2, $3, $4, $5)
-`;
-await client.query(notificationQuery, [
-  userId, // L'ID de l'utilisateur qui a passé la commande
-  notificationType,
-  notificationTitle,
-  notificationMessage,
-  linkUrl
-]);
-console.log(`Notification de création de commande envoyée pour la commande ${createdOrder.id}`);
-
-    // TODO: Vider le panier de l'utilisateur (table cart_items) si la logique du panier est implémentée
-
+    // FIN DE LA TRANSACTION : Tout a réussi, on valide.
     await client.query('COMMIT');
     res.status(201).json({ message: 'Commande créée avec succès!', order: createdOrder });
 
   } catch (error) {
+    // En cas d'erreur à n'importe quelle étape, on annule tout.
     await client.query('ROLLBACK');
     console.error('Erreur lors de la création de la commande:', error);
-    // Renvoyer un message d'erreur plus spécifique si possible
-    if (error.message.includes("Stock insuffisant") || error.message.includes("Produit avec ID") || error.message.includes("Données d'article de panier invalides")) {
+    if (error.message.includes("Stock insuffisant") || error.message.includes("Produit avec ID")) {
         return res.status(400).json({ message: error.message });
     }
     res.status(500).json({ message: 'Erreur serveur lors de la création de la commande.' });
   } finally {
+    // On s'assure de toujours libérer la connexion à la base de données.
     client.release();
   }
 };
 
 
+
 // --- Récupérer les commandes de l'utilisateur connecté (CLIENT) ---
 exports.getUserOrders = async (req, res) => {
-  // ... (inchangé, déjà bon)
+  
   try {
     const userId = req.user.userId;
     const ordersQuery = `
@@ -277,57 +289,77 @@ exports.getOrderDetailsAdmin = async (req, res) => {
 };
 
 // --- (Admin) : Mettre à jour le statut d'une commande ---
-// --- (Admin) : Mettre à jour le statut d'une commande ---
+// Version mise à jour pour gérer aussi le statut du paiement pour les commandes 'cod'
 exports.updateOrderStatusAdmin = async (req, res) => {
   const { orderId } = req.params;
-  const { status } = req.body; // Le nouveau statut envoyé par l'admin
+  const { status: newStatus } = req.body; // Renommé en newStatus pour plus de clarté
 
   const allowedStatuses = ['pending', 'awaiting_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded', 'failed'];
-  if (!status || !allowedStatuses.includes(status)) {
+  if (!newStatus || !allowedStatuses.includes(newStatus)) {
     return res.status(400).json({ message: `Statut invalide. Doit être l'un de: ${allowedStatuses.join(', ')}` });
   }
 
-  const client = await db.pool.connect(); // Utiliser un client pour la transaction
+  const client = await db.pool.connect();
   try {
-    await client.query('BEGIN'); // Démarrer la transaction
+    // DÉBUT DE LA TRANSACTION : les deux mises à jour (commande et paiement) doivent réussir ou échouer ensemble.
+    await client.query('BEGIN');
 
-    // 1. Mettre à jour le statut de la commande
-    const updateQuery = `
+    // Étape 1 : Mettre à jour le statut de la commande
+    const updateOrderQuery = `
       UPDATE orders 
       SET status = $1, updated_at = CURRENT_TIMESTAMP 
       WHERE id = $2 
-      RETURNING id, user_id, order_number, status;`; // Retourner les infos nécessaires pour la notification
-    const updateResult = await client.query(updateQuery, [status, orderId]);
+      RETURNING id, user_id, order_number, status;
+    `;
+    const updateResult = await client.query(updateOrderQuery, [newStatus, orderId]);
 
     if (updateResult.rows.length === 0) {
-      await client.query('ROLLBACK'); // Annuler si la commande n'est pas trouvée
-      client.release();
-      return res.status(404).json({ message: 'Commande non trouvée pour la mise à jour du statut.' });
+      throw new Error('Commande non trouvée.'); // L'erreur sera catchée plus bas
     }
-
     const updatedOrder = updateResult.rows[0];
 
-    // 2. Créer une notification pour l'utilisateur si le statut est pertinent
+    // =====================================================================================
+    // NOUVELLE LOGIQUE : Si la commande est marquée comme "livrée"...
+    // =====================================================================================
+    if (newStatus === 'delivered') {
+      // On vérifie si le paiement associé doit être mis à jour.
+      const paymentCheckQuery = 'SELECT id, payment_method, status FROM payments WHERE order_id = $1';
+      const paymentResult = await client.query(paymentCheckQuery, [orderId]);
+
+      if (paymentResult.rows.length > 0) {
+        const payment = paymentResult.rows[0];
+        
+        // ...ET que la méthode était "paiement à la livraison", ET qu'il est encore "en attente"
+        if (payment.payment_method === 'cod' && payment.status === 'pending') {
+          // Alors on met à jour le statut du paiement à "réussi" !
+          const updatePaymentQuery = `
+            UPDATE payments 
+            SET status = 'succeeded', paid_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $1;
+          `;
+          await client.query(updatePaymentQuery, [payment.id]);
+          console.log(`Paiement COD #${payment.id} pour la commande ${orderId} marqué comme 'succeeded'.`);
+        }
+      }
+    }
+    // =====================================================================================
+
+    // Étape 2 : Créer une notification pour l'utilisateur (logique existante)
     let notificationTitle = '';
     let notificationMessage = '';
-    let createNotification = false;
-
-    switch (status) {
+    // ... votre logique de switch/case pour les notifications ...
+    switch (newStatus) {
       case 'processing':
         notificationTitle = 'Votre commande est en préparation !';
         notificationMessage = `Bonne nouvelle ! Votre commande #${updatedOrder.order_number} est maintenant en cours de préparation par nos équipes.`;
-        createNotification = true;
         break;
       case 'shipped':
         notificationTitle = 'Votre commande a été expédiée !';
-        notificationMessage = `Votre commande #${updatedOrder.order_number} a été expédiée et est en route. Vous pourrez bientôt la suivre.`;
-        // Tu pourrais ajouter un lien de suivi ici si tu as cette info: link_url: '/orders/' + updatedOrder.id + '/tracking'
-        createNotification = true;
+        notificationMessage = `Votre commande #${updatedOrder.order_number} a été expédiée et est en route.`;
         break;
       case 'delivered':
         notificationTitle = 'Votre commande a été livrée !';
         notificationMessage = `Excellente nouvelle ! Votre commande #${updatedOrder.order_number} a été livrée. Profitez bien de vos articles !`;
-        createNotification = true;
         break;
       case 'cancelled':
         notificationTitle = 'Votre commande a été annulée.';
@@ -339,36 +371,33 @@ exports.updateOrderStatusAdmin = async (req, res) => {
         notificationMessage = `Nous vous informons que votre commande #${updatedOrder.order_number} a été annulée et vous seras rembourser après examen. Veuillez nous contacter pour plus d'informations.`;
         createNotification = true;
         break;
-      // Ajoute d'autres cas si nécessaire (ex: 'refunded', 'awaiting_payment' si une action est requise)
     }
 
-    if (createNotification && updatedOrder.user_id) { // S'assurer qu'il y a un user_id
+    if (notificationTitle && updatedOrder.user_id) {
+      const linkUrl = `/orders/${updatedOrder.id}`;
       const notificationQuery = `
          INSERT INTO notifications (user_id, type, title, message, link_url)
          VALUES ($1, 'order_status_update', $2, $3, $4)
       `;
-      // Le link_url pourrait pointer vers la page de détail de la commande dans l'app client
-      const linkUrl = `/orders/${updatedOrder.id}`; // Adapte ce lien à la structure de route de ton app client
-      await client.query(notificationQuery, [
-        updatedOrder.user_id, 
-        notificationTitle, 
-        notificationMessage, 
-        linkUrl 
-      ]);
-      console.log(`Notification créée pour l'utilisateur ${updatedOrder.user_id} concernant la commande ${updatedOrder.id}`);
+      await client.query(notificationQuery, [updatedOrder.user_id, notificationTitle, notificationMessage, linkUrl]);
     }
 
-    await client.query('COMMIT'); // Valider la transaction (mise à jour de la commande + notification)
-    res.status(200).json({ message: 'Statut de la commande mis à jour et notification envoyée (si applicable)!', order: updatedOrder });
+    // FIN DE LA TRANSACTION : On valide toutes les modifications.
+    await client.query('COMMIT');
+    res.status(200).json({ message: 'Statut de la commande mis à jour avec succès.', order: updatedOrder });
 
   } catch (error) {
-    await client.query('ROLLBACK'); // Annuler la transaction en cas d'erreur
-    console.error(`Erreur admin màj statut commande ${orderId} ou création notification:`, error);
-    res.status(500).json({ message: 'Erreur serveur lors de la mise à jour du statut de la commande.' });
+    await client.query('ROLLBACK'); // Annuler toutes les modifications en cas d'erreur
+    console.error(`Erreur admin màj statut commande ${orderId}:`, error.message);
+    if (error.message === 'Commande non trouvée.') {
+        return res.status(404).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'Erreur serveur lors de la mise à jour du statut.' });
   } finally {
-    if (client) client.release(); // Toujours relâcher le client
+    client.release();
   }
 };
+
 
 // NOUVEAU : Récupérer les détails d'UNE commande spécifique pour l'UTILISATEUR CONNECTÉ
 exports.getUserOrderDetail = async (req, res) => {

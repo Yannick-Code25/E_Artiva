@@ -103,7 +103,7 @@
 //   },
 // ];
 
-// const API_BASE_URL = "http://192.168.248.151:3001/api"; // TON IP
+// const API_BASE_URL = "http://192.168.1.2:3001/api"; // TON IP
 
 // export default function TabProfileScreen() {
 //   const {
@@ -677,21 +677,6 @@
 //   },
 // });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // ARTIVA/front_end/app/(tabs)/ProfileScreen.tsx
 import React, { useEffect, useState, useCallback } from "react";
 import {
@@ -797,7 +782,7 @@ const menuItemsBaseConfig: {
   },
 ];
 
-const API_BASE_URL = "http://192.168.248.151:3001/api"; // TON IP
+const API_BASE_URL = "http://192.168.1.2:3001/api"; // TON IP
 
 export default function TabProfileScreen() {
   const {
@@ -807,7 +792,7 @@ export default function TabProfileScreen() {
     isLoading: isAuthLoading,
     unreadNotificationCount,
     fetchUnreadNotificationCount,
-    effectiveAppColorScheme
+    effectiveAppColorScheme,
   } = useAuth();
   const router = useRouter();
   //const colorScheme = useColorScheme();
@@ -817,16 +802,15 @@ export default function TabProfileScreen() {
   //const subtleTextColor = Colors[colorScheme ?? "light"].tabIconDefault;
   //const backgroundColor = Colors[colorScheme ?? "light"].background;
 
-   // CHANGEMENT: Utilisation des couleurs dynamiques du thème partout
-   const currentScheme = effectiveAppColorScheme ?? "light";
-   const colors = Colors[currentScheme];
-   const tintColor = Colors[currentScheme].tint;
-   const textColor = Colors[currentScheme].text;
-   const backgroundColor = Colors[currentScheme].background;
-   const subtleTextColor = Colors[currentScheme].subtleText;
-   const successTextColor = Colors[currentScheme].successText;
-   const cardColor = Colors[currentScheme].card; // Couleur de fond des cartes
-  
+  // CHANGEMENT: Utilisation des couleurs dynamiques du thème partout
+  const currentScheme = effectiveAppColorScheme ?? "light";
+  const colors = Colors[currentScheme];
+  const tintColor = Colors[currentScheme].tint;
+  const textColor = Colors[currentScheme].text;
+  const backgroundColor = Colors[currentScheme].background;
+  const subtleTextColor = Colors[currentScheme].subtleText;
+  const successTextColor = Colors[currentScheme].successText;
+  const cardColor = Colors[currentScheme].card; // Couleur de fond des cartes
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [isOrdersModalVisible, setIsOrdersModalVisible] = useState(false);
@@ -938,7 +922,7 @@ export default function TabProfileScreen() {
     return (
       <View style={[styles.centered, { backgroundColor }]}>
         <ActivityIndicator size="large" color={tintColor} />
-          {/*LoadingData is an indicator that the page is loading */}
+        {/*LoadingData is an indicator that the page is loading */}
         <Text style={{ marginTop: 10, color: textColor }}>
           Chargement du compte...
         </Text>
@@ -1083,10 +1067,12 @@ export default function TabProfileScreen() {
       >
         <Pressable style={styles.modalOverlay} onPress={toggleOrdersModal}>
           <Pressable
-            style={[styles.modalContent, {backgroundColor : cardColor}]} //Le background modalContent est maintenant dynamique
+            style={[styles.modalContent, { backgroundColor: cardColor }]} //Le background modalContent est maintenant dynamique
             onPress={(e) => e.stopPropagation()}
           >
-            <Text style={[styles.modalTitle, {color : tintColor}]}>Mes Commandes</Text>
+            <Text style={[styles.modalTitle, { color: tintColor }]}>
+              Mes Commandes
+            </Text>
             {isLoadingData && orders.length === 0 ? (
               <ActivityIndicator
                 size="large"
@@ -1094,9 +1080,11 @@ export default function TabProfileScreen() {
                 style={{ marginVertical: 20 }}
               />
             ) : error && orders.length === 0 ? (
-              <Text style={[styles.errorText, {color : subtleTextColor}]}>{error}</Text>
+              <Text style={[styles.errorText, { color: subtleTextColor }]}>
+                {error}
+              </Text>
             ) : orders.length === 0 ? (
-              <Text style={[styles.noOrdersText, {color : subtleTextColor}]}>
+              <Text style={[styles.noOrdersText, { color: subtleTextColor }]}>
                 Vous n'avez aucune commande pour le moment.
               </Text>
             ) : (
@@ -1213,10 +1201,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingTop: Platform.OS === "android" ? 45 : 20,
     borderBottomWidth: 1,
-   // borderBottomColor est appliqué dynamiquement
+    // borderBottomColor est appliqué dynamiquement
   },
-  customHeaderTitle: { fontSize: 20, fontWeight: "600", textAlign: "center" ,    // color est appliqué dynamiquement 
-}, // flex:1 retiré pour un meilleur centrage avec boutons optionnels
+  customHeaderTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    textAlign: "center", // color est appliqué dynamiquement
+  }, // flex:1 retiré pour un meilleur centrage avec boutons optionnels
   header: {
     paddingHorizontal: 24,
     paddingTop: 20,
@@ -1233,10 +1224,14 @@ const styles = StyleSheet.create({
     // backgroundColor: "#E5E7EB",
   },
   profileInfo: { flex: 1 },
-  name: { fontWeight: "bold", fontSize: 20 ,      // color est appliqué dynamiquement
-},
-  email: { fontSize: 14, marginTop: 2 ,      // color est appliqué dynamiquement
-},
+  name: {
+    fontWeight: "bold",
+    fontSize: 20, // color est appliqué dynamiquement
+  },
+  email: {
+    fontSize: 14,
+    marginTop: 2, // color est appliqué dynamiquement
+  },
   menuSection: {
     marginTop: 20,
     borderRadius: 12,
@@ -1267,10 +1262,14 @@ const styles = StyleSheet.create({
     //backgroundColor:  backgroundColor === '#000000' ? '#374151' : '#EBF4FF',
   },
   menuItemContent: { flex: 1 },
-  menuItemTitle: { fontWeight: "600", fontSize: 15 ,      // color est appliqué dynamiquement
-},
-  menuItemSubtitle: { fontSize: 13, marginTop: 2 ,      // color est appliqué dynamiquement
-},
+  menuItemTitle: {
+    fontWeight: "600",
+    fontSize: 15, // color est appliqué dynamiquement
+  },
+  menuItemSubtitle: {
+    fontSize: 13,
+    marginTop: 2, // color est appliqué dynamiquement
+  },
   notificationItemBadgeContainer: {
     backgroundColor: "red",
     borderRadius: 10,
@@ -1346,11 +1345,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   orderNumber: { fontWeight: "bold", fontSize: 16, color: "red" },
-  orderDate: { fontSize: 13 , 
-},
+  orderDate: { fontSize: 13 },
   orderProducts: { marginLeft: 8, marginBottom: 8, marginTop: 5 },
-  productsTitle: { fontWeight: "600", fontSize: 14, marginBottom: 6,     // color est appliqué dynamiquement
-},
+  productsTitle: {
+    fontWeight: "600",
+    fontSize: 14,
+    marginBottom: 6, // color est appliqué dynamiquement
+  },
   modalProductItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -1364,22 +1365,29 @@ const styles = StyleSheet.create({
     backgroundColor: "#e0e0e0",
   },
   modalProductInfo: { flex: 1 },
-  modalProductName: { fontSize: 14, fontWeight: "500" ,      // color est appliqué dynamiquement
-},
-  modalProductDetails: { fontSize: 12 ,      // color est appliqué dynamiquement
-},
-  productItem: { fontSize: 14 ,      // color est appliqué dynamiquement
-}, // style pour les items produits dans la liste
+  modalProductName: {
+    fontSize: 14,
+    fontWeight: "500", // color est appliqué dynamiquement
+  },
+  modalProductDetails: {
+    fontSize: 12, // color est appliqué dynamiquement
+  },
+  productItem: {
+    fontSize: 14, // color est appliqué dynamiquement
+  }, // style pour les items produits dans la liste
   orderFooter: {
     marginTop: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  orderPrice: { fontWeight: "bold", fontSize: 16 ,color: "tintColor" },
-  orderStatus: { fontSize: 14, fontWeight: "500" , color: "tintColor" },
-  noOrdersText: { fontSize: 16, textAlign: "center", paddingVertical: 30 ,      // color est appliqué dynamiquement
-},
+  orderPrice: { fontWeight: "bold", fontSize: 16, color: "tintColor" },
+  orderStatus: { fontSize: 14, fontWeight: "500", color: "tintColor" },
+  noOrdersText: {
+    fontSize: 16,
+    textAlign: "center",
+    paddingVertical: 30, // color est appliqué dynamiquement
+  },
   closeButton: {
     paddingVertical: 14,
     borderRadius: 8,
