@@ -22,7 +22,7 @@ import { useColorScheme } from "../../components/useColorScheme";
 import { useAuth } from "../../context/AuthContext";
 import { useTranslation } from "react-i18next"; // Pour traduire les textes des liens
 
-const API_BASE_URL = "http://192.168.1.2:3001/api"; // **METS TON IP**
+const API_BASE_URL = "http://192.168.248.151:3001/api"; // **METS TON IP**
 
 interface SettingsItemProps {
   icon: React.ElementType;

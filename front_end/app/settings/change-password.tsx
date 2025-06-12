@@ -18,7 +18,7 @@ import Colors from "../../constants/Colors";
 import { useColorScheme } from "../../components/useColorScheme";
 import { useAuth } from "../../context/AuthContext"; // Pour le token
 
-const API_BASE_URL = "http://192.168.1.2:3001/api"; // **METS TON IP**
+const API_BASE_URL = "http://192.168.248.151:3001/api"; // **METS TON IP**
 
 export default function ChangePasswordScreen() {
   const router = useRouter();

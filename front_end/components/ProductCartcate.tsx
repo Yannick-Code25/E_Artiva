@@ -34,7 +34,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ item, onPress }) => {
   const { effectiveAppColorScheme } = useAuth(); // <<< OBTENIR LE THÈME
   const cardBackgroundColor = Colors[effectiveAppColorScheme].card;
   const nameTextColor = Colors[effectiveAppColorScheme].text;
-  const priceTextColor = Colors[effectiveAppColorScheme].tint; // Ou une autre couleur de 'Colors'
+  const priceTextColor = Colors[effectiveAppColorScheme].tint_price; // Ou une autre couleur de 'Colors'
   const iconColor = Colors[effectiveAppColorScheme].tabIconDefaultwhist;
   const iconActiveColor = Colors[effectiveAppColorScheme].tint;
 
@@ -54,12 +54,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ item, onPress }) => {
       <TouchableOpacity onPress={handleWishlistToggle} style={styles.wishlistIconContainer}>
         <FontAwesome 
           name={isInWishlist ? "heart" : "heart-o"} 
-          size={22} 
+          size={25} 
           color={isInWishlist ? iconActiveColor : iconColor} 
         />
       </TouchableOpacity>
       <View style={styles.infoContainer}>
-        <Text style={[styles.nameText, {color: nameTextColor} ] } numberOfLines={2}>{item.name}</Text>
+        <Text style={[styles.nameText, {color: nameTextColor}]} numberOfLines={2}>{item.name}</Text>
         <Text style={[styles.priceText, {color: priceTextColor}]}>{item.price}</Text>
       </View>
     </TouchableOpacity>
@@ -69,9 +69,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ item, onPress }) => {
 
 const styles = StyleSheet.create({
   container: {
-    width: 150, // Largeur de la carte produit
-    marginRight: 12,
-    //backgroundColor: 'white', // Fond blanc pour la carte
+    
+    width: '50%', // Largeur de la carte produit
+    marginRight: 5,
+    // backgroundColor: 'white', // Fond blanc pour la carte
     borderRadius: 8,
     elevation: 2, // Ombre pour Android
     shadowColor: '#000', // Ombre pour iOS
@@ -83,10 +84,12 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 130, // Hauteur de l'image produit
+    height: 200, // Hauteur de l'image produit
     backgroundColor: '#e0e0e0', // Placeholder
     borderTopLeftRadius: 8, 
     borderTopRightRadius: 8,
+    resizeMode: 'cover', // Ajuste l'image pour couvrir l'espace sans déformation
+
   },
   wishlistIconContainer: {
     position: 'absolute',
@@ -102,7 +105,6 @@ const styles = StyleSheet.create({
   nameText: {
     fontSize: 14,
     fontWeight: '600',
-    // color: '#333',
     marginBottom: 4,
     minHeight: 36,
   },

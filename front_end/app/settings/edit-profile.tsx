@@ -16,7 +16,7 @@ import { useAuth, User } from "../../context/AuthContext"; // Assure-toi que Use
 import Colors from "../../constants/Colors";
 import { useColorScheme } from "../../components/useColorScheme";
 
-const API_BASE_URL = "http://192.168.1.2:3001/api"; // **METS TON IP**
+const API_BASE_URL = "http://192.168.248.151:3001/api"; // **METS TON IP**
 
 interface ProfileFormData {
   name: string;

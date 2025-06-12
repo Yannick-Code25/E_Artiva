@@ -1,128 +1,88 @@
-const tintColorLight = '#2f95dc';
-const tintColorDark = '#fff';
-
 // ARTIVA/front_end/constants/Colors.ts
 
-// Couleurs de base que tu peux réutiliser et ajuster
-const primaryColor = '#E53E3E'; // Un rouge Artiva (similaire à tomato, mais tu peux le changer)
-const primaryColorDarker = '#C53030'; // Une version plus foncée pour les états :hover ou les bordures
-const primaryColorLighter = '#FC8181'; // Une version plus claire pour le thème sombre ou les accents
+// Couleurs de base (nommées d'après le thème Alibaba pour plus de clarté)
+const alibabaOrange = '#FF6A00';   // Couleur principale (Orange Alibaba)
+const lightGreen = '#2ECC71';      // Vert clair pour promotions (commun aux deux thèmes)
 
-const textColorLight = '#1A202C'; // Texte principal presque noir pour thème clair
-const backgroundColorLight = '#FFFFFF'; // Fond blanc pour thème clair
-const cardColorLight = '#FFFFFF'; // Fond des cartes en thème clair (peut être identique au fond ou légèrement différent)
-const cardBorderLight = '#E2E8F0'; // Bordure subtile pour les cartes en clair (gris clair)
-const subtleTextColorLight = '#718096'; // Texte secondaire/gris clair
-const inputBackgroundLight = '#F7FAFC'; // Fond pour les champs de saisie en clair
-const inputBorderLight = '#CBD5E0'; // Bordure pour les champs de saisie en clair
+// === Thème Clair ===
+const lightTheme = {
+    primary: alibabaOrange,       // Couleur principale
+    titleText: '#1F1F1F',        // Titres
+    descriptionText: '#333333',  // Description produit
+    secondaryText: '#666666',    // Détails moins importants
+    price: '#E53900',           // Couleur du prix
+    promotion: lightGreen,       // Couleur promo ou réduction (vert clair)
+    addToCartButton: alibabaOrange, // Ajouter au panier
+    addToCartButtonHover: '#E65C00', // Survol bouton panier
+    buyNowButton: '#D72600',        // Acheter maintenant
+    screenBackground: '#FFFFFF',  // Arrière-plan principal
+    cardBackground: '#FAFAFA',    // Fond des fiches produit
+    success: '#27AE60',           // Message de validation
+    error: '#C0392B',             // Message d’erreur
+    border: '#E0E0E0',            // Lignes et séparateurs
+};
 
-const textColorDark = '#F7FAFC'; // Texte principal presque blanc pour thème sombre
-const backgroundColorDark = '#171923'; // Fond très foncé (pas noir pur) pour thème sombre
-const cardColorDark = '#2D3748';   // Fond des cartes en thème sombre (bleu-gris foncé)
-const cardBorderDark = '#4A5568';   // Bordure pour les cartes en sombre (gris plus foncé)
-const subtleTextColorDark = '#A0AEC0'; // Texte secondaire/gris clair pour thème sombre
-const inputBackgroundDark = '#2D3748'; // Identique à cardColorDark pour un look intégré
-const inputBorderDark = '#4A5568';   // Identique à cardBorderDark
-
-// Couleurs sémantiques
-const errorColor = '#E53E3E'; // Rouge pour les erreurs (identique à la primaire ici, mais pourrait être différent)
-const errorBackgroundLight = '#FED7D7';
-const errorBackgroundDark = '#4A2424'; // Un rouge plus sombre pour le fond d'erreur en thème sombre
-
-const successColor = '#38A169'; // Vert pour les succès
-const successBackgroundLight = '#C6F6D5';
-const successBackgroundDark = '#2F855A40'; // Vert foncé transparent
-
-const warningColor = '#DD6B20'; // Orange pour les avertissements
-const warningBackgroundLight = '#FEEBC8';
-const warningBackgroundDark = '#4A3B24';
-
+// === Thème Sombre ===
+const darkTheme = {
+    primary: alibabaOrange,       // Couleur principale (Orange Alibaba)
+    titleText: '#FFFFFF',        // Titres
+    descriptionText: '#DDDDDD',  // Description produit
+    secondaryText: '#AAAAAA',    // Détails moins importants
+    price: '#FF7043',           // Couleur du prix
+    promotion: lightGreen,       // Couleur promo ou réduction (vert clair)
+    addToCartButton: alibabaOrange, // Ajouter au panier
+    addToCartButtonHover: '#FFA347', // Survol bouton panier
+    buyNowButton: '#FF4D3D',        // Acheter maintenant
+    screenBackground: '#121212',  // Arrière-plan principal
+    cardBackground: '#1E1E1E',    // Fond des fiches produit
+    success: '#34D399',           // Message de validation
+    error: '#EF4444',             // Message d’erreur
+    border: '#2C2C2C',            // Lignes et séparateurs
+};
 
 export default {
   light: {
-    text: textColorLight,
-    background: backgroundColorLight,
-    tint: primaryColor, // Couleur d'accentuation principale
-    tabIconDefault: '#A0AEC0', // Icônes d'onglet inactives
-    tabIconSelected: primaryColor, // Icônes d'onglet actives
-    card: cardColorLight,
-    cardBorder: cardBorderLight,
-    subtleText: subtleTextColorLight,
-    inputBackground: inputBackgroundLight,
-    inputBorder: inputBorderLight,
-    // Couleurs sémantiques pour le thème clair
-    errorText: errorColor,
-    errorBackground: errorBackgroundLight,
-    successText: successColor,
-    successBackground: successBackgroundLight,
-    warningText: warningColor,
-    warningBackground: warningBackgroundLight,
-    // Tu peux ajouter d'autres couleurs spécifiques ici
-    primary: primaryColor,
-    primaryDarker: primaryColorDarker,
+    text: lightTheme.titleText,           // TEXTE_TITRE
+    background: lightTheme.screenBackground,    // FOND_ECRAN
+    tint: lightTheme.primary,           // COULEUR_PRINCIPALE (tint = accent)
+    tint_price: lightTheme.price,         // PRIX
+    tabIconDefault: '#A0AEC0',        // (Inactif - Gardé pour compatibilité)
+    tabIconDefaultwhist: lightTheme.primary, //COULEUR_PRINCIPALE
+    tabIconSelected: lightTheme.primary,      // COULEUR_PRINCIPALE
+    card: lightTheme.cardBackground,        // FOND_CARTE
+    cardBorder: lightTheme.border,          // BORDURE
+    subtleText: lightTheme.secondaryText,    // TEXTE_SECONDAIRE
+    inputBackground: '#F7FAFC',         // Gardé par défaut
+    inputBorder: '#CBD5E0',             // Gardé par défaut
+    errorText: lightTheme.error,           // ERREUR
+    errorBackground: '#FED7D7',         // Gardé par défaut
+    successText: lightTheme.success,         // SUCCÈS
+    successBackground: '#C6F6D5',         // Gardé par défaut
+    warningText: '#DD6B20',            // Gardé par défaut
+    warningBackground: '#FEEBC8',         // Gardé par défaut
+    primary: lightTheme.primary,           // COULEUR_PRINCIPALE
+    primaryDarker: '#C53030',            // (Adaptation - Pour :hover, etc.)
   },
   dark: {
-    text: textColorDark,
-    background: backgroundColorDark,
-    tint: primaryColorLighter, // Couleur d'accentuation principale pour le thème sombre
-    tabIconDefault: '#718096', // Icônes d'onglet inactives
-    tabIconSelected: primaryColorLighter, // Icônes d'onglet actives
-    card: cardColorDark,
-    cardBorder: cardBorderDark,
-    subtleText: subtleTextColorDark,
-    inputBackground: inputBackgroundDark,
-    inputBorder: inputBorderDark,
-    // Couleurs sémantiques pour le thème sombre
-    errorText: primaryColorLighter, // Utiliser la teinte claire du rouge pour le texte sur fond sombre
-    errorBackground: errorBackgroundDark,
-    successText: '#68D391', // Vert plus clair
-    successBackground: successBackgroundDark,
-    warningText: '#FABD05', // Jaune/Orange plus clair
-    warningBackground: warningBackgroundDark,
-    // Tu peux ajouter d'autres couleurs spécifiques ici
-    primary: primaryColorLighter,
-    primaryDarker: primaryColor, // La couleur primaire claire devient plus foncée en thème sombre
+    text: darkTheme.titleText,            // TEXTE_TITRE
+    background: darkTheme.screenBackground,     // FOND_ECRAN
+    tint: lightTheme.primary,           // COULEUR_PRINCIPALE
+    tint_price: darkTheme.price,         // PRIX
+    tabIconDefault: '#718096',         // (Inactif - Gardé pour compatibilité)
+    tabIconDefaultwhist: lightTheme.primary,
+    tabIconSelected: lightTheme.primary,      // COULEUR_PRINCIPALE
+    card: darkTheme.cardBackground,         // FOND_CARTE
+    cardBorder: darkTheme.border,           // BORDURE
+    subtleText: darkTheme.secondaryText,     // TEXTE_SECONDAIRE
+    inputBackground: '#2D3748',         // Gardé par défaut
+    inputBorder: '#4A5568',             // Gardé par défaut
+    errorText: darkTheme.error,           // ERREUR
+    errorBackground: '#4A2424',         // Gardé par défaut
+    successText: darkTheme.success,         // SUCCÈS
+    successBackground: '#2F855A40',         // Gardé par défaut
+    warningText: '#FABD05',            // Gardé par défaut
+    warningBackground: '#4A3B24',         // Gardé par défaut
+    primary: lightTheme.primary,           // COULEUR_PRINCIPALE
+    primaryDarker: '#C53030',            // (Adaptation - Pour :hover, etc.)
   },
-  // Tu peux aussi ajouter des couleurs communes ici si elles ne changent pas avec le thème
-  // common: {
-  //   activeGreen: '#38A169',
-  //   inactiveGray: '#A0AEC0',
-  // }
 };
-
-// export default {
-//   light: {
-//     text: '#1A202C', // Texte principal (presque noir)
-//     background: '#FFFFFF', // Fond principal (blanc)
-//     tint: tintColorLight, // Couleur d'accentuation principale
-//     tabIconDefault: '#A0AEC0', // Gris pour icônes inactives
-//     tabIconSelected: tintColorLight,
-//     borderColor: '#e0e0e0',
-//     card: '#FFFFFF', // Fond pour les éléments type carte
-//     cardBorder: '#E2E8F0', // Bordure subtile pour les cartes
-//     subtleText: '#718096', // Texte secondaire plus clair
-//     errorText: '#C53030', // Rouge foncé pour les erreurs
-//     errorBackground: '#FED7D7', // Fond rouge clair pour les erreurs
-//     successText: '#2F855A', // Vert pour succès
-//     successBackground: '#C6F6D5', // Fond vert clair
-//     inputBackground: '#F7FAFC',
-//     inputBorder: '#CBD5E0',
-//   },
-//   dark: {
-//     text: '#F7FAFC', // Texte principal (presque blanc)
-//     background: '#1A202C', // Fond principal (bleu-gris très foncé)
-//     tint: tintColorDark,
-//     tabIconDefault: '#718096', // Gris moyen pour icônes inactives
-//     tabIconSelected: tintColorDark,
-//     borderColor: '#3a3a3c',
-//     card: '#2D3748', // Fond pour les cartes en thème sombre
-//     cardBorder: '#4A5568', // Bordure pour les cartes en sombre
-//     subtleText: '#A0AEC0', // Texte secondaire
-//     errorText: '#FC8181', // Rouge clair pour erreurs sur fond sombre
-//     errorBackground: '#4A2424', // Fond rouge foncé pour erreurs
-//     successText: '#68D391', // Vert clair pour succès
-//     successBackground: '#2F855A40', // Fond vert foncé transparent
-//     inputBackground: '#2D3748',
-//     inputBorder: '#4A5568',
-//   },
-// };

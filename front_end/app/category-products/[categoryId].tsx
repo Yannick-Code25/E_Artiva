@@ -12,11 +12,11 @@ import {
 import { Stack, useLocalSearchParams, useRouter, Href } from "expo-router";
 import ProductCard, {
   Product as ProductType,
-} from "../../components/ProductCard"; // Réutilise ton ProductCard
+} from "../../components/ProductCartcate"; // Import du composant ProductCard
 import Colors from "../../constants/Colors";
 import { useColorScheme } from "../../components/useColorScheme";
 
-const API_BASE_URL = "http://192.168.1.2:3001/api"; // **TON IP**
+const API_BASE_URL = "http://192.168.248.151:3001/api"; // **TON IP**
 
 export default function CategoryProductsScreen() {
   const { categoryId, categoryName } = useLocalSearchParams<{
@@ -25,9 +25,7 @@ export default function CategoryProductsScreen() {
   }>();
   const router = useRouter();
   const colorScheme = useColorScheme();
-  const tintColor = Colors[colorScheme ?? "light"].tint;
-  const textColor = Colors[colorScheme ?? "light"].text;
-  const backgroundColor = Colors[colorScheme ?? "light"].background;
+  const colors = Colors[colorScheme ?? "light"]; // Simplification pour accéder aux couleurs
 
   const [products, setProducts] = useState<ProductType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -134,7 +132,7 @@ export default function CategoryProductsScreen() {
   if (isLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={tintColor} />
+        <ActivityIndicator size="large" color={colors.tint} />
       </View>
     );
   }
@@ -145,18 +143,20 @@ export default function CategoryProductsScreen() {
         <Button
           title="Réessayer"
           onPress={fetchProductsByCategory}
-          color={tintColor}
+          color={colors.tint}
         />
       </View>
     );
   }
 
   return (
-    <View style={[styles.screenContainer, { backgroundColor }]}>
+    <View
+      style={[styles.screenContainer, { backgroundColor: colors.background }]}
+    >
       <Stack.Screen options={{ title: pageTitle }} />
       {products.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={{ color: textColor, fontSize: 16 }}>
+          <Text style={{ color: colors.text, fontSize: 16 }}>
             Aucun produit trouvé dans cette catégorie.
           </Text>
         </View>
@@ -164,7 +164,7 @@ export default function CategoryProductsScreen() {
         <FlatList
           data={products}
           renderItem={({ item }) => (
-            <ProductCard item={item} onPress={handleProductPress} />
+            <ProductCard item={item} onPress={handleProductPress} /> // Utilisation du composant ProductCard
           )}
           keyExtractor={(item) => item.id.toString()}
           numColumns={2} // Affichage en grille
@@ -184,6 +184,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
   },
-  listContainer: { paddingHorizontal: 5, paddingTop: 10, paddingBottom: 20 },
-  // ProductCard a ses propres styles, pas besoin de les redéfinir ici sauf pour la disposition
+  listContainer: {
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 20,
+  },
+  // Les styles du ProductCard sont définis dans le fichier ProductCard.tsx
+  // Ici, on se concentre sur les styles spécifiques à la page de catégorie
 });
