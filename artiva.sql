@@ -144,7 +144,7 @@ CREATE TABLE product_images (
 );
 
 COMMENT ON TABLE product_images IS 'Stocke les URLs des images associées aux produits, avec des métadonnées.';
-COMMENT ON COLUMN product_images.is_primary IS 'Marque une image comme étant la principale pour un produit.';
+COMMENT ON COLUMN product_images.is_primary IS 'Marque une image comme étant la principale pour un produit.'; 
 
 -- -----------------------------------------------------------------------------
 -- Table: product_categories
