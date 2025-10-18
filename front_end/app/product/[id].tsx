@@ -39,7 +39,6 @@ interface ProductDetailAPIResponse
 }
 interface ProductDetail extends BaseProductType {
   imagesForCarousel: ProductImageGalleryItem[];
-  
 }
 interface ViewableItemInfo<T> {
   item: T;
@@ -49,7 +48,7 @@ interface ViewableItemInfo<T> {
 }
 
 // **ATTENTION: METS TON ADRESSE IP LOCALE CORRECTE ICI**
-const API_BASE_URL = "http://192.168.1.2:3001/api";
+const API_BASE_URL = "http://192.168.11.131:3001/api";
 const { width: screenWidth } = Dimensions.get("window");
 
 const formatPriceForDisplay = (

@@ -16,7 +16,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext"; // Vérifie le chemin d'importation
 
 // **ATTENTION : REMPLACE PAR TON IP LOCALE OU 10.0.2.2 POUR ÉMULATEUR ANDROID**
-const API_BASE_URL = "http://192.168.1.2:3001/api";
+const API_BASE_URL = "http://192.168.11.131:3001/api";
 // Exemple : const API_BASE_URL = 'http://192.168.1.105:3001/api';
 
 export default function LoginScreen() {
@@ -229,7 +229,6 @@ const styles = StyleSheet.create({
   },
 });
 
-
 // import React, { useState } from "react";
 // import {
 //   View,
@@ -247,7 +246,7 @@ const styles = StyleSheet.create({
 // import { useColorScheme } from "react-native";
 // import Colors from "../constants/Colors";
 
-// const API_BASE_URL = "http://192.168.1.2:3001/api";
+// const API_BASE_URL = "http://192.168.11.131:3001/api";
 
 // export default function LoginScreen() {
 //   const { signIn, isLoading: isAuthLoading } = useAuth();

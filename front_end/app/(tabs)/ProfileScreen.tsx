@@ -103,7 +103,7 @@
 //   },
 // ];
 
-// const API_BASE_URL = "http://192.168.1.2:3001/api"; // TON IP
+// const API_BASE_URL = "http://192.168.11.131:3001/api"; // TON IP
 
 // export default function TabProfileScreen() {
 //   const {
@@ -782,7 +782,7 @@ const menuItemsBaseConfig: {
   },
 ];
 
-const API_BASE_URL = "http://192.168.1.2:3001/api"; // TON IP
+const API_BASE_URL = "http://192.168.11.131:3001/api"; // TON IP
 
 export default function TabProfileScreen() {
   const {

@@ -18,7 +18,7 @@
 // import { useColorScheme } from "../components/useColorScheme";
 // import { useAuth } from "../context/AuthContext"; // Pour le token utilisateur
 
-// const API_BASE_URL = "http://192.168.1.2:3001/api"; // **METS TON IP**
+// const API_BASE_URL = "http://192.168.11.131:3001/api"; // **METS TON IP**
 
 // interface NotificationItem {
 //   id: string | number;
@@ -583,11 +583,6 @@
 //   },
 // });
 
-
-
-
-
-
 // ARTIVA/front_end/app/notifications.tsx
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -607,7 +602,7 @@ import Colors from "../constants/Colors";
 import { useColorScheme } from "../components/useColorScheme";
 import { useAuth } from "../context/AuthContext"; // Pour le token utilisateur
 
-const API_BASE_URL = "http://192.168.1.2:3001/api"; // **METS TON IP**
+const API_BASE_URL = "http://192.168.11.131:3001/api"; // **METS TON IP**
 
 interface NotificationItem {
   id: string | number;
@@ -621,7 +616,8 @@ interface NotificationItem {
 }
 
 export default function NotificationsPage() {
-  const { userToken, fetchUnreadNotificationCount, effectiveAppColorScheme } = useAuth();
+  const { userToken, fetchUnreadNotificationCount, effectiveAppColorScheme } =
+    useAuth();
   const router = useRouter();
 
   // CHANGEMENT: Utilisation des couleurs dynamiques du thème partout
@@ -633,12 +629,11 @@ export default function NotificationsPage() {
   const subtleTextColor = colors.subtleText;
   const card = colors.card;
 
-
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null); // Ajout pour les messages de succès
+  const [successMessage, setSuccessMessage] = useState<string | null>(null); // Ajout pour les messages de succès
 
   // Pour la pagination (si tu l'utilises pleinement)
   const [currentPage, setCurrentPage] = useState(1);
@@ -650,7 +645,7 @@ export default function NotificationsPage() {
       if (!userToken) {
         if (!isRefreshing) setIsLoading(true); // Pour le premier chargement
         setError("Veuillez vous connecter pour voir vos notifications.");
-        setSuccessMessage(null);  // Effacer le message de succes
+        setSuccessMessage(null); // Effacer le message de succes
         if (!isRefreshing) setIsLoading(false);
         setRefreshing(false);
         return;
@@ -671,7 +666,7 @@ export default function NotificationsPage() {
         else setIsLoading(true); // Loader principal ou pour action
       }
       if (page === 1 && !isRefreshing) setError(null); // Reset error pour premier chargement
-        setSuccessMessage(null)
+      setSuccessMessage(null);
 
       try {
         // Ajoute &read_status=unread si tu veux filtrer par défaut
@@ -703,7 +698,7 @@ export default function NotificationsPage() {
       } catch (err: any) {
         console.error("NotificationsScreen: Erreur fetchNotifications:", err);
         setError(err.message || "Impossible de charger les notifications.");
-          setSuccessMessage(null);
+        setSuccessMessage(null);
         if (page === 1) setNotifications([]); // Vider si erreur sur la première page
       } finally {
         setIsLoading(false); // Toujours false ici
@@ -796,8 +791,11 @@ export default function NotificationsPage() {
           console.warn(
             `Échec du marquage de la notification ${notification.id} comme lue: ${errorData.message}`
           );
-            setError(errorData.message || "Impossible de marquer la notification comme lue.");
-            setTimeout(() => setError(null), 3000);
+          setError(
+            errorData.message ||
+              "Impossible de marquer la notification comme lue."
+          );
+          setTimeout(() => setError(null), 3000);
           // Ne pas bloquer la navigation pour une erreur de marquage comme lu, mais logger
         } else {
           console.log(
@@ -813,7 +811,7 @@ export default function NotificationsPage() {
       } catch (e) {
         console.error("Erreur API marquage notif comme lue:", e);
         setError("Erreur lors de la communication avec le serveur.");
-          setTimeout(() => setError(null), 3000);
+        setTimeout(() => setError(null), 3000);
       }
     }
 
@@ -832,7 +830,7 @@ export default function NotificationsPage() {
       } catch (e) {
         console.error("Erreur de navigation depuis la notification:", e);
         setError("Le lien de cette notification semble invalide.");
-          setTimeout(() => setError(null), 3000);
+        setTimeout(() => setError(null), 3000);
       }
     } else {
       console.log(
@@ -853,7 +851,7 @@ export default function NotificationsPage() {
       return; // Sortir si pas de token ou si tout est déjà lu
     }
 
-      /*Alert.alert( // Alert retiré
+    /*Alert.alert( // Alert retiré
       "Marquer tout comme lu",
       "Êtes-vous sûr de vouloir marquer toutes les notifications comme lues ?",
       [
@@ -864,86 +862,82 @@ export default function NotificationsPage() {
         {
           text: "Oui",
           onPress: async () => {*/
-            const previousNotificationsState = [...notifications]; // Sauvegarder l'état actuel pour un revert potentiel
+    const previousNotificationsState = [...notifications]; // Sauvegarder l'état actuel pour un revert potentiel
 
-            // 2. Mise à jour optimiste de l'UI
-            // On met toutes les notifications à 'is_read: true' dans l'état local
-            setNotifications((prev) =>
-              prev.map((n) => ({ ...n, is_read: true }))
-            );
-            console.log(
-              "handleMarkAllAsRead: Mise à jour optimiste UI effectuée."
-            );
+    // 2. Mise à jour optimiste de l'UI
+    // On met toutes les notifications à 'is_read: true' dans l'état local
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    console.log("handleMarkAllAsRead: Mise à jour optimiste UI effectuée.");
 
-            // On peut mettre un loader spécifique pour cette action si on veut,
-            // mais comme l'UI est déjà mise à jour, ce n'est pas toujours nécessaire.
-            // Si tu veux un loader pendant l'appel API :
-            // setIsLoading(true); // Ou un état de chargement spécifique à cette action
+    // On peut mettre un loader spécifique pour cette action si on veut,
+    // mais comme l'UI est déjà mise à jour, ce n'est pas toujours nécessaire.
+    // Si tu veux un loader pendant l'appel API :
+    // setIsLoading(true); // Ou un état de chargement spécifique à cette action
 
-            try {
-              // 3. Appel API
-              console.log(
-                "handleMarkAllAsRead: Appel API vers /notifications/read-all"
-              );
-              const response = await fetch(
-                `${API_BASE_URL}/notifications/read-all`,
-                {
-                  method: "PUT",
-                  headers: {
-                    Authorization: `Bearer ${userToken}`,
-                    "Content-Type": "application/json", // Même si pas de corps, c'est une bonne pratique
-                  },
-                }
-              );
-              if (response.ok) {
-                setNotifications((prev) =>
-                  prev.map((n) => ({ ...n, is_read: true }))
-                );
-                fetchUnreadNotificationCount();
-                  setSuccessMessage("Toutes les notifications ont été marquées comme lues.");
-                  setTimeout(() => setSuccessMessage(null), 3000);
-              }
+    try {
+      // 3. Appel API
+      console.log(
+        "handleMarkAllAsRead: Appel API vers /notifications/read-all"
+      );
+      const response = await fetch(`${API_BASE_URL}/notifications/read-all`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+          "Content-Type": "application/json", // Même si pas de corps, c'est une bonne pratique
+        },
+      });
+      if (response.ok) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+        fetchUnreadNotificationCount();
+        setSuccessMessage(
+          "Toutes les notifications ont été marquées comme lues."
+        );
+        setTimeout(() => setSuccessMessage(null), 3000);
+      }
 
-              if (!response.ok) {
-                // 4a. Si l'API échoue, annuler la mise à jour optimiste
-                setNotifications(previousNotificationsState);
-                const errorData = await response.json().catch(() => ({
-                  message: `Erreur HTTP ${response.status} lors de la tentative de marquer tout comme lu.`,
-                }));
-                console.error(
-                  "handleMarkAllAsRead: Échec API Tout Lu - Erreur:",
-                  errorData.message || `Statut ${response.status}`
-                );
-                  setError(errorData.message || "Impossible de marquer toutes les notifications comme lues.");
-                  setTimeout(() => setError(null), 3000);
-                throw new Error(errorData.message || "Échec API Tout Lu"); // Pour que le catch externe le voie
-              }
+      if (!response.ok) {
+        // 4a. Si l'API échoue, annuler la mise à jour optimiste
+        setNotifications(previousNotificationsState);
+        const errorData = await response.json().catch(() => ({
+          message: `Erreur HTTP ${response.status} lors de la tentative de marquer tout comme lu.`,
+        }));
+        console.error(
+          "handleMarkAllAsRead: Échec API Tout Lu - Erreur:",
+          errorData.message || `Statut ${response.status}`
+        );
+        setError(
+          errorData.message ||
+            "Impossible de marquer toutes les notifications comme lues."
+        );
+        setTimeout(() => setError(null), 3000);
+        throw new Error(errorData.message || "Échec API Tout Lu"); // Pour que le catch externe le voie
+      }
 
-              const data = await response.json(); // Lire la réponse { message, updatedCount }
-              console.log("handleMarkAllAsRead: Réponse API 'Tout lu':", data);
-              // La mise à jour optimiste a déjà fait le travail visuel.
-              // Pas besoin de re-fetcher toute la liste ici, sauf si la réponse API
-              // contenait des informations cruciales que la mise à jour optimiste n'a pas.
-              // Si tu veux absolument être synchrone avec le serveur :
-              // console.log("handleMarkAllAsRead: Succès API, re-fetching notifications...");
-              // fetchNotifications(1, true); // 'true' pour indiquer que c'est un refresh/action
-            } catch (e: any) {
-              // Ce catch attrape les erreurs réseau de fetch ou l'erreur jetée par le !response.ok
-              console.error(
-                "handleMarkAllAsRead: Erreur dans le bloc try/catch API:",
-                e.message
-              );
-              // Si l'erreur n'est pas une alerte, on peut en afficher une générique
-             
-              // S'assurer de revert si ce n'est pas déjà fait (au cas où l'erreur est avant le !response.ok)
-              setNotifications(previousNotificationsState);
-                setError(e.message || "Une erreur s'est produite.");
-                setTimeout(() => setError(null), 3000);
-            } finally {
-              // Si tu avais mis un setIsLoading(true) spécifique pour cette action :
-              // setIsLoading(false);
-            }
-          /*},
+      const data = await response.json(); // Lire la réponse { message, updatedCount }
+      console.log("handleMarkAllAsRead: Réponse API 'Tout lu':", data);
+      // La mise à jour optimiste a déjà fait le travail visuel.
+      // Pas besoin de re-fetcher toute la liste ici, sauf si la réponse API
+      // contenait des informations cruciales que la mise à jour optimiste n'a pas.
+      // Si tu veux absolument être synchrone avec le serveur :
+      // console.log("handleMarkAllAsRead: Succès API, re-fetching notifications...");
+      // fetchNotifications(1, true); // 'true' pour indiquer que c'est un refresh/action
+    } catch (e: any) {
+      // Ce catch attrape les erreurs réseau de fetch ou l'erreur jetée par le !response.ok
+      console.error(
+        "handleMarkAllAsRead: Erreur dans le bloc try/catch API:",
+        e.message
+      );
+      // Si l'erreur n'est pas une alerte, on peut en afficher une générique
+
+      // S'assurer de revert si ce n'est pas déjà fait (au cas où l'erreur est avant le !response.ok)
+      setNotifications(previousNotificationsState);
+      setError(e.message || "Une erreur s'est produite.");
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      // Si tu avais mis un setIsLoading(true) spécifique pour cette action :
+      // setIsLoading(false);
+    }
+    /*},
         },
       ]
     );*/
@@ -1032,14 +1026,36 @@ export default function NotificationsPage() {
       <Stack.Screen
         options={{ title: " Mes Notifications", headerBackTitle: "Retour" }}
       />
-            {/* Affichage des messages de succès ou d'erreur */}
-            {error && <Text style={[styles.message, {color: colors.errorText, backgroundColor: Colors[currentScheme].errorBackground}]}>{error}</Text>}
-            {successMessage && <Text style={[styles.message, {color: Colors[currentScheme].successText, backgroundColor: Colors[currentScheme].successBackground }]}>{successMessage}</Text>}
+      {/* Affichage des messages de succès ou d'erreur */}
+      {error && (
+        <Text
+          style={[
+            styles.message,
+            {
+              color: colors.errorText,
+              backgroundColor: Colors[currentScheme].errorBackground,
+            },
+          ]}
+        >
+          {error}
+        </Text>
+      )}
+      {successMessage && (
+        <Text
+          style={[
+            styles.message,
+            {
+              color: Colors[currentScheme].successText,
+              backgroundColor: Colors[currentScheme].successBackground,
+            },
+          ]}
+        >
+          {successMessage}
+        </Text>
+      )}
 
       <View
-        style={[
-          { borderBottomColor: subtleTextColor, backgroundColor: card },
-        ]}
+        style={[{ borderBottomColor: subtleTextColor, backgroundColor: card }]}
       >
         {notifications.some((n) => !n.is_read) && ( // Affiche seulement s'il y a des non lues
           <TouchableOpacity
@@ -1057,7 +1073,9 @@ export default function NotificationsPage() {
         </View>
       ) : error && notifications.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={{ color: colors.errorText, textAlign: "center" }}>{error}</Text>
+          <Text style={{ color: colors.errorText, textAlign: "center" }}>
+            {error}
+          </Text>
           <Button
             title="Réessayer"
             onPress={() => fetchNotifications(1, true)}
@@ -1112,7 +1130,13 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === "android" ? 40 : 15,
     borderBottomWidth: 1,
   },
-  customHeaderTitle: { fontSize: 20, fontWeight: "bold", textAlign: "center", flex: 1, color: "#212121"},
+  customHeaderTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    textAlign: "center",
+    flex: 1,
+    color: "#212121",
+  },
   markAllReadButton: { paddingVertical: 5, paddingHorizontal: 10 },
   centered: {
     flex: 1,
@@ -1184,11 +1208,11 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginLeft: 10,
   },
-    message: {
+  message: {
     padding: 10,
     borderRadius: 5,
-    textAlign: 'center',
-    fontWeight: 'bold',
+    textAlign: "center",
+    fontWeight: "bold",
     marginVertical: 15,
     fontSize: 15,
   },

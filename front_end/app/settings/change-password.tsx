@@ -18,7 +18,7 @@
 // import { useColorScheme } from "../../components/useColorScheme";
 // import { useAuth } from "../../context/AuthContext"; // Pour le token
 
-// const API_BASE_URL = "http://192.168.1.2:3001/api"; // **METS TON IP**
+// const API_BASE_URL = "http://192.168.11.131:3001/api"; // **METS TON IP**
 
 // export default function ChangePasswordScreen() {
 //   const router = useRouter();
@@ -312,7 +312,6 @@
 //   },
 // });
 
-
 // ARTIVA/front_end/app/change-password.tsx
 import React, { useState } from "react";
 import {
@@ -331,7 +330,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import Colors from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext"; // Pour le token
 
-const API_BASE_URL = "http://192.168.1.2:3001/api"; // **METS TON IP**
+const API_BASE_URL = "http://192.168.11.131:3001/api"; // **METS TON IP**
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
@@ -368,13 +367,15 @@ export default function ChangePasswordScreen() {
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmNewPassword) {
       //Alert.alert("Champs requis", "Veuillez remplir tous les champs.");
-        setError("Veuillez remplir tous les champs.");
-        setTimeout(() => setError(null), 3000);
+      setError("Veuillez remplir tous les champs.");
+      setTimeout(() => setError(null), 3000);
       return;
     }
     if (newPassword !== confirmNewPassword) {
       //Alert.alert( "Erreur", "Le nouveau mot de passe et sa confirmation ne correspondent pas.");
-      setError("Le nouveau mot de passe et sa confirmation ne correspondent pas.");
+      setError(
+        "Le nouveau mot de passe et sa confirmation ne correspondent pas."
+      );
       setTimeout(() => setError(null), 3000);
       return;
     }
@@ -411,19 +412,21 @@ export default function ChangePasswordScreen() {
           response.status,
           data
         );
-          setError(data.message || "Erreur lors du changement de mot de passe.");
+        setError(data.message || "Erreur lors du changement de mot de passe.");
         setTimeout(() => setError(null), 3000);
         throw new Error(data.message || `Erreur ${response.status}`);
       }
 
       console.log("Frontend: Réponse API changement mot de passe:", data);
       // Alert.alert(successTitle,data.message + "\nVous allez être déconnecté. Veuillez vous reconnecter avec votre nouveau mot de passe.",[ {  text: "OK", onPress: async () => {   await signOut(); // Déconnecte l'utilisateur du frontend (efface token local, etc.)  router.replace("/login"); // Redirige vers la page de connexion  }, }, ]);
-       setMessage(data.message + ". Vous allez être déconnecté pour des raisons de sécurité.");
+      setMessage(
+        data.message +
+          ". Vous allez être déconnecté pour des raisons de sécurité."
+      );
       setTimeout(async () => {
         await signOut(); // Déconnecte l'utilisateur
         router.replace("/login");
       }, 3000);
-
 
       // Réinitialiser les champs après succès
       setCurrentPassword("");
@@ -432,8 +435,11 @@ export default function ChangePasswordScreen() {
     } catch (e: any) {
       console.error("ChangePasswordScreen: Erreur:", e);
       //Alert.alert("Erreur", e.message || genericErrorMessage);
-      setError(e.message || "Une erreur est survenue lors du changement de mot de passe.");
-        setTimeout(() => setError(null), 3000);
+      setError(
+        e.message ||
+          "Une erreur est survenue lors du changement de mot de passe."
+      );
+      setTimeout(() => setError(null), 3000);
     } finally {
       setIsLoading(false);
     }
@@ -446,9 +452,33 @@ export default function ChangePasswordScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Stack.Screen options={{ title: "Changer le mot de passe" }} />
-          {/* Affichage des messages de succès ou d'erreur */}
-          {error && <Text style={[styles.message, {backgroundColor: Colors[currentScheme].errorBackground, color: Colors[currentScheme].errorText}]}>{error}</Text>}
-          {message && <Text style={[styles.message, {backgroundColor: Colors[currentScheme].successBackground, color: Colors[currentScheme].successText}]}>{message}</Text>}
+        {/* Affichage des messages de succès ou d'erreur */}
+        {error && (
+          <Text
+            style={[
+              styles.message,
+              {
+                backgroundColor: Colors[currentScheme].errorBackground,
+                color: Colors[currentScheme].errorText,
+              },
+            ]}
+          >
+            {error}
+          </Text>
+        )}
+        {message && (
+          <Text
+            style={[
+              styles.message,
+              {
+                backgroundColor: Colors[currentScheme].successBackground,
+                color: Colors[currentScheme].successText,
+              },
+            ]}
+          >
+            {message}
+          </Text>
+        )}
 
         <View style={[styles.container, { backgroundColor }]}>
           <Text style={[styles.title, { color: textColor }]}>
@@ -624,11 +654,11 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     fontSize: 15,
   },
-     message: {
+  message: {
     padding: 10,
     borderRadius: 5,
-    textAlign: 'center',
-    fontWeight: 'bold',
+    textAlign: "center",
+    fontWeight: "bold",
     marginVertical: 15,
     fontSize: 15,
   },

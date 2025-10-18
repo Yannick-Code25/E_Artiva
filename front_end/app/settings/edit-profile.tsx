@@ -22,7 +22,7 @@
 //   phone: string;
 // }
 
-// const API_BASE_URL = "http://192.168.1.2:3001/api"; // **METS TON IP**
+// const API_BASE_URL = "http://192.168.11.131:3001/api"; // **METS TON IP**
 
 // export default function EditProfileScreen() {
 //   const { user, userToken, updateUserInContext, effectiveAppColorScheme } =
@@ -311,7 +311,6 @@
 //   },
 // });
 
-
 // ARTIVA/front_end/app/settings/edit-profile.tsx
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -336,7 +335,7 @@ interface ProfileFormData {
   phone: string;
 }
 
-const API_BASE_URL = "http://192.168.1.2:3001/api";
+const API_BASE_URL = "http://192.168.11.131:3001/api";
 
 export default function EditProfileScreen() {
   const { user, userToken, updateUserInContext, effectiveAppColorScheme } =
@@ -373,10 +372,7 @@ export default function EditProfileScreen() {
     }
   }, [user]);
 
-  const handleInputChange = (
-    field: keyof ProfileFormData,
-    value: string
-  ) => {
+  const handleInputChange = (field: keyof ProfileFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setError(null);
     setMessage(null);
@@ -437,21 +433,21 @@ export default function EditProfileScreen() {
           response.status,
           data
         );
-          setError(data.message || "Erreur lors de la mise à jour du profil.");
+        setError(data.message || "Erreur lors de la mise à jour du profil.");
         setTimeout(() => setError(null), 3000);
         throw new Error(data.message || `Erreur ${response.status}`);
       }
 
       console.log("Frontend: Réponse API mise à jour profil:", data);
       setMessage("Profil mis à jour avec succès !");
-        setTimeout(() => setMessage(null), 3000);
+      setTimeout(() => setMessage(null), 3000);
       if (data.user) {
         updateUserInContext(data.user);
       }
     } catch (e: any) {
       console.error("ChangePasswordScreen: Erreur:", e);
-        setError(e.message || "Une erreur est survenue.");
-        setTimeout(() => setError(null), 3000);
+      setError(e.message || "Une erreur est survenue.");
+      setTimeout(() => setError(null), 3000);
     } finally {
       setIsLoading(false);
     }
@@ -460,92 +456,119 @@ export default function EditProfileScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={[styles.screenContainer, { flex: 1, backgroundColor: backgroundColor }]}
+      style={[
+        styles.screenContainer,
+        { flex: 1, backgroundColor: backgroundColor },
+      ]}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Stack.Screen options={{ title: "Modifier le profil" }} />
-          {error && <Text style={[styles.message, {backgroundColor: Colors[currentScheme].errorBackground , color: Colors[currentScheme].errorText}]}>{error}</Text>}
-          {message && <Text style={[styles.message, {backgroundColor: Colors[currentScheme].successBackground , color: Colors[currentScheme].successText}]}>{message}</Text>}
+        {error && (
+          <Text
+            style={[
+              styles.message,
+              {
+                backgroundColor: Colors[currentScheme].errorBackground,
+                color: Colors[currentScheme].errorText,
+              },
+            ]}
+          >
+            {error}
+          </Text>
+        )}
+        {message && (
+          <Text
+            style={[
+              styles.message,
+              {
+                backgroundColor: Colors[currentScheme].successBackground,
+                color: Colors[currentScheme].successText,
+              },
+            ]}
+          >
+            {message}
+          </Text>
+        )}
         <View style={[styles.container, { backgroundColor: cardColor }]}>
-            <Text style={[styles.label, { color: textColor }]}>Nom complet :</Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: textColor,
-                  borderColor: subtleTextColor,
-                  backgroundColor: cardColor,
-                },
-              ]}
-              value={formData.name}
-              onChangeText={(val) => handleInputChange("name", val)}
-              placeholder="Votre nom et prénom"
-              placeholderTextColor={subtleTextColor}
-            />
+          <Text style={[styles.label, { color: textColor }]}>
+            Nom complet :
+          </Text>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                color: textColor,
+                borderColor: subtleTextColor,
+                backgroundColor: cardColor,
+              },
+            ]}
+            value={formData.name}
+            onChangeText={(val) => handleInputChange("name", val)}
+            placeholder="Votre nom et prénom"
+            placeholderTextColor={subtleTextColor}
+          />
 
-            <Text style={[styles.label, { color: textColor }]}>Adresse :</Text>
-            <TextInput
-              style={[
-                styles.input,
-                styles.textAreaInput, // Utiliser un style spécifique pour le textArea
-                {
-                  color: textColor,
-                  borderColor: subtleTextColor,
-                  backgroundColor: cardColor,
-                },
-              ]}
-              value={formData.address}
-              onChangeText={(val) => handleInputChange("address", val)}
-              placeholder="Votre adresse de livraison principale"
-              placeholderTextColor={subtleTextColor}
-              multiline
-              numberOfLines={3}
-            />
+          <Text style={[styles.label, { color: textColor }]}>Adresse :</Text>
+          <TextInput
+            style={[
+              styles.input,
+              styles.textAreaInput, // Utiliser un style spécifique pour le textArea
+              {
+                color: textColor,
+                borderColor: subtleTextColor,
+                backgroundColor: cardColor,
+              },
+            ]}
+            value={formData.address}
+            onChangeText={(val) => handleInputChange("address", val)}
+            placeholder="Votre adresse de livraison principale"
+            placeholderTextColor={subtleTextColor}
+            multiline
+            numberOfLines={3}
+          />
 
-            <Text style={[styles.label, { color: textColor }]}>
-              Numéro de téléphone :
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: textColor,
-                  borderColor: subtleTextColor,
-                  backgroundColor: cardColor,
-                },
-              ]}
-              value={formData.phone}
-              onChangeText={(val) => handleInputChange("phone", val)}
-              placeholder="Votre numéro de téléphone"
-              placeholderTextColor={subtleTextColor}
-              keyboardType="phone-pad"
-            />
+          <Text style={[styles.label, { color: textColor }]}>
+            Numéro de téléphone :
+          </Text>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                color: textColor,
+                borderColor: subtleTextColor,
+                backgroundColor: cardColor,
+              },
+            ]}
+            value={formData.phone}
+            onChangeText={(val) => handleInputChange("phone", val)}
+            placeholder="Votre numéro de téléphone"
+            placeholderTextColor={subtleTextColor}
+            keyboardType="phone-pad"
+          />
 
-            <TouchableOpacity
-              style={[
-                styles.button,
-                { backgroundColor: tintColor },
-                isLoading && styles.buttonDisabled,
-              ]}
-              onPress={handleUpdateProfile}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.buttonText}>
-                  Mettre à jour le profil
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              { backgroundColor: tintColor },
+              isLoading && styles.buttonDisabled,
+            ]}
+            onPress={handleUpdateProfile}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>Mettre à jour le profil</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  screenContainer: { flex: 1 ,backgroundColor: "#fff"},
+  screenContainer: { flex: 1, backgroundColor: "#fff" },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: "center",
@@ -561,7 +584,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 30,
-    
   },
   inputContainer: {
     flexDirection: "column", // Aligner le label au-dessus de l'input
@@ -577,9 +599,9 @@ const styles = StyleSheet.create({
     // color: //couleur du theme
     margin: 15,
   },
-    textAreaInput: {
-    height: 100,  // Hauteur pour multiline
-    textAlignVertical: 'top', // Pour Android
+  textAreaInput: {
+    height: 100, // Hauteur pour multiline
+    textAlignVertical: "top", // Pour Android
     paddingTop: 15,
   },
   eyeIcon: {
@@ -601,11 +623,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
   },
-     message: {
+  message: {
     padding: 10,
     borderRadius: 5,
-    textAlign: 'center',
-    fontWeight: 'bold',
+    textAlign: "center",
+    fontWeight: "bold",
     marginVertical: 15,
     fontSize: 15,
   },
@@ -613,14 +635,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 15,
     fontSize: 15,
-      color: "red" //Géré par le theme
+    color: "red", //Géré par le theme
   },
   successMessage: {
     marginTop: 10,
     marginBottom: 10,
     textAlign: "center",
   },
-    label: {
+  label: {
     fontSize: 16,
     fontWeight: "500",
     marginBottom: 8,

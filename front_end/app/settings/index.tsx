@@ -22,7 +22,7 @@
 // import { useAuth } from "../../context/AuthContext";
 // import { useTranslation } from "react-i18next"; // Pour traduire les textes des liens
 
-// const API_BASE_URL = "http://192.168.1.2:3001/api"; // **METS TON IP**
+// const API_BASE_URL = "http://192.168.11.131:3001/api"; // **METS TON IP**
 
 // interface SettingsItemProps {
 //   icon: React.ElementType;
@@ -236,10 +236,6 @@
 //   },
 // });
 
-
-
-
-
 // ARTIVA/front_end/app/settings/index.tsx
 import React, { useState } from "react";
 import {
@@ -266,7 +262,6 @@ import { useAuth } from "../../context/AuthContext";
 import { useTranslation } from "react-i18next"; // Pour traduire les textes des liens
 import { FontAwesome } from "@expo/vector-icons"; // à importer
 
-
 interface SettingsItemProps {
   icon: React.ElementType;
   title: string;
@@ -289,10 +284,7 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
 
   return (
     <Pressable
-      style={[
-        styles.itemContainer,
-        { borderBottomColor: colors.subtleText },
-      ]}
+      style={[styles.itemContainer, { borderBottomColor: colors.subtleText }]}
       onPress={onPress}
     >
       <View style={[styles.iconContainer, { backgroundColor: color + "20" }]}>
@@ -304,7 +296,7 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
   );
 };
 
-const API_BASE_URL = "http://192.168.1.2:3001/api"; // **METS TON IP**
+const API_BASE_URL = "http://192.168.11.131:3001/api"; // **METS TON IP**
 
 export default function SettingsMainScreen() {
   const router = useRouter();
@@ -325,13 +317,16 @@ export default function SettingsMainScreen() {
 
   const handleDeactivateAccount = async () => {
     const confirmTitle = "Désactiver le compte";
-    const confirmMessage = "Êtes-vous sûr ? Après désactivation, vous devrez contacter le support pour réactiver votre compte. Vous serez déconnecté.";
+    const confirmMessage =
+      "Êtes-vous sûr ? Après désactivation, vous devrez contacter le support pour réactiver votre compte. Vous serez déconnecté.";
     const cancelButton = "Annuler";
     const deactivateButtonText = "Désactiver";
-    const successMessageText = "Votre compte a été désactivé. Vous allez être déconnecté.";
+    const successMessageText =
+      "Votre compte a été désactivé. Vous allez être déconnecté.";
     const errorMessageText = "Impossible de désactiver le compte.";
 
-    Alert.alert( // Utiliser Alert directement
+    Alert.alert(
+      // Utiliser Alert directement
       confirmTitle,
       confirmMessage,
       [
@@ -341,9 +336,9 @@ export default function SettingsMainScreen() {
           style: "destructive",
           onPress: async () => {
             if (!userToken) {
-                setError("Vous n'êtes pas connecté.");
-                setTimeout(() => setError(null), 3000);
-                return;
+              setError("Vous n'êtes pas connecté.");
+              setTimeout(() => setError(null), 3000);
+              return;
             }
             setIsLoadingDeactivate(true);
             try {
@@ -367,22 +362,22 @@ export default function SettingsMainScreen() {
                   response.status,
                   data
                 );
-                  setError(errorMessageText);
-                  setTimeout(() => setError(null), 3000);
+                setError(errorMessageText);
+                setTimeout(() => setError(null), 3000);
                 throw new Error(
                   data.message || `Erreur serveur (${response.status})`
                 );
               }
 
               console.log("Réponse API désactivation:", data);
-                setMessage(successMessageText);
-                setTimeout(() => setMessage(null), 3000);
+              setMessage(successMessageText);
+              setTimeout(() => setMessage(null), 3000);
               await signOut(); // Déconnecte l'utilisateur du frontend (efface token local, etc.)
               router.replace("/login"); // Redirige vers login (utilise replace pour vider l'historique)
             } catch (e: any) {
               console.error("Erreur dans handleDeactivateAccount:", e);
-                setError(errorMessageText);
-                setTimeout(() => setError(null), 3000);
+              setError(errorMessageText);
+              setTimeout(() => setError(null), 3000);
             } finally {
               setIsLoadingDeactivate(false);
             }
@@ -427,15 +422,34 @@ export default function SettingsMainScreen() {
   ];
 
   return (
-    <ScrollView
-      style={[
-        styles.screen,
-        { backgroundColor },
-      ]}
-    >
+    <ScrollView style={[styles.screen, { backgroundColor }]}>
       <Stack.Screen options={{ title: "Paramètres du compte" }} />
-        {error && <Text style={[styles.message, {backgroundColor: Colors[currentScheme].errorBackground , color: Colors[currentScheme].errorText}]}>{error}</Text>}
-        {message && <Text style={[styles.message, {backgroundColor: Colors[currentScheme].successBackground , color: Colors[currentScheme].successText}]}>{message}</Text>}
+      {error && (
+        <Text
+          style={[
+            styles.message,
+            {
+              backgroundColor: Colors[currentScheme].errorBackground,
+              color: Colors[currentScheme].errorText,
+            },
+          ]}
+        >
+          {error}
+        </Text>
+      )}
+      {message && (
+        <Text
+          style={[
+            styles.message,
+            {
+              backgroundColor: Colors[currentScheme].successBackground,
+              color: Colors[currentScheme].successText,
+            },
+          ]}
+        >
+          {message}
+        </Text>
+      )}
       <View style={[styles.section, { backgroundColor: cardBackgroundColor }]}>
         {settingsOptions.map((opt) => (
           <SettingsItem
@@ -443,7 +457,9 @@ export default function SettingsMainScreen() {
             icon={opt.icon}
             title={opt.title}
             onPress={opt.onPress}
-            color={opt.isDestructive ? Colors[currentScheme].errorText : tintColor}
+            color={
+              opt.isDestructive ? Colors[currentScheme].errorText : tintColor
+            }
             textColor={
               opt.isDestructive ? Colors[currentScheme].errorText : textColor
             }
@@ -484,8 +500,8 @@ const styles = StyleSheet.create({
   message: {
     padding: 10,
     borderRadius: 5,
-    textAlign: 'center',
-    fontWeight: 'bold',
+    textAlign: "center",
+    fontWeight: "bold",
     marginVertical: 15,
     fontSize: 15,
   },

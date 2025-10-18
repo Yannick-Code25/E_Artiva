@@ -14,7 +14,7 @@
 // import { useColorScheme } from "../../components/useColorScheme";
 // import { useAuth } from "../../context/AuthContext";
 
-// const API_BASE_URL = "http://192.168.1.2:3001/api"; // **TON IP**
+// const API_BASE_URL = "http://192.168.11.131:3001/api"; // **TON IP**
 
 // interface OrderItem {
 //   itemId: number | string;
@@ -412,12 +412,6 @@
 //   // addressText: { color: textColor, marginBottom: 2 }
 // });
 
-
-
-
-
-
-
 // ARTIVA/front_end/app/orders/[orderId].tsx
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -434,7 +428,7 @@ import Colors from "../../constants/Colors";
 import { useColorScheme } from "../../components/useColorScheme";
 import { useAuth } from "../../context/AuthContext";
 
-const API_BASE_URL = "http://192.168.1.2:3001/api"; // **TON IP**
+const API_BASE_URL = "http://192.168.11.131:3001/api"; // **TON IP**
 
 interface OrderItem {
   itemId: number | string;
@@ -536,7 +530,11 @@ export default function OrderDetailScreen() {
   // Fonction pour parser et afficher joliment les adresses JSONB
   const renderAddress = (addressData: any) => {
     if (!addressData)
-      return <Text style={[styles.addressText, {color: colors.subtleText}]}>Non spécifiée</Text>;
+      return (
+        <Text style={[styles.addressText, { color: colors.subtleText }]}>
+          Non spécifiée
+        </Text>
+      );
     // L'API peut renvoyer une chaîne JSON ou un objet déjà parsé si Content-Type est bien application/json
     const addressObj =
       typeof addressData === "string" ? JSON.parse(addressData) : addressData;
@@ -546,13 +544,19 @@ export default function OrderDetailScreen() {
     return (
       <>
         {addressObj.name && (
-          <Text style={[styles.addressText, { color: colors.text }]}>{addressObj.name}</Text>
+          <Text style={[styles.addressText, { color: colors.text }]}>
+            {addressObj.name}
+          </Text>
         )}
         {addressObj.line1 && (
-          <Text style={[styles.addressText, { color: colors.text }]}>{addressObj.line1}</Text>
+          <Text style={[styles.addressText, { color: colors.text }]}>
+            {addressObj.line1}
+          </Text>
         )}
         {addressObj.line2 && (
-          <Text style={[styles.addressText, { color: colors.text }]}>{addressObj.line2}</Text>
+          <Text style={[styles.addressText, { color: colors.text }]}>
+            {addressObj.line2}
+          </Text>
         )}
         {(addressObj.city || addressObj.postal_code) && (
           <Text style={[styles.addressText, { color: colors.text }]}>
@@ -561,10 +565,14 @@ export default function OrderDetailScreen() {
           </Text>
         )}
         {addressObj.country && (
-          <Text style={[styles.addressText, { color: colors.text }]}>{addressObj.country}</Text>
+          <Text style={[styles.addressText, { color: colors.text }]}>
+            {addressObj.country}
+          </Text>
         )}
         {addressObj.phone && (
-          <Text style={[styles.addressText, { color: colors.text }]}>Tél: {addressObj.phone}</Text>
+          <Text style={[styles.addressText, { color: colors.text }]}>
+            Tél: {addressObj.phone}
+          </Text>
         )}
       </>
     );
@@ -599,7 +607,9 @@ export default function OrderDetailScreen() {
   }
 
   return (
-    <ScrollView style={[styles.screenContainer, { backgroundColor: colors.background }]}>
+    <ScrollView
+      style={[styles.screenContainer, { backgroundColor: colors.background }]}
+    >
       <Stack.Screen options={{ title: pageTitle }} />
 
       <View
@@ -612,10 +622,16 @@ export default function OrderDetailScreen() {
           Récapitulatif Commande
         </Text>
         <Text style={[styles.text, { color: colors.text }]}>
-          Numéro : <Text style={[styles.value, { color: colors.text }]}>{order.order_number}</Text>
+          Numéro :{" "}
+          <Text style={[styles.value, { color: colors.text }]}>
+            {order.order_number}
+          </Text>
         </Text>
         <Text style={[styles.text, { color: colors.text }]}>
-          Date : <Text style={[styles.value, { color: colors.text }]}>{formatDate(order.createdAt)}</Text>
+          Date :{" "}
+          <Text style={[styles.value, { color: colors.text }]}>
+            {formatDate(order.createdAt)}
+          </Text>
         </Text>
         <Text style={[styles.text, { color: colors.text }]}>
           Statut :{" "}
@@ -627,7 +643,9 @@ export default function OrderDetailScreen() {
         </Text>
         <Text style={[styles.text, { color: colors.text }]}>
           Total :{" "}
-          <Text style={[styles.value, styles.totalValue, { color: colors.tint }]}>
+          <Text
+            style={[styles.value, styles.totalValue, { color: colors.tint }]}
+          >
             {order.total} {order.currency}
           </Text>
         </Text>
@@ -646,12 +664,18 @@ export default function OrderDetailScreen() {
           </Text>
           {order.userName && (
             <Text style={[styles.text, { color: colors.text }]}>
-              Nom : <Text style={[styles.value, { color: colors.text }]}>{order.userName}</Text>
+              Nom :{" "}
+              <Text style={[styles.value, { color: colors.text }]}>
+                {order.userName}
+              </Text>
             </Text>
           )}
           {order.userEmail && (
             <Text style={[styles.text, { color: colors.text }]}>
-              Email : <Text style={[styles.value, { color: colors.text }]}>{order.userEmail}</Text>
+              Email :{" "}
+              <Text style={[styles.value, { color: colors.text }]}>
+                {order.userEmail}
+              </Text>
             </Text>
           )}
           {/* Ajoute le téléphone du client si ton API le renvoie pour la commande */}
@@ -731,7 +755,9 @@ export default function OrderDetailScreen() {
           {order.shipping_method && (
             <Text style={[styles.text, { color: colors.text }]}>
               Méthode :{" "}
-              <Text style={[styles.value, { color: colors.text }]}>{order.shipping_method}</Text>
+              <Text style={[styles.value, { color: colors.text }]}>
+                {order.shipping_method}
+              </Text>
             </Text>
           )}
           {order.shipping_cost !== undefined && (
@@ -756,7 +782,9 @@ export default function OrderDetailScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Vos Notes
           </Text>
-          <Text style={[styles.text, { color: colors.text }]}>{order.notes}</Text>
+          <Text style={[styles.text, { color: colors.text }]}>
+            {order.notes}
+          </Text>
         </View>
       )}
     </ScrollView>

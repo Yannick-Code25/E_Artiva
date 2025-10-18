@@ -15,7 +15,7 @@ import {
 import { Link, useRouter } from "expo-router";
 import { FontAwesome } from "@expo/vector-icons";
 
-const API_BASE_URL = "http://192.168.248.151:3001/api"; // EXEMPLE: 'http://192.168.1.105:3001/api'
+const API_BASE_URL = "http://192.168.11.131:3001/api"; // EXEMPLE: 'http://192.168.1.105:3001/api'
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -306,12 +306,6 @@ const styles = StyleSheet.create({
   },
 });
 
-
-
-
-
-
-
 // import React, { useState } from 'react';
 // import { View, Text, TextInput, TouchableOpacity, StyleSheet, useColorScheme } from 'react-native';
 // import axios from 'axios';
@@ -348,7 +342,7 @@ const styles = StyleSheet.create({
 //   };
 
 //   return (
-//     <View style={[styles.container, { backgroundColor: themeColors.background }]}>      
+//     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
 //       <Text style={[styles.title, { color: themeColors.text }]}>Créer un compte</Text>
 
 //       <TextInput

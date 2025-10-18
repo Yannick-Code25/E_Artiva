@@ -21,7 +21,7 @@
 // import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // // **ATTENTION: METS TON ADRESSE IP LOCALE CORRECTE ICI**
-// const API_BASE_URL = "http://192.168.1.2:3001/api";
+// const API_BASE_URL = "http://192.168.11.131:3001/api";
 // // Exemple: const API_BASE_URL = 'http://192.168.1.105:3001/api';
 
 // // Types pour les données du formulaire
@@ -474,28 +474,33 @@
 //   },
 // });
 
-
-
-
-
 // ARTIVA/front_end/app/checkout.tsx
 import React, { useState, useEffect, useRef } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
-  ActivityIndicator, Platform, Image, KeyboardAvoidingView, Alert
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  Platform,
+  Image,
+  KeyboardAvoidingView,
+  Alert,
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { FontAwesome } from "@expo/vector-icons";
-import QRCode from 'react-native-qrcode-svg';
+import QRCode from "react-native-qrcode-svg";
 import ViewShot from "react-native-view-shot";
-import * as MediaLibrary from 'expo-media-library';
+import * as MediaLibrary from "expo-media-library";
 
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import Colors from "../constants/Colors";
 
 // **ATTENTION: METS TON ADRESSE IP LOCALE CORRECTE ICI**
-const API_BASE_URL = "http://192.168.1.2:3001/api";
+const API_BASE_URL = "http://192.168.11.131:3001/api";
 
 // --- TYPES ---
 interface CheckoutFormData {
@@ -517,7 +522,13 @@ interface OrderConfirmationData {
 }
 
 // --- COMPOSANT POUR LA BARRE DE PROGRESSION ---
-const StepIndicator = ({ currentStep, colors }: { currentStep: number, colors: any }) => {
+const StepIndicator = ({
+  currentStep,
+  colors,
+}: {
+  currentStep: number;
+  colors: any;
+}) => {
   const steps = ["Panier", "Livraison", "Paiement"];
   return (
     <View style={styles.stepIndicatorContainer}>
@@ -529,19 +540,55 @@ const StepIndicator = ({ currentStep, colors }: { currentStep: number, colors: a
         return (
           <React.Fragment key={step}>
             <View style={styles.stepItem}>
-              <View style={[
-                styles.stepCircle,
-                { backgroundColor: isActive || isCompleted ? colors.tint : colors.card, borderColor: isActive || isCompleted ? colors.tint : colors.border }
-              ]}>
+              <View
+                style={[
+                  styles.stepCircle,
+                  {
+                    backgroundColor:
+                      isActive || isCompleted ? colors.tint : colors.card,
+                    borderColor:
+                      isActive || isCompleted ? colors.tint : colors.border,
+                  },
+                ]}
+              >
                 {isCompleted ? (
-                  <FontAwesome name="check" size={14} color={colors.background} />
+                  <FontAwesome
+                    name="check"
+                    size={14}
+                    color={colors.background}
+                  />
                 ) : (
-                  <Text style={[styles.stepNumber, { color: isActive ? colors.background : colors.subtleText }]}>{stepNumber}</Text>
+                  <Text
+                    style={[
+                      styles.stepNumber,
+                      {
+                        color: isActive ? colors.background : colors.subtleText,
+                      },
+                    ]}
+                  >
+                    {stepNumber}
+                  </Text>
                 )}
               </View>
-              <Text style={[styles.stepLabel, { color: isActive ? colors.tint : colors.subtleText }]}>{step}</Text>
+              <Text
+                style={[
+                  styles.stepLabel,
+                  { color: isActive ? colors.tint : colors.subtleText },
+                ]}
+              >
+                {step}
+              </Text>
             </View>
-            {index < steps.length - 1 && <View style={[styles.stepLine, { backgroundColor: isCompleted ? colors.tint : colors.border }]} />}
+            {index < steps.length - 1 && (
+              <View
+                style={[
+                  styles.stepLine,
+                  {
+                    backgroundColor: isCompleted ? colors.tint : colors.border,
+                  },
+                ]}
+              />
+            )}
           </React.Fragment>
         );
       })}
@@ -549,15 +596,19 @@ const StepIndicator = ({ currentStep, colors }: { currentStep: number, colors: a
   );
 };
 
-
 export default function CheckoutScreen() {
   const router = useRouter();
-  const { user, userToken, isLoading: isAuthLoading, effectiveAppColorScheme } = useAuth();
+  const {
+    user,
+    userToken,
+    isLoading: isAuthLoading,
+    effectiveAppColorScheme,
+  } = useAuth();
   const { cartItems, getTotalPrice, clearCart } = useCart();
   const qrCodeRef = useRef<ViewShot>(null);
 
   // --- COULEURS DU THÈME ---
-  const currentScheme = effectiveAppColorScheme ?? 'light';
+  const currentScheme = effectiveAppColorScheme ?? "light";
   const colors = {
     tint: Colors[currentScheme].tint,
     text: Colors[currentScheme].text,
@@ -567,20 +618,29 @@ export default function CheckoutScreen() {
     border: Colors[currentScheme].cardBorder,
     errorText: Colors[currentScheme].errorText,
     successText: Colors[currentScheme].successText, // CORRECTION: Utilisation de successText
-    disabled: '#BDBDBD',
+    disabled: "#BDBDBD",
   };
 
   // --- ÉTATS ---
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<CheckoutFormData>({
-    fullName: "", email: "", phone: "", addressLine1: "", city: "",
-    country: "Bénin", paymentMethod: "cod", addressLine2: "", postalCode: "", notes: ""
+    fullName: "",
+    email: "",
+    phone: "",
+    addressLine1: "",
+    city: "",
+    country: "Bénin",
+    paymentMethod: "cod",
+    addressLine2: "",
+    postalCode: "",
+    notes: "",
   });
   const [promoCode, setPromoCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
-  const [orderConfirmationData, setOrderConfirmationData] = useState<OrderConfirmationData | null>(null);
+  const [orderConfirmationData, setOrderConfirmationData] =
+    useState<OrderConfirmationData | null>(null);
 
   // --- EFFETS ---
   useEffect(() => {
@@ -591,7 +651,7 @@ export default function CheckoutScreen() {
 
   useEffect(() => {
     if (user) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         fullName: user.name || prev.fullName,
         email: user.email || prev.email,
@@ -603,12 +663,20 @@ export default function CheckoutScreen() {
 
   // --- GESTIONNAIRES & LOGIQUE ---
   const handleInputChange = (field: keyof CheckoutFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const validateStep2 = () => {
-    if (!formData.fullName || !formData.email || !formData.phone || !formData.addressLine1 || !formData.city) {
-      setSubmissionError("Veuillez remplir tous les champs de livraison obligatoires (*).");
+    if (
+      !formData.fullName ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.addressLine1 ||
+      !formData.city
+    ) {
+      setSubmissionError(
+        "Veuillez remplir tous les champs de livraison obligatoires (*)."
+      );
       return false;
     }
     setSubmissionError(null);
@@ -617,10 +685,10 @@ export default function CheckoutScreen() {
 
   const handleNextStep = () => {
     if (currentStep === 2 && !validateStep2()) return;
-    setCurrentStep(prev => prev + 1);
+    setCurrentStep((prev) => prev + 1);
   };
-  
-  const handlePrevStep = () => setCurrentStep(prev => prev - 1);
+
+  const handlePrevStep = () => setCurrentStep((prev) => prev - 1);
 
   const handleSubmitOrder = async () => {
     if (!validateStep2()) return;
@@ -631,47 +699,76 @@ export default function CheckoutScreen() {
     setIsSubmitting(true);
     setSubmissionError(null);
     const orderPayload = {
-        cart_items: cartItems.map(item => ({ product_id: item.id, quantity: item.quantity })),
-        shipping_address: { name: formData.fullName, line1: formData.addressLine1, line2: formData.addressLine2, city: formData.city, postal_code: formData.postalCode, country: formData.country, phone: formData.phone, email: formData.email },
-        payment_method: formData.paymentMethod, notes: formData.notes, currency: "FCFA",
+      cart_items: cartItems.map((item) => ({
+        product_id: item.id,
+        quantity: item.quantity,
+      })),
+      shipping_address: {
+        name: formData.fullName,
+        line1: formData.addressLine1,
+        line2: formData.addressLine2,
+        city: formData.city,
+        postal_code: formData.postalCode,
+        country: formData.country,
+        phone: formData.phone,
+        email: formData.email,
+      },
+      payment_method: formData.paymentMethod,
+      notes: formData.notes,
+      currency: "FCFA",
     };
     try {
-        const response = await fetch(`${API_BASE_URL}/orders`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${userToken}` },
-            body: JSON.stringify(orderPayload),
-        });
-        const responseData = await response.json();
-        if (!response.ok) throw new Error(responseData.message || "Erreur lors de la création de la commande.");
-        clearCart();
-        setOrderConfirmationData({
-            orderNumber: responseData.order?.order_number || "N/A",
-            qrValue: String(responseData.order?.id)
-        });
+      const response = await fetch(`${API_BASE_URL}/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${userToken}`,
+        },
+        body: JSON.stringify(orderPayload),
+      });
+      const responseData = await response.json();
+      if (!response.ok)
+        throw new Error(
+          responseData.message || "Erreur lors de la création de la commande."
+        );
+      clearCart();
+      setOrderConfirmationData({
+        orderNumber: responseData.order?.order_number || "N/A",
+        qrValue: String(responseData.order?.id),
+      });
     } catch (err: any) {
-        setSubmissionError(err.message || "Une erreur est survenue.");
+      setSubmissionError(err.message || "Une erreur est survenue.");
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleDownloadQrCode = async () => {
     const { status } = await MediaLibrary.requestPermissionsAsync();
-    if (status !== 'granted') {
-        Alert.alert("Permission refusée", "Impossible de sauvegarder l'image sans votre autorisation.");
-        return;
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission refusée",
+        "Impossible de sauvegarder l'image sans votre autorisation."
+      );
+      return;
     }
     if (qrCodeRef.current) {
-        try {
-            const uri = await qrCodeRef.current.capture?.();
-            if (!uri) throw new Error("Impossible de capturer le QR Code.");
-            const asset = await MediaLibrary.createAssetAsync(uri);
-            await MediaLibrary.createAlbumAsync('Commandes Artiva', asset, false);
-            Alert.alert('Succès', 'QR Code sauvegardé dans votre galerie (Album: Commandes Artiva).');
-        } catch (error) {
-            console.error("Erreur de sauvegarde QR:", error);
-            Alert.alert("Erreur", "Une erreur est survenue lors de la sauvegarde du QR Code.");
-        }
+      try {
+        const uri = await qrCodeRef.current.capture?.();
+        if (!uri) throw new Error("Impossible de capturer le QR Code.");
+        const asset = await MediaLibrary.createAssetAsync(uri);
+        await MediaLibrary.createAlbumAsync("Commandes Artiva", asset, false);
+        Alert.alert(
+          "Succès",
+          "QR Code sauvegardé dans votre galerie (Album: Commandes Artiva)."
+        );
+      } catch (error) {
+        console.error("Erreur de sauvegarde QR:", error);
+        Alert.alert(
+          "Erreur",
+          "Une erreur est survenue lors de la sauvegarde du QR Code."
+        );
+      }
     }
   };
 
@@ -680,138 +777,408 @@ export default function CheckoutScreen() {
     const subTotal = getTotalPrice();
     const total = subTotal - discount;
     return (
-        <View style={styles.stepContainer}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>1. Récapitulatif du Panier</Text>
-            {cartItems.map(item => (
-                <View key={item.id} style={[styles.recapItem, { borderBottomColor: colors.border }]}>
-                    <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
-                    <View style={{ flex: 1 }}>
-                        <Text style={{ color: colors.text, fontWeight: 'bold' }}>{item.name}</Text>
-                        <Text style={{ color: colors.subtleText }}>Quantité: {item.quantity}</Text>
-                    </View>
-                    <Text style={{ color: colors.text }}>{item.price}</Text>
-                </View>
-            ))}
-            <View style={styles.promoContainer}>
-                <TextInput style={[styles.input, { flex: 1, marginRight: 10, color: colors.text, borderColor: colors.border }]} placeholder="Code promo" placeholderTextColor={colors.subtleText} value={promoCode} onChangeText={setPromoCode}/>
-                <TouchableOpacity style={[styles.promoButton, { backgroundColor: colors.disabled }]} disabled>
-                    <Text style={styles.promoButtonText}>Appliquer</Text>
-                </TouchableOpacity>
+      <View style={styles.stepContainer}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          1. Récapitulatif du Panier
+        </Text>
+        {cartItems.map((item) => (
+          <View
+            key={item.id}
+            style={[styles.recapItem, { borderBottomColor: colors.border }]}
+          >
+            <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.text, fontWeight: "bold" }}>
+                {item.name}
+              </Text>
+              <Text style={{ color: colors.subtleText }}>
+                Quantité: {item.quantity}
+              </Text>
             </View>
-            <View style={[styles.totalSection, {backgroundColor: colors.card}]}>
-                <View style={styles.totalRow}><Text style={{ color: colors.subtleText }}>Sous-total</Text><Text style={{ color: colors.subtleText }}>{subTotal.toFixed(2)} FCFA</Text></View>
-                <View style={styles.totalRow}><Text style={{ color: colors.subtleText }}>Réduction</Text><Text style={{ color: colors.subtleText }}>- {discount.toFixed(2)} FCFA</Text></View>
-                <View style={[styles.grandTotalRow, { borderTopColor: colors.border }]}>
-                    <Text style={[styles.totalText, { color: colors.text }]}>Total</Text>
-                    <Text style={[styles.totalAmount, { color: colors.tint }]}>{total.toFixed(2)} FCFA</Text>
-                </View>
-            </View>
-            <TouchableOpacity style={[styles.submitButton, { backgroundColor: colors.tint }]} onPress={handleNextStep}>
-                <Text style={styles.submitButtonText}>Suivant : Informations de Livraison</Text>
-                <FontAwesome name="arrow-right" size={16} color="white" style={{ marginLeft: 10 }} />
-            </TouchableOpacity>
+            <Text style={{ color: colors.text }}>{item.price}</Text>
+          </View>
+        ))}
+        <View style={styles.promoContainer}>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                flex: 1,
+                marginRight: 10,
+                color: colors.text,
+                borderColor: colors.border,
+              },
+            ]}
+            placeholder="Code promo"
+            placeholderTextColor={colors.subtleText}
+            value={promoCode}
+            onChangeText={setPromoCode}
+          />
+          <TouchableOpacity
+            style={[styles.promoButton, { backgroundColor: colors.disabled }]}
+            disabled
+          >
+            <Text style={styles.promoButtonText}>Appliquer</Text>
+          </TouchableOpacity>
         </View>
+        <View style={[styles.totalSection, { backgroundColor: colors.card }]}>
+          <View style={styles.totalRow}>
+            <Text style={{ color: colors.subtleText }}>Sous-total</Text>
+            <Text style={{ color: colors.subtleText }}>
+              {subTotal.toFixed(2)} FCFA
+            </Text>
+          </View>
+          <View style={styles.totalRow}>
+            <Text style={{ color: colors.subtleText }}>Réduction</Text>
+            <Text style={{ color: colors.subtleText }}>
+              - {discount.toFixed(2)} FCFA
+            </Text>
+          </View>
+          <View
+            style={[styles.grandTotalRow, { borderTopColor: colors.border }]}
+          >
+            <Text style={[styles.totalText, { color: colors.text }]}>
+              Total
+            </Text>
+            <Text style={[styles.totalAmount, { color: colors.tint }]}>
+              {total.toFixed(2)} FCFA
+            </Text>
+          </View>
+        </View>
+        <TouchableOpacity
+          style={[styles.submitButton, { backgroundColor: colors.tint }]}
+          onPress={handleNextStep}
+        >
+          <Text style={styles.submitButtonText}>
+            Suivant : Informations de Livraison
+          </Text>
+          <FontAwesome
+            name="arrow-right"
+            size={16}
+            color="white"
+            style={{ marginLeft: 10 }}
+          />
+        </TouchableOpacity>
+      </View>
     );
   }
 
   function renderStep2() {
     return (
-        <View style={styles.stepContainer}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>2. Informations de Livraison</Text>
-            <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border }]} placeholderTextColor={colors.subtleText} placeholder="Nom complet *" value={formData.fullName} onChangeText={(text) => handleInputChange("fullName", text)} />
-            <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border }]} placeholderTextColor={colors.subtleText} placeholder="Email de contact *" value={formData.email} onChangeText={(text) => handleInputChange("email", text)} keyboardType="email-address" autoCapitalize="none" />
-            <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border }]} placeholderTextColor={colors.subtleText} placeholder="Téléphone de contact *" value={formData.phone} onChangeText={(text) => handleInputChange("phone", text)} keyboardType="phone-pad" />
-            <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border }]} placeholderTextColor={colors.subtleText} placeholder="Adresse (Ligne 1) *" value={formData.addressLine1} onChangeText={(text) => handleInputChange("addressLine1", text)} />
-            <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border }]} placeholderTextColor={colors.subtleText} placeholder="Adresse (Ligne 2, optionnel)" value={formData.addressLine2 || ''} onChangeText={(text) => handleInputChange("addressLine2", text)} />
-            <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border }]} placeholderTextColor={colors.subtleText} placeholder="Ville *" value={formData.city} onChangeText={(text) => handleInputChange("city", text)} />
-            <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.card }]} placeholderTextColor={colors.subtleText} placeholder="Pays *" value={formData.country} onChangeText={(text) => handleInputChange("country", text)} editable={false} />
-            {submissionError && <Text style={[styles.errorText, {color: colors.errorText}]}>{submissionError}</Text>}
-            <View style={styles.navigationButtons}>
-                <TouchableOpacity style={[styles.navButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handlePrevStep}>
-                    <Text style={[styles.navButtonText, { color: colors.text }]}>Précédent</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.navButton, { backgroundColor: colors.tint, borderColor: colors.tint }]} onPress={handleNextStep}>
-                    <Text style={styles.navButtonText}>Suivant : Paiement</Text>
-                </TouchableOpacity>
-            </View>
+      <View style={styles.stepContainer}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          2. Informations de Livraison
+        </Text>
+        <TextInput
+          style={[
+            styles.input,
+            { color: colors.text, borderColor: colors.border },
+          ]}
+          placeholderTextColor={colors.subtleText}
+          placeholder="Nom complet *"
+          value={formData.fullName}
+          onChangeText={(text) => handleInputChange("fullName", text)}
+        />
+        <TextInput
+          style={[
+            styles.input,
+            { color: colors.text, borderColor: colors.border },
+          ]}
+          placeholderTextColor={colors.subtleText}
+          placeholder="Email de contact *"
+          value={formData.email}
+          onChangeText={(text) => handleInputChange("email", text)}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <TextInput
+          style={[
+            styles.input,
+            { color: colors.text, borderColor: colors.border },
+          ]}
+          placeholderTextColor={colors.subtleText}
+          placeholder="Téléphone de contact *"
+          value={formData.phone}
+          onChangeText={(text) => handleInputChange("phone", text)}
+          keyboardType="phone-pad"
+        />
+        <TextInput
+          style={[
+            styles.input,
+            { color: colors.text, borderColor: colors.border },
+          ]}
+          placeholderTextColor={colors.subtleText}
+          placeholder="Adresse (Ligne 1) *"
+          value={formData.addressLine1}
+          onChangeText={(text) => handleInputChange("addressLine1", text)}
+        />
+        <TextInput
+          style={[
+            styles.input,
+            { color: colors.text, borderColor: colors.border },
+          ]}
+          placeholderTextColor={colors.subtleText}
+          placeholder="Adresse (Ligne 2, optionnel)"
+          value={formData.addressLine2 || ""}
+          onChangeText={(text) => handleInputChange("addressLine2", text)}
+        />
+        <TextInput
+          style={[
+            styles.input,
+            { color: colors.text, borderColor: colors.border },
+          ]}
+          placeholderTextColor={colors.subtleText}
+          placeholder="Ville *"
+          value={formData.city}
+          onChangeText={(text) => handleInputChange("city", text)}
+        />
+        <TextInput
+          style={[
+            styles.input,
+            {
+              color: colors.text,
+              borderColor: colors.border,
+              backgroundColor: colors.card,
+            },
+          ]}
+          placeholderTextColor={colors.subtleText}
+          placeholder="Pays *"
+          value={formData.country}
+          onChangeText={(text) => handleInputChange("country", text)}
+          editable={false}
+        />
+        {submissionError && (
+          <Text style={[styles.errorText, { color: colors.errorText }]}>
+            {submissionError}
+          </Text>
+        )}
+        <View style={styles.navigationButtons}>
+          <TouchableOpacity
+            style={[
+              styles.navButton,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+            onPress={handlePrevStep}
+          >
+            <Text style={[styles.navButtonText, { color: colors.text }]}>
+              Précédent
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.navButton,
+              { backgroundColor: colors.tint, borderColor: colors.tint },
+            ]}
+            onPress={handleNextStep}
+          >
+            <Text style={styles.navButtonText}>Suivant : Paiement</Text>
+          </TouchableOpacity>
         </View>
+      </View>
     );
   }
 
   function renderStep3() {
     return (
-        <View style={styles.stepContainer}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>3. Paiement et Confirmation</Text>
-            <Text style={[styles.subSectionTitle, { color: colors.text }]}>Méthode de paiement</Text>
-            <View>
-                <TouchableOpacity style={[styles.paymentOption, { borderColor: colors.tint, backgroundColor: colors.card }]}>
-                    <FontAwesome name="check-circle" size={20} color={colors.tint} />
-                    <Text style={[styles.paymentText, { color: colors.text }]}>Paiement à la livraison</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.paymentOption, { borderColor: colors.border, backgroundColor: colors.background }]} disabled>
-                    <FontAwesome name="circle-o" size={20} color={colors.disabled} />
-                    <Text style={[styles.paymentText, { color: colors.disabled }]}>Mobile Money (Bientôt)</Text>
-                </TouchableOpacity>
-            </View>
-            <Text style={[styles.subSectionTitle, { color: colors.text, marginTop: 30 }]}>Récapitulatif Final</Text>
-            <View style={[styles.finalRecap, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={{ color: colors.text, fontWeight: 'bold' }}>Livraison à :</Text>
-                <Text style={{ color: colors.subtleText, lineHeight: 20 }}>{formData.fullName}, {formData.addressLine1}, {formData.city}.\nContact : {formData.phone}</Text>
-                <View style={[styles.totalRow, { marginTop: 15, paddingTop: 15, borderTopWidth: 1, borderTopColor: colors.border }]}>
-                    <Text style={[styles.totalText, { color: colors.text }]}>Total à payer</Text>
-                    <Text style={[styles.totalAmount, { color: colors.tint }]}>{getTotalPrice().toFixed(2)} FCFA</Text>
-                </View>
-            </View>
-            {submissionError && <Text style={[styles.errorText, {color: colors.errorText}]}>{submissionError}</Text>}
-            <View style={styles.navigationButtons}>
-                <TouchableOpacity style={[styles.navButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handlePrevStep} disabled={isSubmitting}>
-                    <Text style={[styles.navButtonText, { color: colors.text }]}>Précédent</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.navButton, { backgroundColor: colors.tint, borderColor: colors.tint }, isSubmitting && {backgroundColor: colors.disabled}]} onPress={handleSubmitOrder} disabled={isSubmitting}>
-                    {isSubmitting ? <ActivityIndicator color="white" /> : <Text style={styles.navButtonText}>Confirmer la Commande</Text>}
-                </TouchableOpacity>
-            </View>
+      <View style={styles.stepContainer}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          3. Paiement et Confirmation
+        </Text>
+        <Text style={[styles.subSectionTitle, { color: colors.text }]}>
+          Méthode de paiement
+        </Text>
+        <View>
+          <TouchableOpacity
+            style={[
+              styles.paymentOption,
+              { borderColor: colors.tint, backgroundColor: colors.card },
+            ]}
+          >
+            <FontAwesome name="check-circle" size={20} color={colors.tint} />
+            <Text style={[styles.paymentText, { color: colors.text }]}>
+              Paiement à la livraison
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.paymentOption,
+              {
+                borderColor: colors.border,
+                backgroundColor: colors.background,
+              },
+            ]}
+            disabled
+          >
+            <FontAwesome name="circle-o" size={20} color={colors.disabled} />
+            <Text style={[styles.paymentText, { color: colors.disabled }]}>
+              Mobile Money (Bientôt)
+            </Text>
+          </TouchableOpacity>
         </View>
+        <Text
+          style={[
+            styles.subSectionTitle,
+            { color: colors.text, marginTop: 30 },
+          ]}
+        >
+          Récapitulatif Final
+        </Text>
+        <View
+          style={[
+            styles.finalRecap,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Text style={{ color: colors.text, fontWeight: "bold" }}>
+            Livraison à :
+          </Text>
+          <Text style={{ color: colors.subtleText, lineHeight: 20 }}>
+            {formData.fullName}, {formData.addressLine1}, {formData.city}
+            .\nContact : {formData.phone}
+          </Text>
+          <View
+            style={[
+              styles.totalRow,
+              {
+                marginTop: 15,
+                paddingTop: 15,
+                borderTopWidth: 1,
+                borderTopColor: colors.border,
+              },
+            ]}
+          >
+            <Text style={[styles.totalText, { color: colors.text }]}>
+              Total à payer
+            </Text>
+            <Text style={[styles.totalAmount, { color: colors.tint }]}>
+              {getTotalPrice().toFixed(2)} FCFA
+            </Text>
+          </View>
+        </View>
+        {submissionError && (
+          <Text style={[styles.errorText, { color: colors.errorText }]}>
+            {submissionError}
+          </Text>
+        )}
+        <View style={styles.navigationButtons}>
+          <TouchableOpacity
+            style={[
+              styles.navButton,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+            onPress={handlePrevStep}
+            disabled={isSubmitting}
+          >
+            <Text style={[styles.navButtonText, { color: colors.text }]}>
+              Précédent
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.navButton,
+              { backgroundColor: colors.tint, borderColor: colors.tint },
+              isSubmitting && { backgroundColor: colors.disabled },
+            ]}
+            onPress={handleSubmitOrder}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.navButtonText}>Confirmer la Commande</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
     );
   }
 
   function renderOrderConfirmation() {
     return (
-        <ScrollView contentContainerStyle={[styles.centered, { backgroundColor: colors.background, justifyContent: 'space-around' }]}>
-            <View style={{alignItems: 'center'}}>
-                <FontAwesome name="check-circle" size={80} color={colors.successText} />
-                <Text style={[styles.confirmationTitle, { color: colors.text }]}>Commande Validée !</Text>
-                <Text style={[styles.confirmationSubText, { color: colors.subtleText }]}>Votre commande N° <Text style={{fontWeight: 'bold', color: colors.text}}>{orderConfirmationData?.orderNumber}</Text> a été passée avec succès.</Text>
+      <ScrollView
+        contentContainerStyle={[
+          styles.centered,
+          {
+            backgroundColor: colors.background,
+            justifyContent: "space-around",
+          },
+        ]}
+      >
+        <View style={{ alignItems: "center" }}>
+          <FontAwesome
+            name="check-circle"
+            size={80}
+            color={colors.successText}
+          />
+          <Text style={[styles.confirmationTitle, { color: colors.text }]}>
+            Commande Validée !
+          </Text>
+          <Text
+            style={[styles.confirmationSubText, { color: colors.subtleText }]}
+          >
+            Votre commande N°{" "}
+            <Text style={{ fontWeight: "bold", color: colors.text }}>
+              {orderConfirmationData?.orderNumber}
+            </Text>{" "}
+            a été passée avec succès.
+          </Text>
+        </View>
+        <View style={styles.qrSection}>
+          <Text style={[styles.qrInstruction, { color: colors.text }]}>
+            Conservez ce QR Code. Il sera scanné lors du retrait de votre
+            commande.
+          </Text>
+          <ViewShot ref={qrCodeRef} options={{ format: "png", quality: 1.0 }}>
+            <View style={styles.qrCodeContainer}>
+              <QRCode
+                value={orderConfirmationData?.qrValue || "error"}
+                size={200}
+                backgroundColor="white"
+                color="black"
+              />
             </View>
-            <View style={styles.qrSection}>
-                <Text style={[styles.qrInstruction, {color: colors.text}]}>Conservez ce QR Code. Il sera scanné lors du retrait de votre commande.</Text>
-                <ViewShot ref={qrCodeRef} options={{ format: "png", quality: 1.0 }}>
-                    <View style={styles.qrCodeContainer}>
-                         <QRCode value={orderConfirmationData?.qrValue || "error"} size={200} backgroundColor="white" color="black"/>
-                    </View>
-                </ViewShot>
-                <TouchableOpacity style={[styles.downloadButton, { backgroundColor: colors.tint }]} onPress={handleDownloadQrCode}>
-                    <FontAwesome name="download" size={16} color="white" />
-                    <Text style={styles.submitButtonText}>Télécharger le QR Code</Text>
-                </TouchableOpacity>
-            </View>
-            <TouchableOpacity style={styles.homeButton} onPress={() => router.replace('/(tabs)/' as any)}>
-                <Text style={[styles.homeButtonText, {color: colors.tint}]}>Retour à l'accueil</Text>
-            </TouchableOpacity>
-        </ScrollView>
+          </ViewShot>
+          <TouchableOpacity
+            style={[styles.downloadButton, { backgroundColor: colors.tint }]}
+            onPress={handleDownloadQrCode}
+          >
+            <FontAwesome name="download" size={16} color="white" />
+            <Text style={styles.submitButtonText}>Télécharger le QR Code</Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity
+          style={styles.homeButton}
+          onPress={() => router.replace("/(tabs)/" as any)}
+        >
+          <Text style={[styles.homeButtonText, { color: colors.tint }]}>
+            Retour à l'accueil
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
     );
   }
 
   // --- AFFICHAGE PRINCIPAL ---
-  if (isAuthLoading || !userToken && !orderConfirmationData) {
-    return <View style={[styles.centered, { backgroundColor: colors.background }]}><ActivityIndicator size="large" color={colors.tint} /></View>;
+  if (isAuthLoading || (!userToken && !orderConfirmationData)) {
+    return (
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.tint} />
+      </View>
+    );
   }
   if (orderConfirmationData) {
     return renderOrderConfirmation();
   }
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView style={[styles.screen, { backgroundColor: colors.background }]} contentContainerStyle={styles.contentContainer} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1, backgroundColor: colors.background }}
+    >
+      <ScrollView
+        style={[styles.screen, { backgroundColor: colors.background }]}
+        contentContainerStyle={styles.contentContainer}
+        keyboardShouldPersistTaps="handled"
+      >
         <Stack.Screen options={{ title: "Validation de la Commande" }} />
         <StepIndicator currentStep={currentStep} colors={colors} />
         {currentStep === 1 && renderStep1()}
@@ -825,44 +1192,145 @@ export default function CheckoutScreen() {
 // --- STYLES ---
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  contentContainer: { paddingHorizontal: 15, paddingVertical: 20, paddingBottom: 50 },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
-  stepIndicatorContainer: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 30 },
-  stepItem: { alignItems: 'center', flexShrink: 1, paddingHorizontal: 4 },
-  stepCircle: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, justifyContent: 'center', alignItems: 'center', marginBottom: 5 },
-  stepNumber: { fontSize: 14, fontWeight: 'bold' },
-  stepLabel: { fontSize: 12, textAlign: 'center' },
+  contentContainer: {
+    paddingHorizontal: 15,
+    paddingVertical: 20,
+    paddingBottom: 50,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  stepIndicatorContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 30,
+  },
+  stepItem: { alignItems: "center", flexShrink: 1, paddingHorizontal: 4 },
+  stepCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 2,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+  stepNumber: { fontSize: 14, fontWeight: "bold" },
+  stepLabel: { fontSize: 12, textAlign: "center" },
   stepLine: { flex: 1, height: 2, marginTop: 14, marginHorizontal: -15 },
   stepContainer: { paddingVertical: 10 },
-  sectionTitle: { fontSize: 22, fontWeight: '700', marginBottom: 20 },
-  subSectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 15 },
-  input: { borderWidth: 1, paddingHorizontal: 15, paddingVertical: Platform.OS === "ios" ? 14 : 10, borderRadius: 8, marginBottom: 15, fontSize: 16 },
-  promoContainer: { flexDirection: 'row', marginTop: 20 },
-  promoButton: { paddingHorizontal: 20, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
-  promoButtonText: { color: 'white', fontWeight: 'bold' },
-  recapItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1 },
+  sectionTitle: { fontSize: 22, fontWeight: "700", marginBottom: 20 },
+  subSectionTitle: { fontSize: 18, fontWeight: "600", marginBottom: 15 },
+  input: {
+    borderWidth: 1,
+    paddingHorizontal: 15,
+    paddingVertical: Platform.OS === "ios" ? 14 : 10,
+    borderRadius: 8,
+    marginBottom: 15,
+    fontSize: 16,
+  },
+  promoContainer: { flexDirection: "row", marginTop: 20 },
+  promoButton: {
+    paddingHorizontal: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+  },
+  promoButtonText: { color: "white", fontWeight: "bold" },
+  recapItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
   itemImage: { width: 50, height: 50, borderRadius: 8, marginRight: 15 },
   totalSection: { marginTop: 20, padding: 15, borderRadius: 8 },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
+  totalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 4,
+  },
   grandTotalRow: { paddingTop: 15, marginTop: 10, borderTopWidth: 1 },
-  totalText: { fontSize: 18, fontWeight: 'bold' },
-  totalAmount: { fontSize: 18, fontWeight: 'bold' },
-  navigationButtons: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 30 },
-  navButton: { flex: 1, paddingVertical: 15, borderRadius: 8, alignItems: 'center', marginHorizontal: 5, borderWidth: 1 },
-  navButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-  paymentOption: { flexDirection: 'row', alignItems: 'center', padding: 15, borderWidth: 2, borderRadius: 8, marginBottom: 10 },
+  totalText: { fontSize: 18, fontWeight: "bold" },
+  totalAmount: { fontSize: 18, fontWeight: "bold" },
+  navigationButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 30,
+  },
+  navButton: {
+    flex: 1,
+    paddingVertical: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginHorizontal: 5,
+    borderWidth: 1,
+  },
+  navButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
+  paymentOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 15,
+    borderWidth: 2,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
   paymentText: { marginLeft: 15, fontSize: 16 },
   finalRecap: { padding: 15, borderRadius: 8, borderWidth: 1, marginTop: 10 },
-  errorText: { textAlign: 'center', marginVertical: 10, fontSize: 15 },
-  submitButton: { flexDirection: 'row', paddingVertical: 15, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 25 },
-  submitButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  errorText: { textAlign: "center", marginVertical: 10, fontSize: 15 },
+  submitButton: {
+    flexDirection: "row",
+    paddingVertical: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 25,
+  },
+  submitButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
   // Confirmation Screen Styles
-  confirmationTitle: { fontSize: 28, fontWeight: 'bold', marginTop: 20, textAlign: 'center' },
-  confirmationSubText: { fontSize: 16, textAlign: 'center', marginTop: 10, paddingHorizontal: 20, lineHeight: 24 },
-  qrSection: { alignItems: 'center', width: '100%', paddingVertical: 30 },
-  qrInstruction: { fontSize: 15, textAlign: 'center', marginBottom: 20, paddingHorizontal: 10 },
-  qrCodeContainer: { padding: 15, backgroundColor: 'white', borderRadius: 10, elevation: 5, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10 },
-  downloadButton: { flexDirection: 'row', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 25, gap: 10 },
+  confirmationTitle: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginTop: 20,
+    textAlign: "center",
+  },
+  confirmationSubText: {
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 10,
+    paddingHorizontal: 20,
+    lineHeight: 24,
+  },
+  qrSection: { alignItems: "center", width: "100%", paddingVertical: 30 },
+  qrInstruction: {
+    fontSize: 15,
+    textAlign: "center",
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+  qrCodeContainer: {
+    padding: 15,
+    backgroundColor: "white",
+    borderRadius: 10,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+  },
+  downloadButton: {
+    flexDirection: "row",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 25,
+    gap: 10,
+  },
   homeButton: { marginTop: 20, padding: 10 },
-  homeButtonText: { fontSize: 16, fontWeight: 'bold' },
+  homeButtonText: { fontSize: 16, fontWeight: "bold" },
 });

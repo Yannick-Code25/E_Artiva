@@ -9,11 +9,13 @@ import {
   Button,
 } from "react-native";
 import { Stack, useLocalSearchParams, useRouter, Href } from "expo-router";
-import ProductCard, { Product as ProductType } from "../../components/ProductCartcate"; // CORRECTION: Le nom du fichier est probablement ProductCard
+import ProductCard, {
+  Product as ProductType,
+} from "../../components/ProductCartcate"; // CORRECTION: Le nom du fichier est probablement ProductCard
 import Colors from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext"; // CHANGEMENT: Utilisation du hook d'authentification pour le thème
 
-const API_BASE_URL = "http://192.168.1.2:3001/api"; // **TON IP**
+const API_BASE_URL = "http://192.168.11.131:3001/api"; // **TON IP**
 
 export default function CategoryProductsScreen() {
   const { categoryId, categoryName } = useLocalSearchParams<{
@@ -25,13 +27,13 @@ export default function CategoryProductsScreen() {
   // CHANGEMENT: Utilisation de useAuth pour obtenir le thème effectif
   const { effectiveAppColorScheme } = useAuth();
   const currentScheme = effectiveAppColorScheme ?? "light";
-  
+
   // Centralisation des couleurs pour cet écran
   const colors = {
-      background: Colors[currentScheme].background,
-      text: Colors[currentScheme].text,
-      tint: Colors[currentScheme].tint,
-      errorText: Colors[currentScheme].errorText,
+    background: Colors[currentScheme].background,
+    text: Colors[currentScheme].text,
+    tint: Colors[currentScheme].tint,
+    errorText: Colors[currentScheme].errorText,
   };
 
   const [products, setProducts] = useState<ProductType[]>([]);
@@ -54,10 +56,14 @@ export default function CategoryProductsScreen() {
         `${API_BASE_URL}/products?category_id=${categoryId}`
       );
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: `Erreur HTTP ${response.status}` }));
-        throw new Error(errorData.message || `Erreur chargement produits (${response.status})`);
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: `Erreur HTTP ${response.status}` }));
+        throw new Error(
+          errorData.message || `Erreur chargement produits (${response.status})`
+        );
       }
-      
+
       const dataWrapper = await response.json();
       if (!dataWrapper || !Array.isArray(dataWrapper.products)) {
         throw new Error("Format de données produits inattendu.");
@@ -74,7 +80,11 @@ export default function CategoryProductsScreen() {
           id: String(prod.id),
           name: productName,
           price: `${parseFloat(productPrice).toFixed(2)} FCFA`, // Formatage propre du prix
-          imageUrl: prod.image_url || `https://via.placeholder.com/150x150/?text=${encodeURIComponent(productName.substring(0, 10))}`,
+          imageUrl:
+            prod.image_url ||
+            `https://via.placeholder.com/150x150/?text=${encodeURIComponent(
+              productName.substring(0, 10)
+            )}`,
           stock: prod.stock,
           description: prod.description,
           category_ids: (prod.category_ids || []).map(String),
@@ -84,9 +94,11 @@ export default function CategoryProductsScreen() {
         };
       });
       setProducts(adaptedProducts);
-
     } catch (err: any) {
-      console.error("CategoryProductsScreen: Erreur fetchProductsByCategory:", err);
+      console.error(
+        "CategoryProductsScreen: Erreur fetchProductsByCategory:",
+        err
+      );
       setError(err.message || "Impossible de charger les produits.");
       setProducts([]);
     } finally {
@@ -110,12 +122,20 @@ export default function CategoryProductsScreen() {
       </View>
     );
   }
-  
+
   if (error) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         {/* CHANGEMENT: Utilisation de la couleur d'erreur du thème */}
-        <Text style={{ color: colors.errorText, marginBottom: 15, textAlign: 'center' }}>{error}</Text>
+        <Text
+          style={{
+            color: colors.errorText,
+            marginBottom: 15,
+            textAlign: "center",
+          }}
+        >
+          {error}
+        </Text>
         <Button
           title="Réessayer"
           onPress={fetchProductsByCategory}
@@ -126,7 +146,9 @@ export default function CategoryProductsScreen() {
   }
 
   return (
-    <View style={[styles.screenContainer, { backgroundColor: colors.background }]}>
+    <View
+      style={[styles.screenContainer, { backgroundColor: colors.background }]}
+    >
       <Stack.Screen options={{ title: pageTitle }} />
       {products.length === 0 ? (
         <View style={styles.centered}>

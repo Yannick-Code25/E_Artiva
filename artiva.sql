@@ -246,8 +246,6 @@ CREATE TABLE orders (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE orders ALTER COLUMN currency TYPE VARCHAR(4); 
--- Et fais de même pour la table payments si elle a aussi une colonne currency
-ALTER TABLE payments ALTER COLUMN currency TYPE VARCHAR(4);
 
 COMMENT ON TABLE orders IS 'Stocke les informations principales de chaque commande passée.';
 COMMENT ON COLUMN orders.order_number IS 'Identifiant public et unique de la commande.';
@@ -296,7 +294,7 @@ CREATE TABLE payments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-
+ALTER TABLE payments ALTER COLUMN currency TYPE VARCHAR(4);
 COMMENT ON TABLE payments IS 'Détails des transactions de paiement pour les commandes.';
 COMMENT ON COLUMN payments.transaction_id IS 'Référence unique de la transaction fournie par la passerelle de paiement.';
 
@@ -319,8 +317,7 @@ CREATE TABLE notifications (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     -- updated_at n'est généralement pas nécessaire pour les notifications
 );
-ALTER TABLE notifications
-ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE notifications ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
 
 COMMENT ON TABLE notifications IS 'Stocke les notifications envoyées aux utilisateurs.';
 COMMENT ON COLUMN notifications.link_url IS 'Lien cliquable associé à la notification (vers une page de l''app).';
@@ -347,12 +344,12 @@ COMMENT ON TABLE wishlist_items IS 'Stocke les produits ajoutés à la liste de 
 CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
 CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories(parent_id);
 
-CREATE INDEX IF NOT EXISTS idx_products_name ON products(name); -- Si tu recherches souvent par nom
+CREATE INDEX IF NOT EXISTS idx_products_name ON products(name); 
 CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
 
 CREATE INDEX IF NOT EXISTS idx_product_images_product_id ON product_images(product_id);
 
-CREATE INDEX IF NOT EXISTS idx_product_categories_category_id ON product_categories(category_id); -- L'autre partie de la PK est déjà indexée
+CREATE INDEX IF NOT EXISTS idx_product_categories_category_id ON product_categories(category_id); 
 
 CREATE INDEX IF NOT EXISTS idx_product_tag_assignments_tag_id ON product_tag_assignments(tag_id);
 
@@ -369,7 +366,7 @@ CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items(product_id)
 
 CREATE INDEX IF NOT EXISTS idx_payments_transaction_id ON payments(transaction_id);
 
-CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses(user_id);
+CREATE INDEX IF NOT EXISTS idx_address_user_id ON address(user_id);
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type);
