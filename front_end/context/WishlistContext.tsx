@@ -79,8 +79,6 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         console.log("WishlistContext: Wishlist chargée depuis AsyncStorage.");
       }
     } catch (e) {
-      console.error("WishlistContext: Erreur chargement wishlist", e);
-      // En cas d'erreur API, on pourrait essayer de charger depuis local, ou juste vider
       setWishlistItems([]);
     } finally {
       setIsLoadingWishlist(false);
@@ -117,7 +115,6 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       }
       return true; // Indiquer le succès
     } catch (e) {
-      console.error("WishlistContext: Erreur addToWishlist API", e);
       Alert.alert(
         "Erreur",
         "Impossible d'ajouter à la liste de souhaits pour le moment."
@@ -147,7 +144,6 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
       }
       return true;
     } catch (e) {
-      console.error("WishlistContext: Erreur removeFromWishlist API", e);
       Alert.alert(
         "Erreur",
         "Impossible de retirer de la liste de souhaits pour le moment."
