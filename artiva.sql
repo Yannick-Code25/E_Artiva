@@ -111,7 +111,8 @@ CREATE TABLE products (
     description TEXT,                               -- Description détaillée du produit
     price NUMERIC(12, 2) NOT NULL CHECK (price >= 0), -- Prix du produit, doit être positif ou nul
     stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0), -- Quantité en stock, positive ou nulle
-    sku VARCHAR(100) UNIQUE,                        -- Stock Keeping Unit (identifiant unique interne)
+    sku VARCHAR(100) UNIQUE,   
+    image_url TEXT,                      -- Stock Keeping Unit (identifiant unique interne)
     is_published BOOLEAN DEFAULT FALSE NOT NULL,    -- Indique si le produit est visible par les clients
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
