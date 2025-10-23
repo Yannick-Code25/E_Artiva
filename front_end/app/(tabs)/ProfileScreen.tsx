@@ -113,14 +113,25 @@
 //     isLoading: isAuthLoading,
 //     unreadNotificationCount,
 //     fetchUnreadNotificationCount,
+//     effectiveAppColorScheme,
 //   } = useAuth();
 //   const router = useRouter();
-//   const colorScheme = useColorScheme();
-//   const tintColor = Colors[colorScheme ?? "light"].tint;
-//   const textColor = Colors[colorScheme ?? "light"].text;
-//   const cardColor = Colors[colorScheme ?? "light"].card;
-//   const subtleTextColor = Colors[colorScheme ?? "light"].tabIconDefault;
-//   const backgroundColor = Colors[colorScheme ?? "light"].background;
+//   //const colorScheme = useColorScheme();
+//   //const tintColor = Colors[colorScheme ?? "light"].tint;
+//   //const textColor = Colors[colorScheme ?? "light"].text;
+//   //const cardColor = Colors[colorScheme ?? "light"].card;
+//   //const subtleTextColor = Colors[colorScheme ?? "light"].tabIconDefault;
+//   //const backgroundColor = Colors[colorScheme ?? "light"].background;
+
+//   // CHANGEMENT: Utilisation des couleurs dynamiques du thème partout
+//   const currentScheme = effectiveAppColorScheme ?? "light";
+//   const colors = Colors[currentScheme];
+//   const tintColor = Colors[currentScheme].tint;
+//   const textColor = Colors[currentScheme].text;
+//   const backgroundColor = Colors[currentScheme].background;
+//   const subtleTextColor = Colors[currentScheme].subtleText;
+//   const successTextColor = Colors[currentScheme].successText;
+//   const cardColor = Colors[currentScheme].card; // Couleur de fond des cartes
 
 //   const [orders, setOrders] = useState<Order[]>([]);
 //   const [isOrdersModalVisible, setIsOrdersModalVisible] = useState(false);
@@ -232,6 +243,10 @@
 //     return (
 //       <View style={[styles.centered, { backgroundColor }]}>
 //         <ActivityIndicator size="large" color={tintColor} />
+//         {/*LoadingData is an indicator that the page is loading */}
+//         <Text style={{ marginTop: 10, color: textColor }}>
+//           Chargement du compte...
+//         </Text>
 //       </View>
 //     );
 //   }
@@ -373,10 +388,12 @@
 //       >
 //         <Pressable style={styles.modalOverlay} onPress={toggleOrdersModal}>
 //           <Pressable
-//             style={styles.modalContent}
+//             style={[styles.modalContent, { backgroundColor: cardColor }]} //Le background modalContent est maintenant dynamique
 //             onPress={(e) => e.stopPropagation()}
 //           >
-//             <Text style={styles.modalTitle}>Mes Commandes</Text>
+//             <Text style={[styles.modalTitle, { color: tintColor }]}>
+//               Mes Commandes
+//             </Text>
 //             {isLoadingData && orders.length === 0 ? (
 //               <ActivityIndicator
 //                 size="large"
@@ -384,9 +401,11 @@
 //                 style={{ marginVertical: 20 }}
 //               />
 //             ) : error && orders.length === 0 ? (
-//               <Text style={styles.errorText}>{error}</Text>
+//               <Text style={[styles.errorText, { color: subtleTextColor }]}>
+//                 {error}
+//               </Text>
 //             ) : orders.length === 0 ? (
-//               <Text style={styles.noOrdersText}>
+//               <Text style={[styles.noOrdersText, { color: subtleTextColor }]}>
 //                 Vous n'avez aucune commande pour le moment.
 //               </Text>
 //             ) : (
@@ -491,7 +510,8 @@
 //   centered: {
 //     flex: 1,
 //     justifyContent: "center",
-//     alignItems: "center" /* backgroundColor est appliqué dynamiquement */,
+//     alignItems: "center",
+//     /* backgroundColor est appliqué dynamiquement */
 //   },
 //   container: { flex: 1 /* backgroundColor est appliqué dynamiquement */ },
 //   customHeader: {
@@ -502,13 +522,19 @@
 //     paddingVertical: 12,
 //     paddingTop: Platform.OS === "android" ? 45 : 20,
 //     borderBottomWidth: 1,
+//     // borderBottomColor est appliqué dynamiquement
 //   },
-//   customHeaderTitle: { fontSize: 20, fontWeight: "600", textAlign: "center" }, // flex:1 retiré pour un meilleur centrage avec boutons optionnels
+//   customHeaderTitle: {
+//     fontSize: 20,
+//     fontWeight: "600",
+//     textAlign: "center", // color est appliqué dynamiquement
+//   }, // flex:1 retiré pour un meilleur centrage avec boutons optionnels
 //   header: {
 //     paddingHorizontal: 24,
 //     paddingTop: 20,
 //     paddingBottom: 24,
 //     borderBottomWidth: 1,
+//     //borderBottomColor est appliqué dynamiquement
 //   },
 //   profileSection: { flexDirection: "row", alignItems: "center" },
 //   avatar: {
@@ -516,11 +542,17 @@
 //     height: 70,
 //     borderRadius: 35,
 //     marginRight: 16,
-//     backgroundColor: "#E5E7EB",
+//     // backgroundColor: "#E5E7EB",
 //   },
 //   profileInfo: { flex: 1 },
-//   name: { fontWeight: "bold", fontSize: 20 },
-//   email: { fontSize: 14, marginTop: 2 },
+//   name: {
+//     fontWeight: "bold",
+//     fontSize: 20, // color est appliqué dynamiquement
+//   },
+//   email: {
+//     fontSize: 14,
+//     marginTop: 2, // color est appliqué dynamiquement
+//   },
 //   menuSection: {
 //     marginTop: 20,
 //     borderRadius: 12,
@@ -538,6 +570,7 @@
 //     paddingVertical: 16,
 //     paddingHorizontal: 15,
 //     borderBottomWidth: 1,
+//     //borderBottomColor est appliqué dynamiquement
 //   },
 //   menuItemLast: { borderBottomWidth: 0 },
 //   menuItemIcon: {
@@ -547,10 +580,17 @@
 //     alignItems: "center",
 //     justifyContent: "center",
 //     marginRight: 15,
+//     //backgroundColor:  backgroundColor === '#000000' ? '#374151' : '#EBF4FF',
 //   },
 //   menuItemContent: { flex: 1 },
-//   menuItemTitle: { fontWeight: "600", fontSize: 15 },
-//   menuItemSubtitle: { fontSize: 13, marginTop: 2 },
+//   menuItemTitle: {
+//     fontWeight: "600",
+//     fontSize: 15, // color est appliqué dynamiquement
+//   },
+//   menuItemSubtitle: {
+//     fontSize: 13,
+//     marginTop: 2, // color est appliqué dynamiquement
+//   },
 //   notificationItemBadgeContainer: {
 //     backgroundColor: "red",
 //     borderRadius: 10,
@@ -590,7 +630,7 @@
 //     backgroundColor: "rgba(0,0,0,0.5)",
 //   },
 //   modalContent: {
-//     backgroundColor: "white",
+//     //backgroundColor: "white",
 //     borderTopLeftRadius: 20,
 //     borderTopRightRadius: 20,
 //     paddingHorizontal: 20,
@@ -609,7 +649,7 @@
 //     fontSize: 20,
 //     marginBottom: 20,
 //     textAlign: "center",
-//     color: "green",
+//     //color: "green",
 //   },
 //   ordersContainer: {
 //     /* maxHeight: 'calc(100% - 80px)' si le bouton fermer est fixe en bas */
@@ -628,7 +668,11 @@
 //   orderNumber: { fontWeight: "bold", fontSize: 16, color: "red" },
 //   orderDate: { fontSize: 13 },
 //   orderProducts: { marginLeft: 8, marginBottom: 8, marginTop: 5 },
-//   productsTitle: { fontWeight: "600", fontSize: 14, marginBottom: 6 },
+//   productsTitle: {
+//     fontWeight: "600",
+//     fontSize: 14,
+//     marginBottom: 6, // color est appliqué dynamiquement
+//   },
 //   modalProductItem: {
 //     flexDirection: "row",
 //     alignItems: "center",
@@ -642,9 +686,16 @@
 //     backgroundColor: "#e0e0e0",
 //   },
 //   modalProductInfo: { flex: 1 },
-//   modalProductName: { fontSize: 14, fontWeight: "500" },
-//   modalProductDetails: { fontSize: 12 },
-//   productItem: { fontSize: 14 }, // style pour les items produits dans la liste
+//   modalProductName: {
+//     fontSize: 14,
+//     fontWeight: "500", // color est appliqué dynamiquement
+//   },
+//   modalProductDetails: {
+//     fontSize: 12, // color est appliqué dynamiquement
+//   },
+//   productItem: {
+//     fontSize: 14, // color est appliqué dynamiquement
+//   }, // style pour les items produits dans la liste
 //   orderFooter: {
 //     marginTop: 10,
 //     flexDirection: "row",
@@ -653,7 +704,11 @@
 //   },
 //   orderPrice: { fontWeight: "bold", fontSize: 16, color: "tintColor" },
 //   orderStatus: { fontSize: 14, fontWeight: "500", color: "tintColor" },
-//   noOrdersText: { fontSize: 16, textAlign: "center", paddingVertical: 30 },
+//   noOrdersText: {
+//     fontSize: 16,
+//     textAlign: "center",
+//     paddingVertical: 30, // color est appliqué dynamiquement
+//   },
 //   closeButton: {
 //     paddingVertical: 14,
 //     borderRadius: 8,
@@ -661,11 +716,12 @@
 //     marginTop: 20,
 //     borderWidth: 1,
 //     borderColor: "transparent",
+//     //backgroundColor: tintColor,
 //   },
 //   closeButtonText: {
 //     fontSize: 16,
 //     fontWeight: "bold",
-//     // color: cardColor === '#000000' || cardColor === '#121212' ? tintColor : 'white', // Adapte la couleur du texte au fond du bouton
+//     //color: cardColor === '#000000' || cardColor === '#121212' ? tintColor : 'white', // Adapte la couleur du texte au fond du bouton
 //     color: "white",
 //   },
 //   errorText: {
@@ -678,6 +734,7 @@
 // });
 
 // ARTIVA/front_end/app/(tabs)/ProfileScreen.tsx
+
 import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
@@ -687,69 +744,59 @@ import {
   Image,
   ScrollView,
   Modal,
-  Button,
   ActivityIndicator,
   Alert,
-  Platform, // Ajout de Platform pour les styles
+  Platform,
 } from "react-native";
 import {
   Settings,
   ShoppingBag,
   Heart,
-  CreditCard,
   Bell,
-  LogOut as LogOutIcon, // Renommé pour éviter conflit si LogOut est utilisé ailleurs
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
+  LogOut as LogOutIcon,
 } from "lucide-react-native";
 import { useRouter, Href, Stack, useFocusEffect } from "expo-router";
-import { useAuth, User } from "../../context/AuthContext"; // Assure-toi que User est exporté depuis AuthContext
-import Colors from "../../constants/Colors";
-import { useColorScheme } from "../../components/useColorScheme";
+import { useAuth } from "../../context/AuthContext";
+import Colors from "../../constants/Colors"; // Ton fichier de couleurs
 import { FontAwesome } from "@expo/vector-icons";
 
-// Définition des types pour les données
+// (Les interfaces Order, OrderItem, UserDetails, etc. restent les mêmes)
 interface UserDetails {
-  // User est importé de AuthContext
   profileImage?: string;
-  full_name?: string; // Si différent de user.name de AuthContext
+  full_name?: string;
   city?: string;
   email?: string;
 }
 
-// Type pour un article DANS UNE COMMANDE (order_item)
 interface OrderItem {
-  itemId?: string | number; // Vient de oi.id as "itemId"
-  product_id?: string | number; // Vient de oi.product_id
+  itemId?: string | number;
+  product_id?: string | number;
   product_name: string;
   sku?: string;
   quantity: number;
   unit_price: string | number;
   subtotal: string | number;
-  productImageUrl?: string; // Image du produit dans la commande
+  productImageUrl?: string;
 }
 
 interface Order {
   orderId: string | number;
-  order_number?: string; // Rendu optionnel si l'API ne le renvoie pas toujours
+  order_number?: string;
   status: string;
   total: string | number;
   currency: string;
   createdAt: string;
   updatedAt?: string;
-  products: OrderItem[]; // Tableau d'OrderItem
+  products: OrderItem[];
 }
 
-// Menu Items
 const menuItemsBaseConfig: {
-  // Renommé en menuItemsBaseConfig pour clarté
   id: string;
   icon: React.ElementType;
   title: string;
-  subtitleBase: string; // Sous-titre de base
+  subtitleBase: string;
   route?: Href;
-  action?: "toggleOrdersModal"; // Pour les actions qui ne sont pas des navigations directes
+  action?: "toggleOrdersModal";
 }[] = [
   {
     id: "orders",
@@ -765,14 +812,13 @@ const menuItemsBaseConfig: {
     subtitleBase: "Vos produits favoris",
     route: "/(tabs)/WishlistScreen" as Href,
   },
-  // { id: 'payment', icon: CreditCard, title: "Paiement", subtitleBase: "Gérer les moyens", route: "/(tabs)/payment-methods" as Href },
   {
     id: "notifications",
     icon: Bell,
     title: "Notifications",
     subtitleBase: "Vos alertes récentes",
     route: "/notifications" as Href,
-  }, // Route directe
+  },
   {
     id: "settings",
     icon: Settings,
@@ -782,7 +828,7 @@ const menuItemsBaseConfig: {
   },
 ];
 
-const API_BASE_URL = "http://192.168.11.131:3001/api"; // TON IP
+const API_BASE_URL = "http://192.168.11.131:3001/api";
 
 export default function TabProfileScreen() {
   const {
@@ -795,35 +841,20 @@ export default function TabProfileScreen() {
     effectiveAppColorScheme,
   } = useAuth();
   const router = useRouter();
-  //const colorScheme = useColorScheme();
-  //const tintColor = Colors[colorScheme ?? "light"].tint;
-  //const textColor = Colors[colorScheme ?? "light"].text;
-  //const cardColor = Colors[colorScheme ?? "light"].card;
-  //const subtleTextColor = Colors[colorScheme ?? "light"].tabIconDefault;
-  //const backgroundColor = Colors[colorScheme ?? "light"].background;
 
-  // CHANGEMENT: Utilisation des couleurs dynamiques du thème partout
+  // Utilisation des couleurs dynamiques du thème via ton fichier Colors.ts
   const currentScheme = effectiveAppColorScheme ?? "light";
   const colors = Colors[currentScheme];
-  const tintColor = Colors[currentScheme].tint;
-  const textColor = Colors[currentScheme].text;
-  const backgroundColor = Colors[currentScheme].background;
-  const subtleTextColor = Colors[currentScheme].subtleText;
-  const successTextColor = Colors[currentScheme].successText;
-  const cardColor = Colors[currentScheme].card; // Couleur de fond des cartes
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [isOrdersModalVisible, setIsOrdersModalVisible] = useState(false);
-  const [isLoadingData, setIsLoadingData] = useState(false); // Pour fetchUserOrders
+  const [isLoadingData, setIsLoadingData] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [userDetails, setUserDetails] = useState<UserDetails | null>(null); // Pour les détails supplémentaires du profil
+  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       if (userToken) {
-        console.log(
-          "ProfileScreen a le focus, mise à jour du compte des notifications."
-        );
         fetchUnreadNotificationCount();
       }
     }, [userToken, fetchUnreadNotificationCount])
@@ -831,8 +862,7 @@ export default function TabProfileScreen() {
 
   const fetchUserOrders = useCallback(async () => {
     if (!userToken) return;
-    console.log("ProfileScreen: Appel de fetchUserOrders");
-    setIsLoadingData(true); // Utiliser cet état pour le chargement des commandes
+    setIsLoadingData(true);
     setError(null);
     try {
       const response = await fetch(`${API_BASE_URL}/orders`, {
@@ -850,7 +880,6 @@ export default function TabProfileScreen() {
       const ordersData: Order[] = await response.json();
       setOrders(ordersData);
     } catch (err: any) {
-      console.error("fetchUserOrders error:", err);
       setError(
         err.message || "Impossible de charger l'historique des commandes."
       );
@@ -860,20 +889,13 @@ export default function TabProfileScreen() {
     }
   }, [userToken]);
 
-  // Charger les commandes une fois au montage si l'utilisateur est connecté
-  useEffect(() => {
-    if (user && userToken) {
-      // fetchUserOrders(); // Déplacé dans toggleOrdersModal pour ne charger qu'à l'ouverture
-    }
-  }, [user, userToken]);
-
   const handleLogout = async () => {
     Alert.alert("Déconnexion", "Êtes-vous sûr de vouloir vous déconnecter ?", [
       { text: "Annuler", style: "cancel" },
       {
         text: "Oui",
         onPress: async () => {
-          await signOut(); /* La redirection est gérée par AuthContext/app/index.tsx */
+          await signOut();
         },
       },
     ]);
@@ -881,7 +903,6 @@ export default function TabProfileScreen() {
 
   const toggleOrdersModal = () => {
     if (!isOrdersModalVisible && user && userToken) {
-      // Charger les commandes seulement si on ouvre le modal et qu'on est connecté
       fetchUserOrders();
     }
     setIsOrdersModalVisible(!isOrdersModalVisible);
@@ -896,36 +917,66 @@ export default function TabProfileScreen() {
           year: "numeric",
           month: "long",
           day: "numeric",
-        }) +
-          " " +
-          date.toLocaleTimeString("fr-FR");
+          hour: "2-digit",
+          minute: "2-digit",
+        });
   };
 
-  // Construire dynamiquement les items du menu pour inclure le compte des notifications dans le sous-titre
-  // ou simplement pour utiliser la variable unreadNotificationCount pour le badge
-  const menuItemsToDisplay = menuItemsBaseConfig.map((item) => {
-    if (item.id === "notifications") {
-      return {
-        ...item,
-        // Optionnel : Mettre à jour le sous-titre
-        // subtitle: unreadNotificationCount > 0
-        //   ? `${unreadNotificationCount} nouvelle(s)`
-        //   : item.subtitleBase,
-        subtitle: item.subtitleBase, // Garder le sous-titre de base, le badge visuel suffit
-      };
-    }
-    return item; // Retourner l'item original pour les autres
-  });
+  // if (isAuthLoading || !user) {
+  //   return (
+  //     <View style={[styles.centered, { backgroundColor: colors.background }]}>
+  //       <ActivityIndicator size="large" color={colors.primary} />
+  //       <Text style={{ marginTop: 10, color: colors.text }}>Chargement du compte...</Text>
+  //     </View>
+  //   );
+  // }
 
-  if (isAuthLoading || !user) {
-    // Attendre que AuthContext ait chargé l'utilisateur
+  // 1. Gérer l'état de chargement initial
+  if (isAuthLoading) {
     return (
-      <View style={[styles.centered, { backgroundColor }]}>
-        <ActivityIndicator size="large" color={tintColor} />
-        {/*LoadingData is an indicator that the page is loading */}
-        <Text style={{ marginTop: 10, color: textColor }}>
-          Chargement du compte...
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  // 2. Gérer le cas où l'utilisateur n'est pas connecté
+  if (!user) {
+    return (
+      <View
+        style={[
+          styles.centered,
+          { backgroundColor: colors.background, paddingHorizontal: 20 },
+        ]}
+      >
+        <Text style={[styles.authTitle, { color: colors.text }]}>
+          Votre profil vous attend !
         </Text>
+        <Text style={[styles.authSubtitle, { color: colors.subtleText }]}>
+          Connectez-vous ou créez un compte pour accéder à vos commandes, listes
+          de souhaits et plus encore.
+        </Text>
+        <Pressable
+          style={[styles.authButton, { backgroundColor: colors.primary }]}
+          onPress={() => router.push("/login")}
+        >
+          <Text style={styles.authButtonText}>Se connecter</Text>
+        </Pressable>
+        <Pressable
+          style={[
+            styles.authButton,
+            {
+              backgroundColor: "transparent",
+              borderWidth: 1,
+              borderColor: colors.primary,
+            },
+          ]}
+          onPress={() => router.push("/register")}
+        >
+          <Text style={[styles.authButtonText, { color: colors.primary }]}>
+            S'inscrire
+          </Text>
+        </Pressable>
       </View>
     );
   }
@@ -934,99 +985,96 @@ export default function TabProfileScreen() {
     userDetails?.full_name || user.name || "Utilisateur Artiva";
   const displayEmail =
     userDetails?.email || user.email || "Email non disponible";
-  // Utilise une image de placeholder ou une logique pour une vraie image de profil
   const profileImageUrl =
     userDetails?.profileImage ||
-    (user as any)?.profileImageFromAuthContext ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(
       displayName
     )}&background=random&size=128`;
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor }]}
+      style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.contentContainerScrollView}
     >
       <Stack.Screen options={{ title: "Mon Profil", headerShown: false }} />
 
+      {/* --- Header Personnalisé --- */}
       <View
         style={[
           styles.customHeader,
-          { borderBottomColor: subtleTextColor, backgroundColor: cardColor },
+          {
+            backgroundColor: colors.card,
+            borderBottomColor: colors.cardBorder,
+          },
         ]}
       >
-        {/* Espace pour équilibrer si pas de bouton retour. Si tu veux un bouton retour: */}
-        {/* {router.canGoBack() && (
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={28} color={tintColor} />
-          </TouchableOpacity>
-        )} */}
         <View style={{ width: 40 }} />
-        <Text style={[styles.customHeaderTitle, { color: textColor }]}>
+        <Text style={[styles.customHeaderTitle, { color: colors.text }]}>
           Mon Profil
         </Text>
         <View style={{ width: 40 }} />
       </View>
+
+      {/* --- Section Infos Profil --- */}
       <View
         style={[
           styles.header,
-          { backgroundColor: cardColor, borderBottomColor: subtleTextColor },
+          {
+            backgroundColor: colors.card,
+            borderBottomColor: colors.cardBorder,
+          },
         ]}
       >
         <View style={styles.profileSection}>
           <Image source={{ uri: profileImageUrl }} style={styles.avatar} />
           <View style={styles.profileInfo}>
-            <Text style={[styles.name, { color: textColor }]}>
+            <Text style={[styles.name, { color: colors.text }]}>
               {displayName}
             </Text>
-            <Text style={[styles.email, { color: subtleTextColor }]}>
+            <Text style={[styles.email, { color: colors.subtleText }]}>
               {displayEmail}
             </Text>
           </View>
         </View>
       </View>
 
-      {/* Section Menu */}
-      <View style={[styles.menuSection, { backgroundColor: cardColor }]}>
-        {menuItemsToDisplay.map((menuItem, index) => (
+      {/* --- Section Menu --- */}
+      <View style={[styles.menuSection, { backgroundColor: colors.card }]}>
+        {menuItemsBaseConfig.map((menuItem, index) => (
           <Pressable
             key={menuItem.id}
             style={[
               styles.menuItem,
-              index === menuItemsToDisplay.length - 1 && styles.menuItemLast,
-              { borderBottomColor: subtleTextColor },
+              index === menuItemsBaseConfig.length - 1 && styles.menuItemLast,
+              { borderBottomColor: colors.cardBorder },
             ]}
             onPress={() => {
-              if (menuItem.action === "toggleOrdersModal") {
-                toggleOrdersModal();
-              } else if (menuItem.route) {
-                router.push(menuItem.route);
-              }
+              if (menuItem.action === "toggleOrdersModal") toggleOrdersModal();
+              else if (menuItem.route) router.push(menuItem.route);
             }}
           >
             <View
               style={[
                 styles.menuItemIcon,
-                {
-                  backgroundColor:
-                    backgroundColor === "#000000" ? "#374151" : "#EBF4FF",
-                },
+                { backgroundColor: colors.inputBackground },
               ]}
             >
-              <menuItem.icon size={20} color={tintColor} strokeWidth={1.75} />
+              <menuItem.icon
+                size={20}
+                color={colors.primary}
+                strokeWidth={1.75}
+              />
             </View>
             <View style={styles.menuItemContent}>
-              <Text style={[styles.menuItemTitle, { color: textColor }]}>
+              <Text style={[styles.menuItemTitle, { color: colors.text }]}>
                 {menuItem.title}
               </Text>
               <Text
-                style={[styles.menuItemSubtitle, { color: subtleTextColor }]}
+                style={[styles.menuItemSubtitle, { color: colors.subtleText }]}
               >
                 {menuItem.subtitleBase}
               </Text>
             </View>
-
-            {/* Badge de Notification */}
             {menuItem.id === "notifications" && unreadNotificationCount > 0 && (
               <View style={styles.notificationItemBadgeContainer}>
                 <Text style={styles.notificationItemBadgeText}>
@@ -1034,31 +1082,41 @@ export default function TabProfileScreen() {
                 </Text>
               </View>
             )}
-
-            {/* Chevrons */}
             {menuItem.action === "toggleOrdersModal" ? (
               <FontAwesome
                 name={isOrdersModalVisible ? "chevron-up" : "chevron-down"}
                 size={16}
-                color={subtleTextColor}
+                color={colors.subtleText}
               />
             ) : menuItem.route ? (
               <FontAwesome
                 name="chevron-right"
                 size={16}
-                color={subtleTextColor}
+                color={colors.subtleText}
               />
             ) : null}
           </Pressable>
         ))}
       </View>
 
-      <Pressable style={styles.logoutButton} onPress={handleLogout}>
-        <LogOutIcon size={20} color="#EF4444" strokeWidth={2} />
-        <Text style={styles.logoutText}>Se déconnecter</Text>
+      {/* --- Bouton Déconnexion --- */}
+      <Pressable
+        style={[
+          styles.logoutButton,
+          {
+            backgroundColor: colors.errorBackground,
+            borderColor: colors.errorText,
+          },
+        ]}
+        onPress={handleLogout}
+      >
+        <LogOutIcon size={20} color={colors.errorText} strokeWidth={2} />
+        <Text style={[styles.logoutText, { color: colors.errorText }]}>
+          Se déconnecter
+        </Text>
       </Pressable>
 
-      {/* Modal pour afficher les commandes */}
+      {/* --- Modal des Commandes --- */}
       <Modal
         visible={isOrdersModalVisible}
         animationType="slide"
@@ -1067,24 +1125,24 @@ export default function TabProfileScreen() {
       >
         <Pressable style={styles.modalOverlay} onPress={toggleOrdersModal}>
           <Pressable
-            style={[styles.modalContent, { backgroundColor: cardColor }]} //Le background modalContent est maintenant dynamique
+            style={[styles.modalContent, { backgroundColor: colors.card }]}
             onPress={(e) => e.stopPropagation()}
           >
-            <Text style={[styles.modalTitle, { color: tintColor }]}>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>
               Mes Commandes
             </Text>
             {isLoadingData && orders.length === 0 ? (
               <ActivityIndicator
                 size="large"
-                color={tintColor}
+                color={colors.primary}
                 style={{ marginVertical: 20 }}
               />
             ) : error && orders.length === 0 ? (
-              <Text style={[styles.errorText, { color: subtleTextColor }]}>
+              <Text style={[styles.errorText, { color: colors.errorText }]}>
                 {error}
               </Text>
             ) : orders.length === 0 ? (
-              <Text style={[styles.noOrdersText, { color: subtleTextColor }]}>
+              <Text style={[styles.noOrdersText, { color: colors.subtleText }]}>
                 Vous n'avez aucune commande pour le moment.
               </Text>
             ) : (
@@ -1093,77 +1151,80 @@ export default function TabProfileScreen() {
                 nestedScrollEnabled={true}
               >
                 {orders.map((order) => (
-                  <View key={order.orderId} style={styles.orderItem}>
+                  <View
+                    key={order.orderId}
+                    style={[
+                      styles.orderItem,
+                      { borderBottomColor: colors.cardBorder },
+                    ]}
+                  >
                     <View style={styles.orderHeader}>
-                      <Text style={[styles.orderNumber, { color: textColor }]}>
+                      <Text
+                        style={[styles.orderNumber, { color: colors.primary }]}
+                      >
                         CDE #{order.order_number || order.orderId}
                       </Text>
                       <Text
-                        style={[styles.orderDate, { color: subtleTextColor }]}
+                        style={[styles.orderDate, { color: colors.subtleText }]}
                       >
                         {formatDate(order.createdAt)}
                       </Text>
                     </View>
                     <View style={styles.orderProducts}>
                       <Text
-                        style={[styles.productsTitle, { color: textColor }]}
+                        style={[styles.productsTitle, { color: colors.text }]}
                       >
-                        Produits:
+                        Produits :
                       </Text>
-                      {order.products && order.products.length > 0 ? (
-                        order.products.map((productItem, idx) => (
-                          <View
-                            key={
-                              productItem.itemId ||
-                              productItem.product_id ||
-                              idx
-                            }
-                            style={styles.modalProductItem}
-                          >
-                            {productItem.productImageUrl && (
-                              <Image
-                                source={{ uri: productItem.productImageUrl }}
-                                style={styles.modalProductImage}
-                              />
-                            )}
-                            <View style={styles.modalProductInfo}>
-                              <Text
-                                style={[
-                                  styles.modalProductName,
-                                  { color: textColor },
-                                ]}
-                              >
-                                {productItem.product_name || "Produit"}
-                              </Text>
-                              <Text
-                                style={[
-                                  styles.modalProductDetails,
-                                  { color: subtleTextColor },
-                                ]}
-                              >
-                                Qté: {productItem.quantity} - Prix Unit.:{" "}
-                                {productItem.unit_price} {order.currency}
-                              </Text>
-                            </View>
-                          </View>
-                        ))
-                      ) : (
-                        <Text
-                          style={[
-                            styles.productItem,
-                            { color: subtleTextColor },
-                          ]}
+                      {order.products?.map((item, idx) => (
+                        <View
+                          key={item.itemId || idx}
+                          style={styles.modalProductItem}
                         >
-                          Détails non disponibles.
-                        </Text>
-                      )}
+                          {item.productImageUrl && (
+                            <Image
+                              source={{ uri: item.productImageUrl }}
+                              style={styles.modalProductImage}
+                            />
+                          )}
+                          <View style={styles.modalProductInfo}>
+                            <Text
+                              style={[
+                                styles.modalProductName,
+                                { color: colors.text },
+                              ]}
+                            >
+                              {item.product_name}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.modalProductDetails,
+                                { color: colors.subtleText },
+                              ]}
+                            >
+                              Qté: {item.quantity} - Prix: {item.unit_price}{" "}
+                              {order.currency}
+                            </Text>
+                          </View>
+                        </View>
+                      ))}
                     </View>
                     <View style={styles.orderFooter}>
-                      <Text style={[styles.orderPrice, { color: tintColor }]}>
+                      <Text
+                        style={[
+                          styles.orderPrice,
+                          { color: colors.tint_price },
+                        ]}
+                      >
                         Total: {order.total} {order.currency}
                       </Text>
-                      <Text style={[styles.orderStatus, { color: tintColor }]}>
-                        Statut: {order.status}
+                      <Text
+                        style={[
+                          styles.orderStatus,
+                          { color: colors.successText },
+                        ]}
+                      >
+                        {order.status}
                       </Text>
                     </View>
                   </View>
@@ -1171,7 +1232,7 @@ export default function TabProfileScreen() {
               </ScrollView>
             )}
             <Pressable
-              style={[styles.closeButton, { backgroundColor: tintColor }]}
+              style={[styles.closeButton, { backgroundColor: colors.primary }]}
               onPress={toggleOrdersModal}
             >
               <Text style={styles.closeButtonText}>Fermer</Text>
@@ -1183,16 +1244,10 @@ export default function TabProfileScreen() {
   );
 }
 
-// Styles (Assure-toi d'avoir tous les styles nécessaires ici)
+// --- Styles (maintenant sans couleurs fixes) ---
 const styles = StyleSheet.create({
-  contentContainerScrollView: { paddingBottom: 30 }, // Pour que le contenu ne soit pas caché par la barre d'onglet
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    /* backgroundColor est appliqué dynamiquement */
-  },
-  container: { flex: 1 /* backgroundColor est appliqué dynamiquement */ },
+  contentContainerScrollView: { paddingBottom: 30 },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
   customHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -1201,37 +1256,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingTop: Platform.OS === "android" ? 45 : 20,
     borderBottomWidth: 1,
-    // borderBottomColor est appliqué dynamiquement
   },
-  customHeaderTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    textAlign: "center", // color est appliqué dynamiquement
-  }, // flex:1 retiré pour un meilleur centrage avec boutons optionnels
+  customHeaderTitle: { fontSize: 20, fontWeight: "600", textAlign: "center" },
   header: {
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 24,
     borderBottomWidth: 1,
-    //borderBottomColor est appliqué dynamiquement
   },
   profileSection: { flexDirection: "row", alignItems: "center" },
-  avatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    marginRight: 16,
-    // backgroundColor: "#E5E7EB",
-  },
+  avatar: { width: 70, height: 70, borderRadius: 35, marginRight: 16 },
   profileInfo: { flex: 1 },
-  name: {
-    fontWeight: "bold",
-    fontSize: 20, // color est appliqué dynamiquement
-  },
-  email: {
-    fontSize: 14,
-    marginTop: 2, // color est appliqué dynamiquement
-  },
+  name: { fontWeight: "bold", fontSize: 20 },
+  email: { fontSize: 14, marginTop: 2 },
   menuSection: {
     marginTop: 20,
     borderRadius: 12,
@@ -1249,7 +1286,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
-    //borderBottomColor est appliqué dynamiquement
   },
   menuItemLast: { borderBottomWidth: 0 },
   menuItemIcon: {
@@ -1259,17 +1295,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 15,
-    //backgroundColor:  backgroundColor === '#000000' ? '#374151' : '#EBF4FF',
   },
   menuItemContent: { flex: 1 },
-  menuItemTitle: {
-    fontWeight: "600",
-    fontSize: 15, // color est appliqué dynamiquement
-  },
-  menuItemSubtitle: {
-    fontSize: 13,
-    marginTop: 2, // color est appliqué dynamiquement
-  },
+  menuItemTitle: { fontWeight: "600", fontSize: 15 },
+  menuItemSubtitle: { fontSize: 13, marginTop: 2 },
   notificationItemBadgeContainer: {
     backgroundColor: "red",
     borderRadius: 10,
@@ -1291,7 +1320,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFF1F2",
     marginHorizontal: 24,
     marginTop: 25,
     marginBottom: 32,
@@ -1299,17 +1327,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     gap: 8,
     borderWidth: 1,
-    borderColor: "#FFCCD0",
   },
-  logoutText: { fontWeight: "600", fontSize: 16, color: "#EF4444" },
+  logoutText: { fontWeight: "600", fontSize: 16 },
   modalOverlay: {
     flex: 1,
     justifyContent: "flex-end",
-    alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.5)",
   },
   modalContent: {
-    //backgroundColor: "white",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
@@ -1328,30 +1353,18 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginBottom: 20,
     textAlign: "center",
-    //color: "green",
   },
-  ordersContainer: {
-    /* maxHeight: 'calc(100% - 80px)' si le bouton fermer est fixe en bas */
-  },
-  orderItem: {
-    marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
+  ordersContainer: {},
+  orderItem: { marginBottom: 16, paddingBottom: 16, borderBottomWidth: 1 },
   orderHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  orderNumber: { fontWeight: "bold", fontSize: 16, color: "red" },
+  orderNumber: { fontWeight: "bold", fontSize: 16 },
   orderDate: { fontSize: 13 },
   orderProducts: { marginLeft: 8, marginBottom: 8, marginTop: 5 },
-  productsTitle: {
-    fontWeight: "600",
-    fontSize: 14,
-    marginBottom: 6, // color est appliqué dynamiquement
-  },
+  productsTitle: { fontWeight: "600", fontSize: 14, marginBottom: 6 },
   modalProductItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -1365,49 +1378,53 @@ const styles = StyleSheet.create({
     backgroundColor: "#e0e0e0",
   },
   modalProductInfo: { flex: 1 },
-  modalProductName: {
-    fontSize: 14,
-    fontWeight: "500", // color est appliqué dynamiquement
-  },
-  modalProductDetails: {
-    fontSize: 12, // color est appliqué dynamiquement
-  },
-  productItem: {
-    fontSize: 14, // color est appliqué dynamiquement
-  }, // style pour les items produits dans la liste
+  modalProductName: { fontSize: 14, fontWeight: "500" },
+  modalProductDetails: { fontSize: 12 },
   orderFooter: {
     marginTop: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  orderPrice: { fontWeight: "bold", fontSize: 16, color: "tintColor" },
-  orderStatus: { fontSize: 14, fontWeight: "500", color: "tintColor" },
-  noOrdersText: {
-    fontSize: 16,
-    textAlign: "center",
-    paddingVertical: 30, // color est appliqué dynamiquement
-  },
+  orderPrice: { fontWeight: "bold", fontSize: 16 },
+  orderStatus: { fontSize: 14, fontWeight: "500" },
+  noOrdersText: { fontSize: 16, textAlign: "center", paddingVertical: 30 },
   closeButton: {
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 20,
-    borderWidth: 1,
-    borderColor: "transparent",
-    //backgroundColor: tintColor,
   },
-  closeButtonText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    //color: cardColor === '#000000' || cardColor === '#121212' ? tintColor : 'white', // Adapte la couleur du texte au fond du bouton
-    color: "white",
-  },
+  closeButtonText: { fontSize: 16, fontWeight: "bold", color: "white" },
   errorText: {
     fontSize: 15,
     textAlign: "center",
     marginVertical: 15,
     paddingHorizontal: 10,
-    color: "red",
+  },
+  // Nouveaux styles pour la vue "non connecté"
+  authTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  authSubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  authButton: {
+    width: '100%',
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  authButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

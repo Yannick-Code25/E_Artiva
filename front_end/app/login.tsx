@@ -1,4 +1,5 @@
 // ARTIVA/front_end/app/login.tsx
+
 import React, { useState } from "react";
 import {
   View,
@@ -6,465 +7,223 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
+  useColorScheme,
+  ScrollView,
 } from "react-native";
-import { Link, useRouter } from "expo-router"; // useRouter n'est plus explicitement utilisé ici pour la redirection post-login
+import { Link } from "expo-router";
 import { FontAwesome } from "@expo/vector-icons";
-import { useAuth } from "../context/AuthContext"; // Vérifie le chemin d'importation
+import { useAuth } from "../context/AuthContext";
+import Colors from "../constants/Colors";
 
-// **ATTENTION : REMPLACE PAR TON IP LOCALE OU 10.0.2.2 POUR ÉMULATEUR ANDROID**
 const API_BASE_URL = "http://192.168.11.131:3001/api";
-// Exemple : const API_BASE_URL = 'http://192.168.1.105:3001/api';
 
 export default function LoginScreen() {
-  const { signIn, isLoading: isAuthLoading } = useAuth(); // isLoading de AuthContext
-  const router = useRouter();
+  const { signIn, isLoading: isAuthLoading } = useAuth();
+  
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
 
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false); // État de chargement pour la soumission du formulaire
-  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  
+  // NOUVEAU: État pour gérer l'erreur renvoyée par le serveur
+  const [serverError, setServerError] = useState<string>("");
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // On efface les erreurs dès que l'utilisateur modifie un champ
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: "" }));
+    }
+    if (serverError) {
+      setServerError("");
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+    const { email, password } = formData;
+    
+    if (!email.trim()) {
+      newErrors.email = "L'adresse e-mail est requise.";
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = "L'adresse e-mail n'est pas valide.";
+    }
+
+    if (!password) {
+      newErrors.password = "Le mot de passe est requis.";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert(
-        "Champs requis",
-        "Veuillez entrer votre e-mail et votre mot de passe."
-      );
-      return;
-    }
-    setIsSubmitting(true);
+    setServerError(""); 
+    if (!validateForm()) return;
 
+    setIsSubmitting(true);
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: formData.email, password: formData.password }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || `Erreur de serveur: ${response.status}`
-        );
+        throw new Error(data.message || `Erreur de serveur: ${response.status}`);
       }
 
-      // 'data' devrait contenir { token, user (avec id, name, email, role) }
-      console.log("LoginScreen: Connexion réussie, données reçues:", data);
-
-      // Appel de signIn du contexte. Ceci mettra à jour l'état global
-      // et déclenchera la redirection via l'useEffect dans AuthContext.
       await signIn(data.token, data.user);
 
-      // Plus besoin de redirection manuelle ici (router.replace)
     } catch (error: any) {
-      console.error(
-        "LoginScreen: Erreur lors de la tentative de connexion:",
-        error
-      );
-      Alert.alert(
-        "Erreur de connexion",
-        error.message ||
-          "Impossible de se connecter. Vérifiez vos identifiants ou votre connexion."
-      );
+      setServerError(error.message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Si AuthContext est toujours en train de déterminer l'état initial, afficher un loader
-  if (isAuthLoading) {
+  if (isAuthLoading && !isSubmitting) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#fff",
-        }}
-      >
-        <ActivityIndicator size="large" color="tomato" />
-      </View>
+      <SafeAreaView style={[styles.centeredLoader, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </SafeAreaView>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.keyboardAvoidingContainer}
-    >
-      <View style={styles.container}>
-        <Text style={styles.title}>Artiva</Text>
-        <Text style={styles.subtitle}>Connexion</Text>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.container}>
+            <Text style={[styles.title, { color: colors.primary }]}>Artiva</Text>
+            <Text style={[styles.subtitle, { color: colors.subtleText }]}>Connexion</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Adresse e-mail"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          textContentType="emailAddress"
-          autoComplete="email" // Pour le remplissage automatique
-        />
-
-        <View style={styles.passwordContainer}>
-          <TextInput
-            style={styles.passwordInput}
-            placeholder="Mot de passe"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            textContentType="password"
-            autoComplete="password" // Pour le remplissage automatique
-          />
-          <TouchableOpacity
-            onPress={() => setShowPassword(!showPassword)}
-            style={styles.eyeIconContainer}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <FontAwesome
-              name={showPassword ? "eye-slash" : "eye"}
-              size={20}
-              color="#888"
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: errors.email ? colors.errorText : colors.inputBorder, color: colors.text }]}
+              placeholder="Adresse e-mail"
+              placeholderTextColor={colors.subtleText}
+              value={formData.email}
+              onChangeText={(text) => handleInputChange("email", text)}
+              keyboardType="email-address"
+              autoCapitalize="none"
             />
-          </TouchableOpacity>
-        </View>
+            {errors.email && <Text style={[styles.errorText, { color: colors.errorText }]}>{errors.email}</Text>}
 
-        <TouchableOpacity
-          style={[
-            styles.button,
-            (isSubmitting || isAuthLoading) && styles.buttonDisabled,
-          ]} // Le bouton est aussi désactivé si AuthContext charge
-          onPress={handleLogin}
-          disabled={isSubmitting || isAuthLoading}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color="#ffffff" />
-          ) : (
-            <Text style={styles.buttonText}>Se connecter</Text>
-          )}
-        </TouchableOpacity>
-
-        <View style={styles.linksContainer}>
-          <Link href="/register" asChild>
-            <TouchableOpacity>
-              <Text style={styles.linkText}>Créer un compte</Text>
-            </TouchableOpacity>
-          </Link>
-          {/* 
-          <Link href="/forgot-password" asChild style={{marginTop: 10}}>
-             <TouchableOpacity>
-                <Text style={styles.linkText}>Mot de passe oublié ?</Text>
+            <View style={[styles.passwordContainer, { backgroundColor: colors.inputBackground, borderColor: errors.password ? colors.errorText : colors.inputBorder }]}>
+              <TextInput
+                style={[styles.passwordInput, { color: colors.text }]}
+                placeholder="Mot de passe"
+                placeholderTextColor={colors.subtleText}
+                value={formData.password}
+                onChangeText={(text) => handleInputChange("password", text)}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                <FontAwesome name={showPassword ? "eye-slash" : "eye"} size={20} color={colors.subtleText} />
               </TouchableOpacity>
-          </Link>
-          */}
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+            </View>
+            {errors.password && <Text style={[styles.errorText, { color: colors.errorText }]}>{errors.password}</Text>}
+
+            {/* NOUVEAU: Zone d'affichage pour l'erreur du serveur */}
+            {serverError && (
+              <View style={[styles.serverErrorContainer, { backgroundColor: colors.errorBackground }]}>
+                 <FontAwesome name="exclamation-circle" size={18} color={colors.errorText} style={{ marginRight: 10 }} />
+                <Text style={[styles.serverErrorText, { color: colors.errorText }]}>{serverError}</Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: colors.primary }]}
+              onPress={handleLogin}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text style={styles.buttonText}>Se connecter</Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.linksContainer}>
+              <Link href="/register" asChild>
+                <TouchableOpacity>
+                  <Text style={[styles.linkText, { color: colors.primary }]}>Créer un compte</Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
-// Tes styles (assure-toi qu'ils sont bien définis comme précédemment)
+// Styles mis à jour
 const styles = StyleSheet.create({
-  keyboardAvoidingContainer: { flex: 1 },
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-    backgroundColor: "#FFFFFF",
-  },
-  title: { fontSize: 48, fontWeight: "bold", color: "tomato", marginBottom: 8 },
-  subtitle: { fontSize: 24, color: "#333", marginBottom: 40 },
+  safeArea: { flex: 1 },
+  scrollContainer: { flexGrow: 1, justifyContent: 'center', padding: 20 },
+  container: { width: '100%' },
+  centeredLoader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 48, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
+  subtitle: { fontSize: 24, textAlign: 'center', marginBottom: 40 },
   input: {
-    width: "100%",
-    backgroundColor: "#F0F0F0",
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderRadius: 10,
     fontSize: 16,
-    marginBottom: 15,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    marginBottom: 5,
   },
   passwordContainer: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F0F0F0",
+    flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
-    marginBottom: 25,
+    marginTop: 15,
+    marginBottom: 5,
   },
-  passwordInput: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    fontSize: 16,
-  },
-  eyeIconContainer: { paddingHorizontal: 15 },
+  passwordInput: { flex: 1, paddingHorizontal: 20, paddingVertical: 15, fontSize: 16 },
+  eyeIcon: { padding: 15 },
   button: {
-    width: "100%",
-    backgroundColor: "tomato",
     paddingVertical: 18,
     borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     minHeight: 50,
+    marginTop: 20, // Ajusté pour l'erreur serveur
   },
-  buttonDisabled: { backgroundColor: "#FFC0CB" },
-  buttonText: { color: "white", fontSize: 18, fontWeight: "600" },
-  linksContainer: { marginTop: 20, alignItems: "center" },
-  linkText: {
-    fontSize: 16,
-    color: "tomato",
-    fontWeight: "500",
-    paddingVertical: 5,
+  buttonText: { color: 'white', fontSize: 18, fontWeight: '600' },
+  linksContainer: { marginTop: 20, alignItems: 'center' },
+  linkText: { fontSize: 16, fontWeight: '500', paddingVertical: 5 },
+  errorText: {
+    fontSize: 14,
+    marginTop: 5,
+    marginLeft: 5,
+    marginBottom: 10, // Ajoute un peu d'espace avant le champ suivant
+  },
+  // NOUVEAUX STYLES pour l'erreur serveur
+  serverErrorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20, // Espace avant le bouton
+  },
+  serverErrorText: {
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1, // Pour que le texte prenne la place restante
   },
 });
-
-// import React, { useState } from "react";
-// import {
-//   View,
-//   Text,
-//   TextInput,
-//   TouchableOpacity,
-//   StyleSheet,
-//   ActivityIndicator,
-//   KeyboardAvoidingView,
-//   Platform,
-// } from "react-native";
-// import { Link, useRouter } from "expo-router";
-// import { FontAwesome } from "@expo/vector-icons";
-// import { useAuth } from "../context/AuthContext";
-// import { useColorScheme } from "react-native";
-// import Colors from "../constants/Colors";
-
-// const API_BASE_URL = "http://192.168.11.131:3001/api";
-
-// export default function LoginScreen() {
-//   const { signIn, isLoading: isAuthLoading } = useAuth();
-//   const router = useRouter();
-//   const theme = useColorScheme() || "light";
-//   const themeColors = Colors[theme];
-
-//   const [email, setEmail] = useState<string>("");
-//   const [password, setPassword] = useState<string>("");
-//   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-//   const [showPassword, setShowPassword] = useState<boolean>(false);
-//   const [errorMessage, setErrorMessage] = useState<string>("");
-
-//   const handleLogin = async () => {
-//     setErrorMessage("");
-
-//     if (!email.trim() || !password.trim()) {
-//       setErrorMessage("Veuillez entrer votre e-mail et votre mot de passe.");
-//       return;
-//     }
-
-//     setIsSubmitting(true);
-
-//     try {
-//       const response = await fetch(`${API_BASE_URL}/auth/login`, {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({ email, password }),
-//       });
-
-//       const data = await response.json();
-
-//       if (!response.ok) {
-//         throw new Error(data.message || `Erreur de serveur: ${response.status}`);
-//       }
-
-//       await signIn(data.token, data.user);
-//     } catch (error: any) {
-//       console.error("LoginScreen: Erreur de connexion:", error);
-//       setErrorMessage(
-//         error.message || "Impossible de se connecter. Vérifiez vos identifiants ou votre connexion."
-//       );
-//     } finally {
-//       setIsSubmitting(false);
-//     }
-//   };
-
-//   if (isAuthLoading) {
-//     return (
-//       <View style={[styles.centered, { backgroundColor: themeColors.background }]}>
-//         <ActivityIndicator size="large" color={themeColors.primary} />
-//       </View>
-//     );
-//   }
-
-//   return (
-//     <KeyboardAvoidingView
-//       behavior={Platform.OS === "ios" ? "padding" : "height"}
-//       style={{ flex: 1 }}
-//     >
-//       <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-//         <Text style={[styles.title, { color: themeColors.primary }]}>Artiva</Text>
-//         <Text style={[styles.subtitle, { color: themeColors.text }]}>Connexion</Text>
-
-//         {errorMessage !== "" && (
-//           <View style={[styles.errorBox, { backgroundColor: themeColors.errorBackground }]}>
-//             <Text style={{ color: themeColors.errorText, textAlign: "center" }}>{errorMessage}</Text>
-//           </View>
-//         )}
-
-//         <TextInput
-//           style={[styles.input, {
-//             backgroundColor: themeColors.inputBackground,
-//             borderColor: themeColors.inputBorder,
-//             color: themeColors.text,
-//           }]}
-//           placeholder="Adresse e-mail"
-//           placeholderTextColor={themeColors.subtleText}
-//           value={email}
-//           onChangeText={setEmail}
-//           keyboardType="email-address"
-//           autoCapitalize="none"
-//           textContentType="emailAddress"
-//           autoComplete="email"
-//         />
-
-//         <View style={[styles.passwordContainer, {
-//           backgroundColor: themeColors.inputBackground,
-//           borderColor: themeColors.inputBorder,
-//         }]}>
-//           <TextInput
-//             style={[styles.passwordInput, { color: themeColors.text }]}
-//             placeholder="Mot de passe"
-//             placeholderTextColor={themeColors.subtleText}
-//             value={password}
-//             onChangeText={setPassword}
-//             secureTextEntry={!showPassword}
-//             textContentType="password"
-//             autoComplete="password"
-//           />
-//           <TouchableOpacity
-//             onPress={() => setShowPassword(!showPassword)}
-//             style={styles.eyeIconContainer}
-//           >
-//             <FontAwesome
-//               name={showPassword ? "eye-slash" : "eye"}
-//               size={20}
-//               color={themeColors.subtleText}
-//             />
-//           </TouchableOpacity>
-//         </View>
-
-//         <TouchableOpacity
-//           style={[
-//             styles.button,
-//             { backgroundColor: themeColors.primary },
-//             (isSubmitting || isAuthLoading) && styles.buttonDisabled,
-//           ]}
-//           onPress={handleLogin}
-//           disabled={isSubmitting || isAuthLoading}
-//         >
-//           {isSubmitting ? (
-//             <ActivityIndicator size="small" color="#ffffff" />
-//           ) : (
-//             <Text style={styles.buttonText}>Se connecter</Text>
-//           )}
-//         </TouchableOpacity>
-
-//         <View style={styles.linksContainer}>
-//           <Link href="/register" asChild>
-//             <TouchableOpacity>
-//               <Text style={[styles.linkText, { color: themeColors.primary }]}>
-//                 Créer un compte
-//               </Text>
-//             </TouchableOpacity>
-//           </Link>
-//         </View>
-//       </View>
-//     </KeyboardAvoidingView>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     justifyContent: "center",
-//     alignItems: "center",
-//     paddingHorizontal: 24,
-//   },
-//   centered: {
-//     flex: 1,
-//     justifyContent: "center",
-//     alignItems: "center",
-//   },
-//   title: {
-//     fontSize: 48,
-//     fontWeight: "bold",
-//     marginBottom: 8,
-//   },
-//   subtitle: {
-//     fontSize: 24,
-//     marginBottom: 40,
-//   },
-//   input: {
-//     width: "100%",
-//     paddingHorizontal: 20,
-//     paddingVertical: 15,
-//     borderRadius: 10,
-//     fontSize: 16,
-//     marginBottom: 15,
-//     borderWidth: 1,
-//   },
-//   passwordContainer: {
-//     width: "100%",
-//     flexDirection: "row",
-//     alignItems: "center",
-//     borderRadius: 10,
-//     borderWidth: 1,
-//     marginBottom: 25,
-//   },
-//   passwordInput: {
-//     flex: 1,
-//     paddingHorizontal: 20,
-//     paddingVertical: 15,
-//     fontSize: 16,
-//   },
-//   eyeIconContainer: {
-//     paddingHorizontal: 15,
-//   },
-//   button: {
-//     width: "100%",
-//     paddingVertical: 18,
-//     borderRadius: 10,
-//     alignItems: "center",
-//     justifyContent: "center",
-//     minHeight: 50,
-//   },
-//   buttonDisabled: {
-//     opacity: 0.6,
-//   },
-//   buttonText: {
-//     color: "white",
-//     fontSize: 18,
-//     fontWeight: "600",
-//   },
-//   linksContainer: {
-//     marginTop: 20,
-//     alignItems: "center",
-//   },
-//   linkText: {
-//     fontSize: 16,
-//     fontWeight: "500",
-//     paddingVertical: 5,
-//   },
-//   errorBox: {
-//     width: "100%",
-//     padding: 12,
-//     borderRadius: 8,
-//     marginBottom: 16,
-//   },
-// });

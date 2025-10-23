@@ -1,4 +1,5 @@
-// front_end/app/register.tsx
+// ARTIVA/front_end/app/register.tsx
+
 import React, { useState } from "react";
 import {
   View,
@@ -6,440 +7,285 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
+  Alert,
+  useColorScheme, // On utilise le hook de React Native
 } from "react-native";
 import { Link, useRouter } from "expo-router";
 import { FontAwesome } from "@expo/vector-icons";
+import Colors from "../constants/Colors"; // Assure-toi que le chemin est correct
 
-const API_BASE_URL = "http://192.168.11.131:3001/api"; // EXEMPLE: 'http://192.168.1.105:3001/api'
+// N'oublie pas de remplacer cette URL par la tienne ou de la mettre dans un fichier de config
+const API_BASE_URL = "http://192.168.11.131:3001/api";
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  // Ajoutons les champs optionnels pour le test, même si le formulaire ne les a pas encore tous explicitement
-  const [address, setAddress] = useState(""); // Tu peux ajouter des inputs pour ça plus tard
-  const [phone, setPhone] = useState(""); // Tu peux ajouter des inputs pour ça plus tard
+  
+  // --- Gestion du thème ---
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  // -------------------------
 
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: { [key:string]: string } = {};
+    const { name, email, password, confirmPassword } = formData;
+    
+    if (!name.trim()) newErrors.name = "Le nom complet est requis.";
+
+    if (!email.trim()) {
+      newErrors.email = "L'adresse e-mail est requise.";
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = "L'adresse e-mail n'est pas valide.";
+    }
+
+    if (!password) {
+      newErrors.password = "Le mot de passe est requis.";
+    } else if (password.length < 8) {
+      newErrors.password = "Le mot de passe doit contenir au moins 8 caractères.";
+    }
+
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Les mots de passe ne correspondent pas.";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleRegister = async () => {
-    if (
-      !name.trim() ||
-      !email.trim() ||
-      !password.trim() ||
-      !confirmPassword.trim()
-    ) {
-      Alert.alert(
-        "Champs requis",
-        "Veuillez remplir tous les champs obligatoires."
-      );
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert(
-        "Erreur de mot de passe",
-        "Les mots de passe ne correspondent pas."
-      );
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        // Utilise l'URL de l'API
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
-          email,
-          password,
-          address: address || null, // Envoie null si vide
-          phone: phone || null, // Envoie null si vide
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          address: formData.address || null,
+          phone: formData.phone || null,
         }),
       });
 
-      const data = await response.json(); // Essaie de parser la réponse JSON
+      const data = await response.json();
 
       if (!response.ok) {
-        // Vérifie si la réponse HTTP est un succès (status 2xx)
-        // Si le backend renvoie un message d'erreur spécifique, utilise-le
-        throw new Error(data.message || `Erreur ${response.status}`);
+        throw new Error(data.message || `Erreur serveur (${response.status})`);
       }
 
-      // Si l'enregistrement est réussi
       Alert.alert(
-        "Inscription réussie",
-        "Votre compte a été créé. Vous pouvez maintenant vous connecter."
+        "Inscription réussie !",
+        "Votre compte a été créé. Vous allez être redirigé vers la page de connexion."
       );
-      router.push("/login"); // Redirige vers la page de connexion après inscription
+      router.push("/login");
+
     } catch (error: any) {
-      console.error("Erreur d'inscription frontend:", error);
-      Alert.alert(
-        "Erreur d'inscription",
-        error.message ||
-          "Une erreur de communication avec le serveur est survenue. Vérifiez votre connexion ou l'URL de l'API."
-      );
+      console.error("Erreur d'inscription:", error);
+      Alert.alert("Erreur d'inscription", error.message || "Une erreur est survenue.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.keyboardAvoidingContainer}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContentContainer}>
-        <View style={styles.container}>
-          <Text style={styles.title}>Artiva</Text>
-          <Text style={styles.subtitle}>Créer un compte</Text>
-
-          <TextInput
-            style={styles.input}
-            placeholder="Nom complet *"
-            value={name}
-            onChangeText={setName}
-            textContentType="name"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Adresse e-mail *"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            textContentType="emailAddress"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Numéro de téléphone (ex: 0612345678)" // Nouveau
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-            textContentType="telephoneNumber"
-            autoComplete="tel"
-          />
-          <TextInput
-            style={[styles.input, styles.addressInput]} // Style spécifique pour l'adresse si besoin de plus de hauteur
-            placeholder="Adresse complète (rue, ville, code postal)" // Nouveau
-            value={address}
-            onChangeText={setAddress}
-            textContentType="fullStreetAddress" // type plus générique
-            autoComplete="street-address"
-            multiline={true} // Permet plusieurs lignes pour l'adresse
-            numberOfLines={3} // Hauteur indicative pour multiline
-          />
-          <View style={styles.passwordContainer}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.container}>
+            <Text style={[styles.title, { color: colors.primary }]}>Artiva</Text>
+            <Text style={[styles.subtitle, { color: colors.subtleText }]}>Créer un compte</Text>
+            
             <TextInput
-              style={styles.passwordInput}
-              placeholder="Mot de passe *"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              textContentType="newPassword"
+              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.text }]}
+              placeholder="Nom complet *"
+              placeholderTextColor={colors.subtleText}
+              value={formData.name}
+              onChangeText={(text) => handleInputChange("name", text)}
             />
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              style={styles.eyeIconContainer}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <FontAwesome
-                name={showPassword ? "eye-slash" : "eye"}
-                size={20}
-                color="#888"
-              />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.passwordContainer}>
+            {errors.name && <Text style={[styles.errorText, { color: colors.errorText }]}>{errors.name}</Text>}
+
             <TextInput
-              style={styles.passwordInput}
-              placeholder="Confirmer le mot de passe *"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={!showConfirmPassword}
-              textContentType="newPassword"
+              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.text }]}
+              placeholder="Adresse e-mail *"
+              placeholderTextColor={colors.subtleText}
+              value={formData.email}
+              onChangeText={(text) => handleInputChange("email", text)}
+              keyboardType="email-address"
+              autoCapitalize="none"
             />
-            <TouchableOpacity
-              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-              style={styles.eyeIconContainer}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <FontAwesome
-                name={showConfirmPassword ? "eye-slash" : "eye"}
-                size={20}
-                color="#888"
+            {errors.email && <Text style={[styles.errorText, { color: colors.errorText }]}>{errors.email}</Text>}
+            
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.text }]}
+              placeholder="Numéro de téléphone"
+              placeholderTextColor={colors.subtleText}
+              value={formData.phone}
+              onChangeText={(text) => handleInputChange("phone", text)}
+              keyboardType="phone-pad"
+            />
+            
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.text }]}
+              placeholder="Adresse complète"
+              placeholderTextColor={colors.subtleText}
+              value={formData.address}
+              onChangeText={(text) => handleInputChange("address", text)}
+            />
+
+            <View style={[styles.passwordContainer, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder }]}>
+              <TextInput
+                style={[styles.passwordInput, { color: colors.text }]}
+                placeholder="Mot de passe *"
+                placeholderTextColor={colors.subtleText}
+                value={formData.password}
+                onChangeText={(text) => handleInputChange("password", text)}
+                secureTextEntry={!showPassword}
               />
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.button, isLoading && styles.buttonDisabled]}
-            onPress={handleRegister}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <Text style={styles.buttonText}>S'inscrire</Text>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.linksContainer}>
-            <Text style={styles.footerText}>Déjà un compte ? </Text>
-            <Link href="/login" asChild>
-              <TouchableOpacity>
-                <Text style={styles.linkText}>Se connecter</Text>
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                <FontAwesome name={showPassword ? "eye-slash" : "eye"} size={20} color={colors.subtleText} />
               </TouchableOpacity>
-            </Link>
+            </View>
+            {errors.password && <Text style={[styles.errorText, { color: colors.errorText }]}>{errors.password}</Text>}
+
+            <View style={[styles.passwordContainer, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder }]}>
+              <TextInput
+                style={[styles.passwordInput, { color: colors.text }]}
+                placeholder="Confirmer le mot de passe *"
+                placeholderTextColor={colors.subtleText}
+                value={formData.confirmPassword}
+                onChangeText={(text) => handleInputChange("confirmPassword", text)}
+                secureTextEntry={!showConfirmPassword}
+              />
+              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
+                <FontAwesome name={showConfirmPassword ? "eye-slash" : "eye"} size={20} color={colors.subtleText} />
+              </TouchableOpacity>
+            </View>
+            {errors.confirmPassword && <Text style={[styles.errorText, { color: colors.errorText }]}>{errors.confirmPassword}</Text>}
+
+            <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleRegister} disabled={isLoading}>
+              {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>S'inscrire</Text>}
+            </TouchableOpacity>
+
+            <View style={styles.footer}>
+              <Text style={[styles.footerText, { color: colors.subtleText }]}>Déjà un compte ? </Text>
+              <Link href="/login" asChild>
+                <TouchableOpacity>
+                  <Text style={[styles.linkText, { color: colors.primary }]}>Se connecter</Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
+
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
+// Les styles ne contiennent PLUS de couleurs statiques
 const styles = StyleSheet.create({
-  keyboardAvoidingContainer: {
+  safeArea: {
     flex: 1,
   },
-  scrollContentContainer: {
+  scrollContainer: {
     flexGrow: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
+    padding: 20,
   },
   container: {
-    alignItems: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 20, // Réduit un peu pour que tout tienne mieux
-    backgroundColor: "#FFFFFF",
+    width: '100%',
   },
   title: {
-    fontSize: 40, // Un peu réduit
-    fontWeight: "bold",
-    color: "tomato",
-    marginBottom: 8,
+    fontSize: 36,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
   },
   subtitle: {
-    fontSize: 22, // Un peu réduit
-    color: "#333",
-    marginBottom: 25, // Un peu réduit
+    fontSize: 20,
+    textAlign: 'center',
+    marginBottom: 30,
   },
   input: {
-    width: "100%",
-    backgroundColor: "#F0F0F0",
-    paddingHorizontal: 20,
-    paddingVertical: 12, // Un peu réduit pour plus de champs
+    paddingHorizontal: 15,
+    paddingVertical: 15,
     borderRadius: 10,
-    fontSize: 15, // Un peu réduit
-    marginBottom: 12, // Un peu réduit
+    fontSize: 16,
+    marginBottom: 15,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
-  },
-  addressInput: {
-    // Style pour le champ adresse multiline
-    minHeight: 80, // Hauteur minimale pour l'adresse
-    textAlignVertical: "top", // Aligne le placeholder en haut pour multiline
-    paddingTop: 12, // Ajustement du padding pour multiline
   },
   passwordContainer: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F0F0F0",
+    flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
-    marginBottom: 12, // Un peu réduit
+    marginBottom: 5,
   },
   passwordInput: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 12, // Un peu réduit
-    fontSize: 15, // Un peu réduit
-  },
-  eyeIconContainer: {
     paddingHorizontal: 15,
+    paddingVertical: 15,
+    fontSize: 16,
+  },
+  eyeIcon: {
+    padding: 15,
   },
   button: {
-    width: "100%",
-    backgroundColor: "tomato",
-    paddingVertical: 15, // Un peu réduit
+    padding: 15,
     borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48, // Un peu réduit
-    marginTop: 10, // Espace avant le bouton
-  },
-  buttonDisabled: {
-    backgroundColor: "#FFC0CB",
+    alignItems: 'center',
+    marginTop: 20,
   },
   buttonText: {
-    color: "white",
-    fontSize: 17, // Un peu réduit
-    fontWeight: "600",
+    color: 'white', // Le texte du bouton principal reste blanc dans les deux thèmes
+    fontSize: 18,
+    fontWeight: 'bold',
   },
-  linksContainer: {
-    marginTop: 15, // Un peu réduit
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 25,
   },
   footerText: {
-    fontSize: 15, // Un peu réduit
-    color: "#555",
+    fontSize: 16,
   },
   linkText: {
-    fontSize: 15, // Un peu réduit
-    color: "tomato",
-    fontWeight: "500",
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  errorText: {
+    fontSize: 14,
+    marginBottom: 10,
     marginLeft: 5,
   },
 });
-
-// import React, { useState } from 'react';
-// import { View, Text, TextInput, TouchableOpacity, StyleSheet, useColorScheme } from 'react-native';
-// import axios from 'axios';
-// import Colors from '../../constants/Colors';
-
-// const RegisterScreen = () => {
-//   const colorScheme = useColorScheme();
-//   const themeColors = Colors[colorScheme || 'light'];
-
-//   const [form, setForm] = useState({
-//     name: '',
-//     email: '',
-//     password: '',
-//     address: '',
-//     phone: '',
-//   });
-
-//   const [feedback, setFeedback] = useState({ message: '', type: '' });
-
-//   const handleChange = (field, value) => {
-//     setForm({ ...form, [field]: value });
-//   };
-
-//   const handleRegister = async () => {
-//     setFeedback({ message: '', type: '' });
-//     try {
-//       const res = await axios.post('http://localhost:3000/api/auth/register', form);
-//       setFeedback({ message: res.data.message, type: 'success' });
-//       setForm({ name: '', email: '', password: '', address: '', phone: '' });
-//     } catch (err) {
-//       const msg = err?.response?.data?.message || "Une erreur s'est produite.";
-//       setFeedback({ message: msg, type: 'error' });
-//     }
-//   };
-
-//   return (
-//     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-//       <Text style={[styles.title, { color: themeColors.text }]}>Créer un compte</Text>
-
-//       <TextInput
-//         style={[styles.input, { backgroundColor: themeColors.inputBackground, borderColor: themeColors.inputBorder, color: themeColors.text }]}
-//         placeholder="Nom"
-//         placeholderTextColor={themeColors.subtleText}
-//         onChangeText={(text) => handleChange('name', text)}
-//         value={form.name}
-//       />
-
-//       <TextInput
-//         style={[styles.input, { backgroundColor: themeColors.inputBackground, borderColor: themeColors.inputBorder, color: themeColors.text }]}
-//         placeholder="Email"
-//         placeholderTextColor={themeColors.subtleText}
-//         onChangeText={(text) => handleChange('email', text)}
-//         value={form.email}
-//         keyboardType="email-address"
-//       />
-
-//       <TextInput
-//         style={[styles.input, { backgroundColor: themeColors.inputBackground, borderColor: themeColors.inputBorder, color: themeColors.text }]}
-//         placeholder="Mot de passe"
-//         placeholderTextColor={themeColors.subtleText}
-//         onChangeText={(text) => handleChange('password', text)}
-//         value={form.password}
-//         secureTextEntry
-//       />
-
-//       <TextInput
-//         style={[styles.input, { backgroundColor: themeColors.inputBackground, borderColor: themeColors.inputBorder, color: themeColors.text }]}
-//         placeholder="Adresse (facultatif)"
-//         placeholderTextColor={themeColors.subtleText}
-//         onChangeText={(text) => handleChange('address', text)}
-//         value={form.address}
-//       />
-
-//       <TextInput
-//         style={[styles.input, { backgroundColor: themeColors.inputBackground, borderColor: themeColors.inputBorder, color: themeColors.text }]}
-//         placeholder="Téléphone (facultatif)"
-//         placeholderTextColor={themeColors.subtleText}
-//         onChangeText={(text) => handleChange('phone', text)}
-//         value={form.phone}
-//         keyboardType="phone-pad"
-//       />
-
-//       {feedback.message.length > 0 && (
-//         <Text
-//           style={{
-//             color: feedback.type === 'success' ? themeColors.successText : themeColors.errorText,
-//             marginBottom: 10,
-//             textAlign: 'center',
-//             fontWeight: '500',
-//           }}
-//         >
-//           {feedback.message}
-//         </Text>
-//       )}
-
-//       <TouchableOpacity
-//         style={[styles.button, { backgroundColor: themeColors.primary }]}
-//         onPress={handleRegister}
-//       >
-//         <Text style={[styles.buttonText, { color: '#fff' }]}>S'inscrire</Text>
-//       </TouchableOpacity>
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     paddingHorizontal: 20,
-//     justifyContent: 'center',
-//   },
-//   title: {
-//     fontSize: 24,
-//     fontWeight: 'bold',
-//     marginBottom: 20,
-//     textAlign: 'center',
-//   },
-//   input: {
-//     borderWidth: 1,
-//     borderRadius: 8,
-//     paddingHorizontal: 12,
-//     paddingVertical: 10,
-//     marginBottom: 12,
-//     fontSize: 16,
-//   },
-//   button: {
-//     paddingVertical: 12,
-//     borderRadius: 8,
-//     alignItems: 'center',
-//   },
-//   buttonText: {
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//   },
-// });
-
-// export default RegisterScreen;
