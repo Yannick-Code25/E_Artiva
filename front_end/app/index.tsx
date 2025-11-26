@@ -34,7 +34,7 @@
 // }
 
 
-
+/*
 
 // ARTIVA/front_end/app/index.tsx
 import { Redirect, SplashScreen, Href } from 'expo-router';
@@ -71,4 +71,46 @@ export default function StartPage() {
   // gérera si l'utilisateur doit être redirigé vers /login pour certaines actions.
   console.log("StartPage (index.tsx): Redirection vers /(tabs)/");
   return <Redirect href="/(tabs)"  />; 
+}
+
+*/
+
+
+// ARTIVA/front_end/app/index.tsx
+import { Redirect } from 'expo-router';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { useAuth } from '../context/AuthContext'; // Vérifie le chemin
+
+export default function StartPage() {
+  const { userToken, isLoading: isAuthLoading } = useAuth();
+
+  useEffect(() => {
+    if (!isAuthLoading) {
+      console.log(
+        "StartPage (index.tsx): Vérification Auth terminée. Token:",
+        userToken ? "Présent" : "Absent"
+      );
+    }
+  }, [isAuthLoading, userToken]);
+
+  if (isAuthLoading) {
+    console.log("StartPage (index.tsx): Auth en cours de chargement...");
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'white',
+        }}
+      >
+        <ActivityIndicator size="large" color="tomato" />
+      </View>
+    );
+  }
+
+  // Une fois que l'état d'authentification est connu, redirection vers les onglets
+  console.log("StartPage (index.tsx): Redirection vers /(tabs)/");
+  return <Redirect href="/(tabs)" />;
 }
