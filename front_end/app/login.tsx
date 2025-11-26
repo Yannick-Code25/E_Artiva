@@ -19,7 +19,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import Colors from "../constants/Colors";
 
-const API_BASE_URL = "http://192.168.11.131:3001/api";
+const API_BASE_URL = "http://192.168.244.128:3001/api";
 
 export default function LoginScreen() {
   const { signIn, isLoading: isAuthLoading } = useAuth();
