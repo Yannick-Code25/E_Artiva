@@ -3,7 +3,7 @@ const db = require('../config/db');
 
 // Récupérer les notifications pour l'utilisateur connecté (avec pagination et filtre de lecture)
 exports.getUserNotifications = async (req, res) => {
-  const userId = req.user.userId;
+  const userId = req.user.id;
   const { page = 1, limit = 15, read_status } = req.query;
   const offset = (parseInt(String(page), 10) - 1) * parseInt(String(limit), 10);
 
@@ -78,7 +78,7 @@ exports.getUserNotifications = async (req, res) => {
 
 // Marquer une notification comme lue
 exports.markNotificationAsRead = async (req, res) => {
-  const userId = req.user.userId;
+  const userId = req.user.id;
   const { notificationId } = req.params;
 
   try {
@@ -110,7 +110,7 @@ exports.markNotificationAsRead = async (req, res) => {
 
 // Marquer toutes les notifications comme lues pour un utilisateur
 exports.markAllNotificationsAsRead = async (req, res) => {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     try {
         const updateQuery = `
             UPDATE notifications
@@ -130,7 +130,7 @@ exports.markAllNotificationsAsRead = async (req, res) => {
 };
 
 exports.getUnreadNotificationsCount = async (req, res) => {
-  const userId = req.user.userId;
+  const userId = req.user.id;
   try {
     const query = 'SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = FALSE;';
     const result = await db.query(query, [userId]);

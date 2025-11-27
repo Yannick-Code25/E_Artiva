@@ -14,7 +14,7 @@
 // import { useColorScheme } from "../../components/useColorScheme";
 // import { useAuth } from "../../context/AuthContext";
 
-// const API_BASE_URL = "http://192.168.244.128:3001/api"; // **TON IP**
+// const API_BASE_URL = "http://192.168.11.121:3001/api"; // **TON IP**
 
 // interface OrderItem {
 //   itemId: number | string;
@@ -428,7 +428,7 @@ import Colors from "../../constants/Colors";
 import { useColorScheme } from "../../components/useColorScheme";
 import { useAuth } from "../../context/AuthContext";
 
-const API_BASE_URL = "http://192.168.244.128:3001/api"; // **TON IP**
+const API_BASE_URL = "http://192.168.11.121:3001/api"; // **TON IP**
 
 interface OrderItem {
   itemId: number | string;

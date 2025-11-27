@@ -24,7 +24,7 @@ import { useRouter, Href, Stack } from "expo-router"; // Stack ajouté pour l'en
 import { useAuth } from "../../context/AuthContext";
 import { useTranslation } from "react-i18next";
 
-const API_BASE_URL = "http://192.168.244.128:3001/api"; // **VÉIRIFIE TON IP**
+const API_BASE_URL = "http://192.168.11.121:3001/api"; // **VÉIRIFIE TON IP**
 
 interface TaggedProductsStore {
   tagId: string | number;

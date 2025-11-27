@@ -27,7 +27,7 @@ async function getActiveCart(userId, client) {
 
 // --- Récupérer le panier de l'utilisateur connecté (avec les items et détails produit) ---
 exports.getUserCart = async (req, res) => {
-  const userId = req.user.userId;
+  const userId = req.user.id;
   try {
     const cart = await getActiveCart(userId);
     if (!cart) { // Ne devrait pas arriver si getActiveCart en crée un
@@ -82,7 +82,7 @@ exports.getUserCart = async (req, res) => {
 
 // --- Ajouter/Mettre à jour un article dans le panier de l'utilisateur ---
 exports.addItemToCart = async (req, res) => {
-  const userId = req.user.userId;
+  const userId = req.user.id;
   const { productId, quantity } = req.body;
 
   if (!productId || quantity === undefined || parseInt(quantity, 10) <= 0) {
@@ -170,7 +170,7 @@ exports.addItemToCart = async (req, res) => {
 
 // --- Supprimer un article du panier de l'utilisateur ---
 exports.removeItemFromCart = async (req, res) => {
-  const userId = req.user.userId;
+  const userId = req.user.id;
   const { cartItemId } = req.params; // On va utiliser l'ID de l'item du panier pour la suppression
 
   if (!cartItemId) {
@@ -206,7 +206,7 @@ exports.removeItemFromCart = async (req, res) => {
 
 // --- Vider le panier de l'utilisateur ---
 exports.clearUserCart = async (req, res) => {
-  const userId = req.user.userId;
+  const userId = req.user.id;
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
@@ -229,7 +229,7 @@ exports.clearUserCart = async (req, res) => {
   
   // Récupérer le panier actif de l'utilisateur connecté et ses articles
 exports.getCurrentUserCart = async (req, res) => {
-  const userId = req.user.userId; // De authMiddleware
+  const userId = req.user.id; // De authMiddleware
 
   try {
     // 1. Trouver le panier actif de l'utilisateur (on suppose un seul panier actif par utilisateur pour l'instant)

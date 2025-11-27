@@ -3,7 +3,7 @@ const db = require('../config/db');
 
 // Récupérer la liste de souhaits de l'utilisateur connecté
 exports.getWishlist = async (req, res) => {
-  const userId = req.user.userId; // De authMiddleware
+  const userId = req.user.id; // De authMiddleware
   try {
     const query = `
       SELECT 
@@ -38,7 +38,7 @@ exports.getWishlist = async (req, res) => {
 
 // Ajouter un produit à la liste de souhaits
 exports.addToWishlist = async (req, res) => {
-  const userId = req.user.userId;
+  const userId = req.user.id;
   const { productId } = req.body;
 
   if (!productId) {
@@ -73,7 +73,7 @@ exports.addToWishlist = async (req, res) => {
 
 // Retirer un produit de la liste de souhaits
 exports.removeFromWishlist = async (req, res) => {
-  const userId = req.user.userId;
+  const userId = req.user.id;
   const { productId } = req.params; // Ou req.body si tu préfères
 
   if (!productId) {

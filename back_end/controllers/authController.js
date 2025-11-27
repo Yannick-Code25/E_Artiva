@@ -1,7 +1,8 @@
 // ARTIVA/back_end/controllers/authController.js
-const db = require("../config/db");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+import db from "../config/db.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import sendLoginCode from "../utils/sendEmail.js"; // ESM import pour envoi email
 
 // ======== UTILITAIRE ========
 function generateCode() {
@@ -9,7 +10,7 @@ function generateCode() {
 }
 
 // ======== UTILISATEUR ========
-exports.registerUser = async (req, res) => {
+export const registerUser = async (req, res) => {
   const { name, email, password, address, phone } = req.body;
   if (!name || !email || !password)
     return res.status(400).json({ message: "Nom, email et mot de passe requis" });
@@ -34,8 +35,8 @@ exports.registerUser = async (req, res) => {
   }
 };
 
-// ======== LOGIN + ENVOI CODE ========
-exports.loginUser = async (req, res) => {
+// ======== LOGIN + ENVOI CODE 2FA ========
+export const loginUser = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
     return res.status(400).json({ message: "Email et mot de passe requis" });
@@ -56,15 +57,18 @@ exports.loginUser = async (req, res) => {
     if (!isMatch)
       return res.status(401).json({ message: "Email ou mot de passe incorrect" });
 
-    // Générer et envoyer code 2FA
+    // Générer code 2FA
     const code = generateCode();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 min UTC
+
     await db.query(
       "INSERT INTO login_codes (user_id, code, expires_at) VALUES ($1,$2,$3)",
       [user.id, code, expiresAt]
     );
 
-    console.log(`Code 2FA pour ${email}: ${code}`); // remplacer par envoi mail réel
+    // Envoyer le code par email
+    await sendLoginCode(email, code);
+
     res.status(200).json({ message: "Code envoyé à l'email de l'utilisateur" });
   } catch (error) {
     console.error(error);
@@ -73,13 +77,12 @@ exports.loginUser = async (req, res) => {
 };
 
 // ======== VÉRIFICATION CODE 2FA ========
-exports.verifyLoginCode = async (req, res) => {
+export const verifyLoginCode = async (req, res) => {
   const { email, code } = req.body;
   if (!email || !code)
     return res.status(400).json({ message: "Email et code requis" });
 
   try {
-    // Récupérer l'utilisateur
     const userResult = await db.query(
       "SELECT id, email, name, role FROM users WHERE email=$1",
       [email]
@@ -92,7 +95,6 @@ exports.verifyLoginCode = async (req, res) => {
 
     console.log(`Tentative vérification code pour ${email}: "${codeClean}"`);
 
-    // Vérifier le code 2FA avec fuseau UTC
     const codeResult = await db.query(
       `SELECT * FROM login_codes
        WHERE user_id=$1 AND TRIM(code)=$2 AND is_used=false AND expires_at > NOW() AT TIME ZONE 'UTC'`,
@@ -108,7 +110,7 @@ exports.verifyLoginCode = async (req, res) => {
       [codeResult.rows[0].id]
     );
 
-    // Générer le token JWT
+    // Générer token JWT
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
@@ -123,7 +125,7 @@ exports.verifyLoginCode = async (req, res) => {
 };
 
 // ======== ADMIN ========
-exports.registerAdmin = async (req, res) => {
+export const registerAdmin = async (req, res) => {
   const { name, email, password, role } = req.body;
   if (!name || !email || !password)
     return res.status(400).json({ message: "Nom, email et mot de passe requis" });

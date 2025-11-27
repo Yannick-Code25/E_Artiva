@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs');
 exports.getCurrentUserProfile = async (req, res) => {
   // ... (ton code existant, qui fonctionne)
   try {
-    const userId = req.user.userId; 
+    const userId = req.user.id; 
     const userRole = req.user.role;
     let queryText;
     if (userRole === 'admin' || userRole === 'super_admin') { // L'admin peut aussi voir son profil via cette route
@@ -163,7 +163,7 @@ exports.deleteUserByAdmin = async (req, res) => {
 
 // NOUVEAU : Mettre à jour le profil de l'utilisateur actuellement connecté (CLIENT)
 exports.updateMyProfile = async (req, res) => {
-  const userId = req.user.userId; // De authMiddleware
+  const userId = req.user.id; // De authMiddleware
   const { name, address, phone, current_password, new_password } = req.body; 
   // On pourrait aussi permettre de changer l'email, mais c'est plus sensible (vérification)
 
@@ -233,7 +233,7 @@ exports.updateMyProfile = async (req, res) => {
 };
 
 exports.deactivateMyAccount = async (req, res) => {
-  const userId = req.user.userId; // Récupéré du token JWT
+  const userId = req.user.id; // Récupéré du token JWT
   console.log(`Backend: Tentative de désactivation pour userId: ${userId}`); // LOG
 
   try {
@@ -268,7 +268,7 @@ exports.deactivateMyAccount = async (req, res) => {
 };
 // AJOUTER CETTE FONCTION DANS userController.js si elle manque :
 exports.changePassword = async (req, res) => {
-  const userId = req.user.userId;
+  const userId = req.user.id;
   const userRole = req.user.role; // Pour savoir quelle table interroger (users ou admin)
   const { currentPassword, newPassword, confirmNewPassword } = req.body;
 
