@@ -1,19 +1,27 @@
 // ARTIVA/back_end/routes/authRoutes.js
 const express = require('express');
-const router = express.Router(); // Crée un nouveau routeur Express
-const authController = require('../controllers/authController'); // Importe notre contrôleur
+const router = express.Router();
+const authController = require('../controllers/authController');
 
-// Définition des routes
-// POST /api/auth/register - pour enregistrer un nouvel utilisateur
+// =====================
+// Routes utilisateurs
+// =====================
+
+// Enregistrer un nouvel utilisateur
 router.post('/register', authController.registerUser);
 
-// POST /api/auth/login - pour connecter un utilisateur (à créer plus tard)
- router.post('/login', authController.loginUser);
+// Connexion d'un utilisateur
+router.post('/login', authController.loginUser);
 
- // NOUVELLE ROUTE : Enregistrement d'un administrateur
-// Cette route pourrait être protégée elle-même (par exemple, accessible seulement par un super_admin existant)
-// Pour l'instant, on la laisse ouverte pour faciliter la création du premier admin.
+// Vérification du code à 6 chiffres après login
+router.post('/verify-login-code', authController.verifyLoginCode);
+
+// =====================
+// Routes administrateurs
+// =====================
+
+// Enregistrer un nouvel admin
+// Pour l'instant accessible à tous (tu pourras ajouter une protection plus tard)
 router.post('/admin/register', authController.registerAdmin);
 
-module.exports = router; // Exporte le routeur pour qu'il soit utilisé dans app.js
-
+module.exports = router;
