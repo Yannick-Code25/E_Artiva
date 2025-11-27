@@ -1270,11 +1270,11 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
     borderWidth: 1,
   },
-  navButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
+  navButtonText: { color: "white", fontSize: 13, fontWeight: "bold" },
   paymentOption: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 15,
+    padding: 22,
     borderWidth: 2,
     borderRadius: 8,
     marginBottom: 10,

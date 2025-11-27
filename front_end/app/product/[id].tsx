@@ -366,8 +366,10 @@ export default function ProductDetailScreen() {
   }
 
   return (
+  <View style={{ flex: 1, backgroundColor: backgroundColor }}>
     <ScrollView
       style={[styles.screenContainer, { backgroundColor }]}
+      contentContainerStyle={{ paddingBottom: 100 }} // évite que le bouton cache le contenu
       showsVerticalScrollIndicator={false}
     >
       <Stack.Screen
@@ -387,6 +389,7 @@ export default function ProductDetailScreen() {
           ),
         }}
       />
+
       {product.imagesForCarousel && product.imagesForCarousel.length > 0 ? (
         <View style={styles.carouselWrapper}>
           <FlatList
@@ -439,7 +442,6 @@ export default function ProductDetailScreen() {
           {product.description || "Pas de description disponible."}
         </Text>
 
-        {/* CHANGEMENT: Affichage du message du panier */}
         {cartMessage && (
           <Text
             style={[
@@ -454,48 +456,6 @@ export default function ProductDetailScreen() {
           </Text>
         )}
 
-        {/* CHANGEMENT: Nouvelle logique pour les boutons du panier */}
-        {quantityInCart > 0 ? (
-          <View style={styles.quantityContainer}>
-            <Text style={[styles.quantityLabel, { color: textColor }]}>
-              Au panier :
-            </Text>
-            <TouchableOpacity
-              onPress={() => handleUpdateQuantityInCart(-1)}
-              style={[styles.quantityButton, { borderColor: subtleTextColor }]}
-            >
-              <FontAwesome name="minus" size={20} color={textColor} />
-            </TouchableOpacity>
-            <Text style={[styles.quantityValue, { color: textColor }]}>
-              {quantityInCart}
-            </Text>
-            <TouchableOpacity
-              onPress={() => handleUpdateQuantityInCart(1)}
-              style={[styles.quantityButton, { borderColor: subtleTextColor }]}
-              disabled={quantityInCart >= (product.stock ?? Infinity)}
-            >
-              <FontAwesome
-                name="plus"
-                size={20}
-                color={
-                  quantityInCart >= (product.stock ?? Infinity)
-                    ? subtleTextColor
-                    : textColor
-                }
-              />
-            </TouchableOpacity>
-          </View>
-        ) : (
-          product.stock !== undefined &&
-          product.stock > 0 && (
-            <TouchableOpacity
-              style={[styles.addToCartButton, { backgroundColor: tintColor }]}
-              onPress={handleInitialAddToCart}
-            >
-              <Text style={styles.addToCartButtonText}>Ajouter au panier</Text>
-            </TouchableOpacity>
-          )
-        )}
         <Text style={[styles.stockInfo, { color: subtleTextColor }]}>
           {product.stock !== undefined && product.stock > 0
             ? `Stock : ${product.stock}`
@@ -503,7 +463,7 @@ export default function ProductDetailScreen() {
         </Text>
       </View>
 
-      {/* CHANGEMENT: Section pour produits de la même sous-catégorie */}
+      {/* Produits similaires */}
       {similarSubCategoryProducts.length > 0 && (
         <View style={{ marginTop: 10 }}>
           <ScrollSection<BaseProductType>
@@ -520,7 +480,6 @@ export default function ProductDetailScreen() {
         </View>
       )}
 
-      {/* CHANGEMENT: Section pour produits populaires/suggérés */}
       {similarMainCategoryProducts.length > 0 && (
         <View style={{ marginTop: 10, marginBottom: 20 }}>
           <ScrollSection<BaseProductType>
@@ -537,7 +496,32 @@ export default function ProductDetailScreen() {
         </View>
       )}
     </ScrollView>
-  );
+
+    {/* BOUTON AJOUTER AU PANIER FIXE EN BAS */}
+    {product && product.stock && product.stock > 0 && (
+      <View
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          padding: 15,
+          backgroundColor: Colors[currentScheme].background,
+          borderTopWidth: 1,
+          borderColor: "#ddd",
+        }}
+      >
+        <TouchableOpacity
+          style={[styles.addToCartButton, { backgroundColor: tintColor }]}
+          onPress={handleInitialAddToCart}
+        >
+          <Text style={styles.addToCartButtonText}>Ajouter au panier</Text>
+        </TouchableOpacity>
+      </View>
+    )}
+  </View>
+);
+
 }
 
 // CHANGEMENT: Styles nettoyés pour ne plus contenir de couleurs codées en dur

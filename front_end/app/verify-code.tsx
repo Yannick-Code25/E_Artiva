@@ -44,23 +44,26 @@ export default function VerifyCode() {
     return data;
   };
 
-  const handleVerify = async () => {
-    if (!/^\d{6}$/.test(code)) {
-      Alert.alert("Erreur", "Veuillez saisir un code à 6 chiffres valide");
-      return;
-    }
+const handleVerify = async () => {
+  if (!/^\d{6}$/.test(code)) {
+    Alert.alert("Erreur", "Veuillez saisir un code à 6 chiffres valide");
+    return;
+  }
 
-    setLoading(true);
-    try {
-      const data = await verifyCodeAPI(email, code);
-      await signIn(data.token, data.user);
-      router.replace("/"); // Authentification complète → accueil
-    } catch (error: any) {
-      Alert.alert("Erreur", error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  try {
+    const data = await verifyCodeAPI(email, code);
+    await signIn(data.token, data.user);
+    console.log("Token JWT :", data.token); // <-- ici tu vois le token
+    console.log("User info :", data.user);
+    router.replace("/"); // Authentification complète → accueil
+  } catch (error: any) {
+    Alert.alert("Erreur", error.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
