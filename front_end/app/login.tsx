@@ -1,5 +1,4 @@
 // ARTIVA/front_end/app/login.tsx
-
 import React, { useState } from "react";
 import {
   View,
@@ -28,7 +27,8 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-const handleLogin = async () => {
+
+  const handleLogin = async () => {
   if (!email || !password) {
     Alert.alert("Erreur", "Veuillez remplir tous les champs");
     return;
@@ -37,27 +37,17 @@ const handleLogin = async () => {
   setIsSubmitting(true);
 
   try {
-    // 1. Vérification email + mot de passe
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
 
-    const data = await res.json();
+    const data = await res.json(); // data doit contenir message ou info code envoyé
 
-    if (!res.ok) {
-      throw new Error(data.message || "Email ou mot de passe incorrect");
-    }
+    if (!res.ok) throw new Error(data.message || "Email ou mot de passe incorrect");
 
-    // 2. Envoi du code (logique simple comme avant)
-    await fetch(`${API_BASE_URL}/auth/send-code`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-
-    // 3. Redirection vers la page de vérification du code
+    // Redirection vers la page de vérification du code
     router.push({
       pathname: "/verify-code",
       params: { email },
@@ -113,6 +103,14 @@ const handleLogin = async () => {
               onChangeText={setPassword}
               secureTextEntry
             />
+
+            {/* LIEN "Mot de passe oublié ?" */}
+            <TouchableOpacity
+              onPress={() => router.push('/forgot-password')}
+              style={{ alignSelf: 'flex-end', marginBottom: 20 }}
+            >
+              <Text style={{ color: colors.primary, fontWeight: '500' }}>Mot de passe oublié ?</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.button, { backgroundColor: colors.primary }]}

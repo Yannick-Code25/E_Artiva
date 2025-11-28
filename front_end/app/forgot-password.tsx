@@ -1,112 +1,128 @@
-// front_end/app/forgot-password.tsx
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { Stack, useRouter } from 'expo-router'; // Stack pour l'en-tête
+import { Stack, useRouter } from 'expo-router';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [step, setStep] = useState<'request' | 'reset'>('request'); // étape actuelle
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendResetLink = () => {
+  const handleSendResetLink = async () => {
     if (!email.trim()) {
       Alert.alert('E-mail requis', 'Veuillez entrer votre adresse e-mail.');
       return;
     }
     setIsLoading(true);
-    // TODO: Appel API pour envoyer le lien de réinitialisation
-    console.log('Demande de réinitialisation pour:', email);
-    setTimeout(() => {
-      setIsLoading(false);
+
+    try {
+      const response = await fetch('http://192.168.11.121:3001/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.message || 'Erreur lors de l’envoi du code.');
+
       Alert.alert(
-        'Vérifiez vos e-mails', 
-        'Si un compte est associé à cet e-mail, un lien de réinitialisation a été envoyé.',
-        [{ text: "OK", onPress: () => router.back() }] // Bouton OK qui ramène en arrière
+        'Code envoyé',
+        'Si un compte existe avec cet email, vous recevrez un code pour réinitialiser votre mot de passe.'
       );
-    }, 1500);
+
+      setStep('reset'); // passer à la saisie du code et mot de passe
+    } catch (err: any) {
+      Alert.alert('Erreur', err.message || 'Une erreur est survenue.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!code.trim() || !newPassword.trim()) {
+      Alert.alert('Champs requis', 'Veuillez remplir le code et le nouveau mot de passe.');
+      return;
+    }
+    setIsLoading(true);
+
+    try {
+const response = await fetch('http://192.168.11.121:3001/api/auth/reset-password', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, code, newPassword }),
+});
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.message || 'Erreur lors de la réinitialisation.');
+
+      Alert.alert('Succès', 'Mot de passe réinitialisé !', [
+        { text: 'OK', onPress: () => router.push('/login') },
+      ]);
+    } catch (err: any) {
+      Alert.alert('Erreur', err.message || 'Une erreur est survenue.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <View style={styles.container}>
-      {/* Optionnel: Ajoute un titre à l'en-tête de cet écran */}
-      <Stack.Screen options={{ title: 'Mot de passe oublié' }} /> 
-
+      <Stack.Screen options={{ title: 'Mot de passe oublié' }} />
       <Text style={styles.title}>Réinitialiser le mot de passe</Text>
-      <Text style={styles.instructions}>
-        Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.
-      </Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Adresse e-mail"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-
-      <TouchableOpacity
-        style={[styles.button, isLoading && styles.buttonDisabled]}
-        onPress={handleSendResetLink}
-        disabled={isLoading}>
-        {isLoading ? (
-          <ActivityIndicator size="small" color="#ffffff" />
-        ) : (
-          <Text style={styles.buttonText}>Envoyer le lien</Text>
-        )}
-      </TouchableOpacity>
+      {step === 'request' ? (
+        <>
+          <TextInput
+            style={styles.input}
+            placeholder="Adresse e-mail"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <TouchableOpacity
+            style={[styles.button, isLoading && styles.buttonDisabled]}
+            onPress={handleSendResetLink}
+            disabled={isLoading}>
+            {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Envoyer le code</Text>}
+          </TouchableOpacity>
+        </>
+      ) : (
+        <>
+          <TextInput
+            style={styles.input}
+            placeholder="Code reçu par email"
+            value={code}
+            onChangeText={setCode}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Nouveau mot de passe"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            secureTextEntry
+          />
+          <TouchableOpacity
+            style={[styles.button, isLoading && styles.buttonDisabled]}
+            onPress={handleResetPassword}
+            disabled={isLoading}>
+            {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Réinitialiser</Text>}
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 }
 
-// Styles similaires aux autres écrans d'auth
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    backgroundColor: '#FFFFFF',
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 15,
-  },
-  instructions: {
-    fontSize: 16,
-    color: '#555',
-    textAlign: 'center',
-    marginBottom: 30,
-    paddingHorizontal: 10, // Pour que le texte ne soit pas trop large
-  },
-  input: {
-    width: '100%',
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderRadius: 10,
-    fontSize: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  button: {
-    width: '100%',
-    backgroundColor: 'tomato',
-    paddingVertical: 18,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 50,
-  },
-  buttonDisabled: {
-    backgroundColor: '#FFC0CB',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
-  },
+  container: { flex: 1, justifyContent: 'center', paddingHorizontal: 24, backgroundColor: '#fff' },
+  title: { fontSize: 26, fontWeight: 'bold', color: '#333', textAlign: 'center', marginBottom: 30 },
+  input: { width: '100%', backgroundColor: '#F0F0F0', padding: 15, borderRadius: 10, marginBottom: 20, fontSize: 16 },
+  button: { width: '100%', backgroundColor: 'tomato', padding: 18, borderRadius: 10, alignItems: 'center' },
+  buttonDisabled: { backgroundColor: '#FFC0CB' },
+  buttonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
 });

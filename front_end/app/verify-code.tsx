@@ -34,11 +34,12 @@ export default function VerifyCode() {
   const [loading, setLoading] = useState(false);
 
   const verifyCodeAPI = async (email: string, code: string) => {
-    const res = await fetch(`${API_BASE_URL}/auth/verify-login-code`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, code }),
-    });
+const res = await fetch(`${API_BASE_URL}/auth/verify-code`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email, code }),
+});
+
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Code invalide");
     return data;
