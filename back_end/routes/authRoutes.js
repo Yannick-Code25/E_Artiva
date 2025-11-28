@@ -1,27 +1,26 @@
 // ARTIVA/back_end/routes/authRoutes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const authController = require('../controllers/authController');
 
-// =====================
+// Import des fonctions depuis authController
+const {
+  forgotPassword,
+  resetPasswordWithCode,
+  registerUser,
+  loginUser,
+  verifyLoginCode,
+  registerAdmin
+} = require("../controllers/authController");
+
 // Routes utilisateurs
-// =====================
+router.post("/register", registerUser);
+router.post("/login", loginUser);
+router.post("/verify-code", verifyLoginCode);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPasswordWithCode);
 
-// Enregistrer un nouvel utilisateur
-router.post('/register', authController.registerUser);
 
-// Connexion d'un utilisateur
-router.post('/login', authController.loginUser);
-
-// Vérification du code à 6 chiffres après login
-router.post('/verify-login-code', authController.verifyLoginCode);
-
-// =====================
-// Routes administrateurs
-// =====================
-
-// Enregistrer un nouvel admin
-// Pour l'instant accessible à tous (tu pourras ajouter une protection plus tard)
-router.post('/admin/register', authController.registerAdmin);
+// Routes admin
+router.post("/register-admin", registerAdmin);
 
 module.exports = router;

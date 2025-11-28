@@ -1,16 +1,97 @@
-// ARTIVA/back_end/controllers/authController.js
-import db from "../config/db.js";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import sendLoginCode from "../utils/sendEmail.js"; // ESM import pour envoi email
+const db = require("../config/db.js");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { sendLoginCode, sendResetPasswordCode } = require("../utils/sendEmail.js");
+require('dotenv').config();
 
-// ======== UTILITAIRE ========
+// ==========================
+// UTILITAIRE
+// ==========================
 function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString(); // 6 chiffres
 }
 
-// ======== UTILISATEUR ========
-export const registerUser = async (req, res) => {
+// ==========================
+// RESET MOT DE PASSE PAR CODE
+// ==========================
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: "Email requis" });
+
+  try {
+    const userResult = await db.query(
+      "SELECT id, email FROM users WHERE email=$1",
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(200).json({
+        message: "Si ce compte existe, un code de réinitialisation a été envoyé."
+      });
+    }
+
+    const user = userResult.rows[0];
+
+    const code = generateCode();
+const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // UTC string
+console.log("Insertion code reset:", user.id, code, expiresAt);
+
+await db.query(
+  `INSERT INTO password_reset_codes (user_id, code, expires_at) VALUES ($1, $2, $3)`,
+  [user.id, code, expiresAt]
+);
+
+
+    await sendResetPasswordCode(user.email, code);
+
+    res.status(200).json({
+      message: "Si ce compte existe, un code de réinitialisation a été envoyé."
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+const resetPasswordWithCode = async (req, res) => {
+  const { email, code, newPassword } = req.body;
+  if (!email || !code || !newPassword) {
+    return res.status(400).json({ message: "Email, code et nouveau mot de passe requis." });
+  }
+
+  try {
+    const userResult = await db.query("SELECT id FROM users WHERE email=$1", [email]);
+    if (userResult.rows.length === 0) return res.status(404).json({ message: "Utilisateur introuvable." });
+
+    const user = userResult.rows[0];
+const codeResult = await db.query(
+  `SELECT * FROM password_reset_codes
+   WHERE user_id=$1 AND code=$2 AND is_used=false AND expires_at > NOW() AT TIME ZONE 'UTC'`,
+  [user.id, code]
+);
+
+
+    if (codeResult.rows.length === 0) {
+      return res.status(400).json({ message: "Code invalide ou expiré." });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, parseInt(process.env.PASSWORD_SALT_ROUNDS || "10"));
+    await db.query("UPDATE users SET password_hash=$1 WHERE id=$2", [hashedPassword, user.id]);
+    await db.query("UPDATE password_reset_codes SET is_used=true WHERE id=$1", [codeResult.rows[0].id]);
+
+    res.json({ message: "Mot de passe réinitialisé avec succès." });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur." });
+  }
+};
+
+// ==========================
+// REGISTER USER
+// ==========================
+const registerUser = async (req, res) => {
   const { name, email, password, address, phone } = req.body;
   if (!name || !email || !password)
     return res.status(400).json({ message: "Nom, email et mot de passe requis" });
@@ -35,8 +116,10 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// ======== LOGIN + ENVOI CODE 2FA ========
-export const loginUser = async (req, res) => {
+// ==========================
+// LOGIN + ENVOI CODE 2FA
+// ==========================
+const loginUser = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
     return res.status(400).json({ message: "Email et mot de passe requis" });
@@ -76,8 +159,10 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// ======== VÉRIFICATION CODE 2FA ========
-export const verifyLoginCode = async (req, res) => {
+// ==========================
+// VÉRIFICATION CODE 2FA
+// ==========================
+const verifyLoginCode = async (req, res) => {
   const { email, code } = req.body;
   if (!email || !code)
     return res.status(400).json({ message: "Email et code requis" });
@@ -92,8 +177,6 @@ export const verifyLoginCode = async (req, res) => {
 
     const user = userResult.rows[0];
     const codeClean = code.toString().trim();
-
-    console.log(`Tentative vérification code pour ${email}: "${codeClean}"`);
 
     const codeResult = await db.query(
       `SELECT * FROM login_codes
@@ -124,8 +207,10 @@ export const verifyLoginCode = async (req, res) => {
   }
 };
 
-// ======== ADMIN ========
-export const registerAdmin = async (req, res) => {
+// ==========================
+// ADMIN
+// ==========================
+const registerAdmin = async (req, res) => {
   const { name, email, password, role } = req.body;
   if (!name || !email || !password)
     return res.status(400).json({ message: "Nom, email et mot de passe requis" });
@@ -150,4 +235,16 @@ export const registerAdmin = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: "Erreur serveur" });
   }
+};
+
+// ==========================
+// EXPORT MODULE
+// ==========================
+module.exports = {
+  forgotPassword,
+  resetPasswordWithCode,
+  registerUser,
+  loginUser,
+  verifyLoginCode,
+  registerAdmin
 };
