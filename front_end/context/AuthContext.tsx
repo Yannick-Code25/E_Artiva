@@ -16,7 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const TOKEN_KEY = "artiva-auth-token";
 const USER_INFO_KEY = "artiva-user-info";
 const THEME_PREFERENCE_KEY = "artiva-theme-preference";
-const API_BASE_URL = "http://192.168.11.121:3001/api"; // **METS TON IP ICI**
+const API_BASE_URL = "http://192.168.11.106:3001/api"; // **METS TON IP ICI**
 
 // --- Types ---
 export interface User {

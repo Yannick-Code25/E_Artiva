@@ -18,7 +18,7 @@
 // import { useColorScheme } from "../components/useColorScheme";
 // import { useAuth } from "../context/AuthContext"; // Pour le token utilisateur
 
-// const API_BASE_URL = "http://192.168.11.121:3001/api"; // **METS TON IP**
+// const API_BASE_URL = "http://192.168.11.106:3001/api"; // **METS TON IP**
 
 // interface NotificationItem {
 //   id: string | number;
@@ -602,7 +602,7 @@ import Colors from "../constants/Colors";
 import { useColorScheme } from "../components/useColorScheme";
 import { useAuth } from "../context/AuthContext"; // Pour le token utilisateur
 
-const API_BASE_URL = "http://192.168.11.121:3001/api"; // **METS TON IP**
+const API_BASE_URL = "http://192.168.11.106:3001/api"; // **METS TON IP**
 
 interface NotificationItem {
   id: string | number;

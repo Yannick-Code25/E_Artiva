@@ -17,7 +17,7 @@ import {
 import { useRouter } from "expo-router";
 import Colors from "../constants/Colors";
 
-const API_BASE_URL = "http://192.168.11.121:3001/api";
+const API_BASE_URL = "http://192.168.11.106:3001/api";
 
 export default function LoginScreen() {
   const router = useRouter();
