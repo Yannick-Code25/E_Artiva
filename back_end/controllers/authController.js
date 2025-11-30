@@ -1,8 +1,40 @@
+// ARTIVA/back_end/controllers/authController.js
 const db = require("../config/db.js");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { sendLoginCode, sendResetPasswordCode } = require("../utils/sendEmail.js");
 require('dotenv').config();
+
+// ==========================
+// LOGIN ADMIN (sans 2FA)
+// ==========================
+const loginAdmin = async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ message: "Email et mot de passe requis" });
+
+  try {
+    const adminResult = await db.query("SELECT * FROM admin WHERE email=$1", [email]);
+    if (adminResult.rows.length === 0)
+      return res.status(401).json({ message: "Email ou mot de passe incorrect" });
+
+    const admin = adminResult.rows[0];
+    const isMatch = await bcrypt.compare(password, admin.password_hash);
+    if (!isMatch)
+      return res.status(401).json({ message: "Email ou mot de passe incorrect" });
+
+    const token = jwt.sign(
+      { id: admin.id, email: admin.email, role: admin.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({ token, admin, message: "Connexion admin réussie" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
 
 // ==========================
 // UTILITAIRE
@@ -31,16 +63,13 @@ const forgotPassword = async (req, res) => {
     }
 
     const user = userResult.rows[0];
-
     const code = generateCode();
-const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // UTC string
-console.log("Insertion code reset:", user.id, code, expiresAt);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
-await db.query(
-  `INSERT INTO password_reset_codes (user_id, code, expires_at) VALUES ($1, $2, $3)`,
-  [user.id, code, expiresAt]
-);
-
+    await db.query(
+      "INSERT INTO password_reset_codes (user_id, code, expires_at) VALUES ($1, $2, $3)",
+      [user.id, code, expiresAt]
+    );
 
     await sendResetPasswordCode(user.email, code);
 
@@ -56,25 +85,23 @@ await db.query(
 
 const resetPasswordWithCode = async (req, res) => {
   const { email, code, newPassword } = req.body;
-  if (!email || !code || !newPassword) {
+  if (!email || !code || !newPassword)
     return res.status(400).json({ message: "Email, code et nouveau mot de passe requis." });
-  }
 
   try {
     const userResult = await db.query("SELECT id FROM users WHERE email=$1", [email]);
-    if (userResult.rows.length === 0) return res.status(404).json({ message: "Utilisateur introuvable." });
+    if (userResult.rows.length === 0)
+      return res.status(404).json({ message: "Utilisateur introuvable." });
 
     const user = userResult.rows[0];
-const codeResult = await db.query(
-  `SELECT * FROM password_reset_codes
-   WHERE user_id=$1 AND code=$2 AND is_used=false AND expires_at > NOW() AT TIME ZONE 'UTC'`,
-  [user.id, code]
-);
+    const codeResult = await db.query(
+      `SELECT * FROM password_reset_codes
+       WHERE user_id=$1 AND code=$2 AND is_used=false AND expires_at > NOW() AT TIME ZONE 'UTC'`,
+      [user.id, code]
+    );
 
-
-    if (codeResult.rows.length === 0) {
+    if (codeResult.rows.length === 0)
       return res.status(400).json({ message: "Code invalide ou expiré." });
-    }
 
     const hashedPassword = await bcrypt.hash(newPassword, parseInt(process.env.PASSWORD_SALT_ROUNDS || "10"));
     await db.query("UPDATE users SET password_hash=$1 WHERE id=$2", [hashedPassword, user.id]);
@@ -117,7 +144,7 @@ const registerUser = async (req, res) => {
 };
 
 // ==========================
-// LOGIN + ENVOI CODE 2FA
+// LOGIN USER (avec 2FA)
 // ==========================
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
@@ -125,13 +152,7 @@ const loginUser = async (req, res) => {
     return res.status(400).json({ message: "Email et mot de passe requis" });
 
   try {
-    // Vérifier admin
-    let userResult = await db.query("SELECT * FROM admin WHERE email=$1", [email]);
-    if (userResult.rows.length === 0) {
-      // Sinon chercher user normal
-      userResult = await db.query("SELECT * FROM users WHERE email=$1", [email]);
-    }
-
+    let userResult = await db.query("SELECT * FROM users WHERE email=$1", [email]);
     if (userResult.rows.length === 0)
       return res.status(401).json({ message: "Email ou mot de passe incorrect" });
 
@@ -140,16 +161,14 @@ const loginUser = async (req, res) => {
     if (!isMatch)
       return res.status(401).json({ message: "Email ou mot de passe incorrect" });
 
-    // Générer code 2FA
     const code = generateCode();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 min UTC
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
     await db.query(
       "INSERT INTO login_codes (user_id, code, expires_at) VALUES ($1,$2,$3)",
       [user.id, code, expiresAt]
     );
 
-    // Envoyer le code par email
     await sendLoginCode(email, code);
 
     res.status(200).json({ message: "Code envoyé à l'email de l'utilisateur" });
@@ -168,10 +187,7 @@ const verifyLoginCode = async (req, res) => {
     return res.status(400).json({ message: "Email et code requis" });
 
   try {
-    const userResult = await db.query(
-      "SELECT id, email, name, role FROM users WHERE email=$1",
-      [email]
-    );
+    const userResult = await db.query("SELECT id, email, name, role FROM users WHERE email=$1", [email]);
     if (userResult.rows.length === 0)
       return res.status(404).json({ message: "Utilisateur introuvable" });
 
@@ -187,13 +203,8 @@ const verifyLoginCode = async (req, res) => {
     if (codeResult.rows.length === 0)
       return res.status(400).json({ message: "Code invalide ou expiré" });
 
-    // Marquer le code comme utilisé
-    await db.query(
-      "UPDATE login_codes SET is_used=true WHERE id=$1",
-      [codeResult.rows[0].id]
-    );
+    await db.query("UPDATE login_codes SET is_used=true WHERE id=$1", [codeResult.rows[0].id]);
 
-    // Générer token JWT
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
@@ -208,12 +219,12 @@ const verifyLoginCode = async (req, res) => {
 };
 
 // ==========================
-// ADMIN
+// REGISTER ADMIN
 // ==========================
 const registerAdmin = async (req, res) => {
-  const { name, email, password, role } = req.body;
-  if (!name || !email || !password)
-    return res.status(400).json({ message: "Nom, email et mot de passe requis" });
+  const { email, password, role } = req.body;  // plus de name
+  if (!email || !password)
+    return res.status(400).json({ message: "Email et mot de passe requis" });
 
   const adminRole = role || "admin";
   if (!["admin", "super_admin"].includes(adminRole))
@@ -226,8 +237,8 @@ const registerAdmin = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, parseInt(process.env.PASSWORD_SALT_ROUNDS || "10"));
     const newAdmin = await db.query(
-      "INSERT INTO admin (name,email,password_hash,role) VALUES ($1,$2,$3,$4) RETURNING id,name,email,role",
-      [name, email, hashedPassword, adminRole]
+      "INSERT INTO admin (email, password_hash, role) VALUES ($1, $2, $3) RETURNING id, email, role",
+      [email, hashedPassword, adminRole]
     );
 
     res.status(201).json({ message: "Admin créé", admin: newAdmin.rows[0] });
@@ -246,5 +257,6 @@ module.exports = {
   registerUser,
   loginUser,
   verifyLoginCode,
-  registerAdmin
+  registerAdmin,
+  loginAdmin  // <-- n'oublie pas !
 };

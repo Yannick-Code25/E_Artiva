@@ -9,7 +9,8 @@ const {
   registerUser,
   loginUser,
   verifyLoginCode,
-  registerAdmin
+  registerAdmin,
+  loginAdmin   // le login pour les admins
 } = require("../controllers/authController");
 
 // Routes utilisateurs
@@ -19,6 +20,8 @@ router.post("/verify-code", verifyLoginCode);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPasswordWithCode);
 
+// Route login admin
+router.post("/login-admin", loginAdmin);
 
 // Routes admin
 router.post("/register-admin", registerAdmin);
