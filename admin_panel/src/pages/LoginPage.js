@@ -1,11 +1,9 @@
 // admin_panel/src/pages/LoginPage.js
 import React, { useState } from 'react';
-import axios from 'axios'; // Ou fetch
-import { useNavigate } from 'react-router-dom'; // Pour la redirection
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-// **ATTENTION : REMPLACE PAR L'URL DE TON BACKEND EN LOCAL**
-// Puisque l'admin panel tournera aussi sur localhost (sur un autre port), localhost fonctionnera ici.
-const API_BASE_URL = 'http://localhost:3001/api'; 
+const API_BASE_URL = 'http://localhost:3001/api';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -20,18 +18,18 @@ function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+      const response = await axios.post(`${API_BASE_URL}/auth/login-admin`, {
         email,
         password,
       });
 
-      const { token, user } = response.data;
+      const { token, admin } = response.data; // <-- Ici, on récupère "admin"
 
-      if (user && user.role === 'admin') { // Vérifier si l'utilisateur est bien un admin
-        localStorage.setItem('adminToken', token); // Stocker le token dans localStorage
-        localStorage.setItem('adminUser', JSON.stringify(user)); // Stocker les infos user
-        console.log('Connexion Admin réussie:', user);
-        navigate('/dashboard'); // Rediriger vers le tableau de bord admin
+      if (admin && admin.role === 'admin') { // Vérifier si c'est bien un admin
+        localStorage.setItem('adminToken', token); 
+        localStorage.setItem('adminUser', JSON.stringify(admin)); 
+        console.log('Connexion Admin réussie:', admin);
+        navigate('/dashboard'); 
       } else {
         setError('Accès refusé. Vous devez être administrateur.');
       }
