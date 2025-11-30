@@ -59,3 +59,50 @@ export const sendResetPasswordCode = async (to, code) => {
     throw err;
   }
 };
+
+// ------------------------------
+// Envoi d'une nouvelle commande : client + admin
+// ------------------------------
+export const sendNewOrderEmails = async (userEmail, adminEmail, orderData) => {
+  try {
+    // Email pour le CLIENT
+    await transporter.sendMail({
+      from: `"Artiva 🛍️" <${process.env.EMAIL_USER || "artiva.app@gmail.com"}>`,
+      to: userEmail,
+      subject: "🛒 Votre commande a été enregistrée",
+      html: `
+        <div style="font-family:sans-serif;color:#333;">
+          <h2>Merci pour votre commande !</h2>
+          <p>Voici les détails :</p>
+          <pre style="background:#f5f5f5;padding:10px;border-radius:5px;">
+${JSON.stringify(orderData, null, 2)}
+          </pre>
+          <p>L'équipe Artiva vous remercie 🙏</p>
+        </div>
+      `
+    });
+
+    // Email pour l’ADMIN
+    await transporter.sendMail({
+      from: `"Artiva 🛍️" <${process.env.EMAIL_USER || "artiva.app@gmail.com"}>`,
+      to: adminEmail,
+      subject: "📦 Nouvelle commande reçue",
+      html: `
+        <div style="font-family:sans-serif;color:#333;">
+          <h2>Nouvelle commande</h2>
+          <p><b>Client :</b> ${userEmail}</p>
+          <p><b>Détails :</b></p>
+          <pre style="background:#f5f5f5;padding:10px;border-radius:5px;">
+${JSON.stringify(orderData, null, 2)}
+          </pre>
+        </div>
+      `
+    });
+
+    console.log(`[Order] Emails envoyés à ${userEmail} et admin : ${adminEmail}`);
+
+  } catch (err) {
+    console.error("[Order] Erreur lors de l’envoi des emails :", err);
+    throw err;
+  }
+};

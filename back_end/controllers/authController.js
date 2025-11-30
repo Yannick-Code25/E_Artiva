@@ -8,6 +8,7 @@ require('dotenv').config();
 // ==========================
 // LOGIN ADMIN (sans 2FA)
 // ==========================
+
 const loginAdmin = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ message: "Email et mot de passe requis" });

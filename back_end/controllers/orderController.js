@@ -1,14 +1,12 @@
 // ARTIVA/back_end/controllers/orderController.js
 const db = require('../config/db');
-const { v4: uuidv4 } = require('uuid'); // Pour générer des order_number uniques si besoin
+const { v4: uuidv4 } = require('uuid');
+const { sendNewOrderEmails } = require("../utils/sendEmail.js"); // <-- AJOUT
 
 // --- Créer une nouvelle commande (CLIENT) ---
-// Version mise à jour pour inclure la création d'un enregistrement de paiement.
 exports.createOrder = async (req, res) => {
-const userId = req.user.id; // au lieu de req.user.id
+  const userId = req.user.id;
 
-  
-  // On récupère 'payment_method' qui est maintenant envoyé par le frontend
   const { cart_items, shipping_address, payment_method, notes, currency } = req.body;
 
   if (!cart_items || !Array.isArray(cart_items) || cart_items.length === 0) {
@@ -22,150 +20,166 @@ const userId = req.user.id; // au lieu de req.user.id
   }
 
   const client = await db.pool.connect();
-try {
-  console.log("=== Début de la création de commande ===");
 
-  // Vérification du userId
-  if (!userId) {
-    throw new Error("userId non défini. L'utilisateur n'est pas authentifié !");
-  }
-  console.log("userId présent :", userId);
+  try {
+    console.log("=== Début de la création de commande ===");
 
-  // DÉBUT DE LA TRANSACTION
-  await client.query('BEGIN');
-
-  let totalAmount = 0;
-  const orderItemsData = [];
-
-  // 1. Vérifier le stock et calculer le total
-  for (const item of cart_items) {
-    if (!item.product_id || !item.quantity || parseInt(item.quantity, 10) <= 0) {
-      throw new Error(`Données d'article de panier invalides pour product_id: ${item.product_id}`);
+    if (!userId) {
+      throw new Error("userId non défini. L'utilisateur n'est pas authentifié !");
     }
 
-    const productResult = await client.query(
-      'SELECT name, price, stock, sku FROM products WHERE id = $1 FOR UPDATE',
-      [item.product_id]
+    await client.query('BEGIN');
+
+    let totalAmount = 0;
+    const orderItemsData = [];
+
+    // 1. Vérifier stock + calcul total
+    for (const item of cart_items) {
+      if (!item.product_id || !item.quantity || parseInt(item.quantity, 10) <= 0) {
+        throw new Error(`Données d'article invalides pour product_id: ${item.product_id}`);
+      }
+
+      const productResult = await client.query(
+        'SELECT name, price, stock, sku FROM products WHERE id = $1 FOR UPDATE',
+        [item.product_id]
+      );
+
+      if (productResult.rows.length === 0) {
+        throw new Error(`Produit ID ${item.product_id} introuvable.`);
+      }
+
+      const product = productResult.rows[0];
+      const quantity = parseInt(item.quantity, 10);
+
+      if (product.stock < quantity) {
+        throw new Error(`Stock insuffisant pour ${product.name}`);
+      }
+
+      // MAJ stock
+      await client.query(
+        'UPDATE products SET stock = stock - $1 WHERE id = $2',
+        [quantity, item.product_id]
+      );
+
+      const unitPrice = parseFloat(product.price);
+      const subtotal = unitPrice * quantity;
+      totalAmount += subtotal;
+
+      orderItemsData.push({
+        product_id: item.product_id,
+        product_name: product.name,
+        sku: product.sku,
+        quantity,
+        unit_price: unitPrice,
+        subtotal,
+      });
+    }
+
+    // Frais de port
+    const shippingCost = 0;
+    totalAmount += shippingCost;
+
+    // 3. Créer la commande
+    const orderNumber = `ORD-${Date.now()}-${uuidv4().substring(0, 6).toUpperCase()}`;
+
+    const orderQuery = `
+      INSERT INTO orders (
+        order_number, user_id, status, total_amount, currency,
+        shipping_address, shipping_cost, notes
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      RETURNING id, order_number, status, total_amount, created_at;
+    `;
+
+    const orderResult = await client.query(orderQuery, [
+      orderNumber,
+      userId,
+      'pending',
+      totalAmount.toFixed(2),
+      currency || 'FCFA',
+      JSON.stringify(shipping_address),
+      shippingCost.toFixed(2),
+      notes || null
+    ]);
+
+    const createdOrder = orderResult.rows[0];
+
+    // 4. Insérer les items
+    const itemInserts = orderItemsData.map(item => {
+      return client.query(
+        `INSERT INTO order_items (
+          order_id, product_id, product_name, sku, quantity, unit_price, subtotal
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [
+          createdOrder.id,
+          item.product_id,
+          item.product_name,
+          item.sku,
+          item.quantity,
+          item.unit_price.toFixed(2),
+          item.subtotal.toFixed(2)
+        ]
+      );
+    });
+    await Promise.all(itemInserts);
+
+    // 5. Paiement
+    const paymentStatus = (payment_method === 'cod') ? 'pending' : 'awaiting_payment';
+    await client.query(
+      `INSERT INTO payments (order_id, payment_method, amount, currency, status)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [
+        createdOrder.id,
+        payment_method,
+        totalAmount.toFixed(2),
+        currency || 'FCFA',
+        paymentStatus
+      ]
     );
 
-    if (productResult.rows.length === 0) {
-      throw new Error(`Produit avec ID ${item.product_id} non trouvé.`);
-    }
+    // 6. Notification
+    await client.query(
+      `INSERT INTO notifications (user_id, type, title, message, link_url)
+       VALUES ($1,'order_placed',$2,$3,$4)`,
+      [
+        userId,
+        'Votre commande a été reçue !',
+        `Merci pour votre commande #${createdOrder.order_number}.`,
+        `/orders/${createdOrder.id}`
+      ]
+    );
 
-    const product = productResult.rows[0];
-    const quantity = parseInt(item.quantity, 10);
+    // 🔥🔥🔥 7. ENVOI DES EMAILS (client + admin) 🔥🔥🔥
+    const adminEmail = process.env.ADMIN_EMAIL || "artiva.app@gmail.com";
+    const userEmail = req.user.email; // email du client connecté
 
-    if (product.stock < quantity) {
-      throw new Error(`Stock insuffisant pour le produit: ${product.name} (demandé: ${quantity}, disponible: ${product.stock})`);
-    }
-
-    // Mettre à jour le stock
-    await client.query('UPDATE products SET stock = stock - $1 WHERE id = $2', [quantity, item.product_id]);
-    
-    const unitPrice = parseFloat(product.price);
-    const subtotal = unitPrice * quantity;
-    totalAmount += subtotal;
-
-    orderItemsData.push({
-      product_id: item.product_id,
-      product_name: product.name,
-      sku: product.sku,
-      quantity: quantity,
-      unit_price: unitPrice,
-      subtotal: subtotal,
+    await sendNewOrderEmails(userEmail, adminEmail, {
+      order_number: createdOrder.order_number,
+      amount: totalAmount,
+      currency,
+      payment_method,
+      items: orderItemsData,
+      shipping_address,
     });
+
+    await client.query('COMMIT');
+
+    res.status(201).json({
+      message: "Commande créée avec succès et emails envoyés !",
+      order: createdOrder
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error("Erreur création commande :", error);
+
+    if (error.message.includes("Stock insuffisant") || error.message.includes("Produit")) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    res.status(500).json({ message: "Erreur serveur lors de la création de la commande." });
+  } finally {
+    client.release();
   }
-  console.log("Stock vérifié et total calculé :", totalAmount);
-
-  // Frais de port
-  const finalShippingCost = 0;
-  totalAmount += finalShippingCost;
-
-  // 3. Créer la commande
-  const orderNumber = `ORD-${Date.now()}-${uuidv4().substring(0, 6).toUpperCase()}`;
-  console.log("Création de la commande avec orderNumber :", orderNumber);
-
-  const orderQuery = `
-    INSERT INTO orders (
-      order_number, user_id, status, total_amount, currency, 
-      shipping_address, shipping_cost, notes
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    RETURNING id, order_number, status, total_amount, created_at;
-  `;
-
-  const orderResult = await client.query(orderQuery, [
-    orderNumber, userId, 'pending',
-    totalAmount.toFixed(2), currency || 'FCFA',
-    JSON.stringify(shipping_address),
-    finalShippingCost.toFixed(2),
-    notes || null
-  ]);
-
-  const createdOrder = orderResult.rows[0];
-  console.log("Commande créée avec succès :", createdOrder);
-
-  // 4. Insérer les articles
-  const orderItemsPromises = orderItemsData.map(item => {
-    const itemQuery = `
-      INSERT INTO order_items (
-        order_id, product_id, product_name, sku, quantity, unit_price, subtotal
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7);
-    `;
-    return client.query(itemQuery, [
-      createdOrder.id, item.product_id, item.product_name, item.sku,
-      item.quantity, item.unit_price.toFixed(2), item.subtotal.toFixed(2)
-    ]);
-  });
-  await Promise.all(orderItemsPromises);
-  console.log("Articles de la commande insérés");
-
-  // 5. Enregistrement du paiement
-  const paymentQuery = `
-    INSERT INTO payments (
-      order_id, payment_method, amount, currency, status
-    ) VALUES ($1, $2, $3, $4, $5)
-    RETURNING id, status;
-  `;
-  const paymentStatus = (payment_method === 'cod') ? 'pending' : 'awaiting_payment';
-  const paymentResult = await client.query(paymentQuery, [
-    createdOrder.id,
-    payment_method,
-    totalAmount.toFixed(2),
-    currency || 'FCFA',
-    paymentStatus
-  ]);
-  console.log(`Paiement #${paymentResult.rows[0].id} enregistré avec statut '${paymentResult.rows[0].status}'`);
-
-  // 6. Créer une notification
-  if (!userId) {
-    console.warn("Notification non créée car userId manquant");
-  } else {
-    const notificationTitle = 'Votre commande a été reçue !';
-    const notificationMessage = `Merci pour votre commande #${createdOrder.order_number}. Nous la traitons actuellement.`;
-    const linkUrl = `/orders/${createdOrder.id}`;
-    const notificationQuery = `
-      INSERT INTO notifications (user_id, type, title, message, link_url)
-      VALUES ($1, 'order_placed', $2, $3, $4)
-    `;
-    await client.query(notificationQuery, [userId, notificationTitle, notificationMessage, linkUrl]);
-    console.log("Notification créée pour l'utilisateur :", userId);
-  }
-
-  // 7. Commit transaction
-  await client.query('COMMIT');
-  console.log("=== Transaction validée ===");
-  res.status(201).json({ message: 'Commande créée avec succès!', order: createdOrder });
-
-} catch (error) {
-  await client.query('ROLLBACK');
-  console.error('Erreur complète lors de la création de la commande :', error);
-  if (error.message.includes("Stock insuffisant") || error.message.includes("Produit avec ID")) {
-    return res.status(400).json({ message: error.message });
-  }
-  res.status(500).json({ message: 'Erreur serveur lors de la création de la commande.' });
-} finally {
-  client.release();
-}
 };
 
 
