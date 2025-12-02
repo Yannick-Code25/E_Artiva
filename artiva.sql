@@ -13,6 +13,19 @@ ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE NOT NULL;
 
+
+-- Création de la table login_codes
+CREATE TABLE IF NOT EXISTS login_codes (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    code VARCHAR(6) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    is_used BOOLEAN DEFAULT FALSE
+);
+
+-- Index primaire (créé automatiquement avec SERIAL PRIMARY KEY)
+-- Foreign key user_id vers users(id) avec cascade delete déjà inclus
+
 -- Et n'oublie pas le trigger si tu l'as créé :
 CREATE TRIGGER trigger_users_updated_at
 BEFORE UPDATE ON users
