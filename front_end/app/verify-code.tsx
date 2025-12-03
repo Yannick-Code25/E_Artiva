@@ -18,7 +18,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "../context/AuthContext";
 import Colors from "../constants/Colors";
 
-const API_BASE_URL = "http://192.168.11.106:3001/api";
+const API_BASE_URL = "http://192.168.11.120:3001/api";
 
 
 export default function VerifyCode() {
