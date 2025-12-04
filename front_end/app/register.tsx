@@ -20,7 +20,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import Colors from "../constants/Colors"; // Assure-toi que le chemin est correct
 
 // N'oublie pas de remplacer cette URL par la tienne ou de la mettre dans un fichier de config
-const API_BASE_URL = "http://192.168.11.106:3001/api";
+const API_BASE_URL = "http://192.168.11.120:3001/api";
 
 export default function RegisterScreen() {
   const router = useRouter();
