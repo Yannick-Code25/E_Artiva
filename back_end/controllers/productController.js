@@ -5,7 +5,7 @@ const db = require("../config/db");
 exports.createProduct = async (req, res) => {
   const { 
     name, description, price, stock, image_url, 
-    sku, is_published, // Champs pour la table products
+    sku, is_published, video_url, // Champs pour la table products
     category_ids, tag_ids, // Tableaux d'IDs pour les liaisons
     images // NOUVEAU : Attend un tableau d'objets image. Ex: [{image_url: "url1", is_primary: true}, {image_url: "url2"}]
   } = req.body;
@@ -36,8 +36,8 @@ exports.createProduct = async (req, res) => {
 
     // Insérer le produit principal
     const productQuery = `
-      INSERT INTO products (name, description, price, stock, image_url, sku, is_published) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO products (name, description, price, stock, image_url, sku, is_published, video_url) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *;`; // RETURNING * récupère tous les champs du produit inséré
     const productResult = await client.query(productQuery, [
       name, 
@@ -46,7 +46,8 @@ exports.createProduct = async (req, res) => {
       parsedStock, 
       mainImageUrlFromRoot, // On insère l'image principale ici pour la table 'products' 
       sku || null, // SKU peut être unique, géré par la BDD
-      publishedStatus
+      publishedStatus,
+      video_url || null
     ]);
     const createdProduct = productResult.rows[0];
     console.log(`Produit créé ID: ${createdProduct.id}, Nom: ${createdProduct.name}`);
@@ -117,136 +118,6 @@ exports.createProduct = async (req, res) => {
 };
 
 // --- Récupérer tous les produits (Publique) ---
-// exports.getAllProducts = async (req, res) => {
-//   const { 
-//     category_id, 
-//     tag_id,      
-//     tag_name,    
-//     limit,       
-//     random,      
-//     search       
-//   } = req.query;
-
-//   try {
-//     let queryParams = [];
-//     let paramIndex = 1;
-    
-//     // Note: SELECT DISTINCT ON (p.id) a été retiré
-//     let baseQuery = `
-//       SELECT 
-//         p.id, p.name, p.description, p.price, p.stock, p.image_url, 
-//         p.sku, p.is_published, p.created_at, p.updated_at,
-//         (SELECT ARRAY_AGG(c.name ORDER BY c.name) 
-//          FROM categories c 
-//          JOIN product_categories pc_names ON c.id = pc_names.category_id 
-//          WHERE pc_names.product_id = p.id) as categories_names,
-//         (SELECT ARRAY_AGG(pc.category_id)
-//          FROM product_categories pc
-//          WHERE pc.product_id = p.id) as category_ids,
-//         (SELECT ARRAY_AGG(t.name ORDER BY t.name) 
-//          FROM product_tags t 
-//          JOIN product_tag_assignments pta_names ON t.id = pta_names.tag_id 
-//          WHERE pta_names.product_id = p.id) as tags_names,
-//         (SELECT ARRAY_AGG(pta.tag_id)
-//          FROM product_tag_assignments pta
-//          WHERE pta.product_id = p.id) as tag_ids
-//       FROM products p
-//     `;
-    
-//     let joinClauses = "";
-//     let whereClauses = ["p.is_published = TRUE", "p.stock > 0"];
-
-//     // Ajout : Filtrer par category_id
-//     if (category_id) {
-//       joinClauses += ` JOIN product_categories pc_filter ON p.id = pc_filter.product_id`;
-//       whereClauses.push(`pc_filter.category_id = $${paramIndex++}`);
-//       queryParams.push(parseInt(category_id, 10));
-//     }
-
-//     if (tag_id) {
-//       joinClauses += ` JOIN product_tag_assignments pta_filter ON p.id = pta_filter.product_id`;
-//       whereClauses.push(`pta_filter.tag_id = $${paramIndex++}`);
-//       queryParams.push(parseInt(tag_id, 10));
-//     } else if (tag_name) {
-//       joinClauses += ` JOIN product_tag_assignments pta_filter ON p.id = pta_filter.product_id JOIN product_tags pt_filter ON pta_filter.tag_id = pt_filter.id`;
-//       whereClauses.push(`pt_filter.name = $${paramIndex++}`);
-//       queryParams.push(tag_name);
-//     }
-
-//     if (search) {
-//       whereClauses.push(`(p.name ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex} OR p.sku ILIKE $${paramIndex})`);
-//       queryParams.push(`%${search}%`);
-//       paramIndex++;
-//     }
-
-//     let finalQuery = baseQuery + joinClauses;
-//     if (whereClauses.length > 0) {
-//       finalQuery += ` WHERE ${whereClauses.join(' AND ')}`;
-//     }
-
-//     if (random === 'true' || random === true) {
-//       finalQuery += " ORDER BY RANDOM()";
-//     } else {
-//       finalQuery += " ORDER BY p.created_at DESC"; 
-//     }
-
-//     // La requête pour COUNT doit avoir les mêmes JOINs et WHERE que la requête principale
-//     let countQuery = `SELECT COUNT(DISTINCT p.id) FROM products p ${joinClauses}`;
-//     if (whereClauses.length > 0) {
-//         countQuery += ` WHERE ${whereClauses.join(' AND ')}`;
-//     }
-//     const countResult = await db.query(countQuery, queryParams.slice(0, paramIndex -1));
-//     const totalItems = parseInt(countResult.rows[0].count, 10);
-//     const totalPages = Math.ceil(totalItems / (parseInt(limit, 10) || 20));
-
-//     if (limit) {
-//       finalQuery += ` LIMIT $${paramIndex++}`;
-//       queryParams.push(parseInt(limit, 10));
-//     } else {
-//       finalQuery += ` LIMIT $${paramIndex++}`; 
-//       queryParams.push(20); 
-//     }
-//     // Ajout de OFFSET pour la pagination
-//     const offset = ( (parseInt(req.query.page, 10) || 1) - 1) * (parseInt(limit, 10) || 20);
-//     finalQuery += ` OFFSET $${paramIndex++}`;
-//     queryParams.push(offset);
-
-//     console.log("SQL pour getAllProducts:", finalQuery);
-//     console.log("Params pour getAllProducts:", queryParams);
-
-//     const { rows } = await db.query(finalQuery, queryParams);
-    
-//     const productsData = rows.map(product => ({
-//         ...product,
-//         category_ids: product.category_ids || [],
-//         categories_names: product.categories_names || [],
-//         tag_ids: product.tag_ids || [],
-//         tags_names: product.tags_names || []
-//     }));
-
-//     // Si aucun produit n'est trouvé, renvoyer un tableau vide
-//     if (!productsData || productsData.length === 0) {
-//         return res.status(200).json({
-//             products: [],
-//             currentPage: parseInt(req.query.page, 10) || 1,
-//             totalPages: 0,
-//             totalItems: 0
-//         });
-//     }
-
-//     res.status(200).json({
-//         products: productsData,
-//         currentPage: parseInt(req.query.page, 10) || 1,
-//         totalPages,
-//         totalItems
-//     });
-
-//   } catch (error) {
-//     console.error('Erreur lors de la récupération de tous les produits:', error);
-//     res.status(500).json({ message: 'Erreur serveur lors de la récupération des produits.' });
-//   }
-// };
-// --- Récupérer tous les produits (Publique) ---
 exports.getAllProducts = async (req, res) => {
   const { 
     category_id, 
@@ -265,7 +136,7 @@ exports.getAllProducts = async (req, res) => {
     let baseQuery = `
       SELECT 
         p.id, p.name, p.description, p.price, p.stock, p.image_url, 
-        p.sku, p.is_published, p.created_at, p.updated_at,
+        p.sku, p.is_published, p.created_at, p.updated_at, p.video_url,
         (SELECT ARRAY_AGG(c.name ORDER BY c.name) 
          FROM categories c 
          JOIN product_categories pc_names ON c.id = pc_names.category_id 
@@ -398,6 +269,7 @@ exports.getProductById = async (req, res) => {
         p.is_published, 
         p.created_at, 
         p.updated_at,
+        p.video_url,
         -- Sous-requête pour récupérer toutes les images de la table 'product_images' associées à ce produit
         (SELECT ARRAY_AGG(
             json_build_object(
@@ -491,7 +363,7 @@ exports.getProductById = async (req, res) => {
 // --- Mettre à jour un produit (Admin) ---
 exports.updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, stock, image_url, sku, is_published, category_ids, tag_ids,images // NOUVEAU : Tableau d'objets image pour product_images 
+  const { name, description, price, stock, image_url, sku, is_published, category_ids, tag_ids, images, video_url // NOUVEAU : Tableau d'objets image pour product_images 
   } = req.body;
 
   // Construire dynamiquement la requête de mise à jour pour ne modifier que les champs fournis
@@ -514,6 +386,11 @@ exports.updateProduct = async (req, res) => {
   if (image_url !== undefined) { fields.push(`image_url = $${paramIndex++}`); values.push(image_url || null); }
   if (sku !== undefined) { fields.push(`sku = $${paramIndex++}`); values.push(sku || null); }
   if (is_published !== undefined) { fields.push(`is_published = $${paramIndex++}`); values.push(Boolean(is_published)); }
+
+  if (video_url !== undefined) { 
+      fields.push(`video_url = $${paramIndex++}`); 
+      values.push(video_url || null); 
+  }
   
   if (fields.length === 0 && !category_ids && !tag_ids) { // Si rien n'est à mettre à jour (sauf potentiellement les liaisons)
     // Si seulement les liaisons sont à mettre à jour, on peut quand même continuer.
@@ -667,7 +544,7 @@ exports.getAllProductsAdmin = async (req, res) => {
     const query = `
       SELECT 
         p.id, p.name, p.description, p.price, p.stock, p.image_url, 
-        p.sku, p.is_published, p.created_at, p.updated_at,
+        p.sku, p.is_published, p.created_at, p.updated_at, p.video_url,
         (SELECT ARRAY_AGG(c.name ORDER BY c.name) 
          FROM categories c 
          JOIN product_categories pc ON c.id = pc.category_id 
