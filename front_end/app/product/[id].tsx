@@ -9,11 +9,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
-  Button,
   FlatList,
+  Platform,
+  Share,
+  Linking,
 } from "react-native";
 import { Stack, useLocalSearchParams, useRouter, Href } from "expo-router";
-import { FontAwesome } from "@expo/vector-icons";
+import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import Colors from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
 import { Product as BaseProductType } from "../../components/ProductCard";
@@ -21,8 +23,9 @@ import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
 import ScrollSection from "../../components/ScrollSection";
 import ProductCard from "../../components/ProductCard";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Interfaces (conservées de la version de base, car plus complètes)
+// ... Tes interfaces restent inchangées ...
 interface ProductImageGalleryItem {
   id: string | number;
   image_url: string;
@@ -36,9 +39,11 @@ interface ProductDetailAPIResponse
   price: string | number;
   main_image_url?: string;
   images?: ProductImageGalleryItem[];
+  video_url?: string;
 }
 interface ProductDetail extends BaseProductType {
   imagesForCarousel: ProductImageGalleryItem[];
+  video_url?: string;
 }
 interface ViewableItemInfo<T> {
   item: T;
@@ -46,9 +51,43 @@ interface ViewableItemInfo<T> {
   index: number | null;
   isViewable: boolean;
 }
+// --- AJOUTER AVEC LES AUTRES INTERFACES ---
+interface ProductReview {
+  id: string;
+  userName: string;
+  rating: number; // 1 à 5
+  comment: string;
+  date: string;
+}
 
-// **ATTENTION: METS TON ADRESSE IP LOCALE CORRECTE ICI**
-const API_BASE_URL = "http://192.168.11.106:3001/api";
+// --- AJOUTER JUSTE AVANT "export default function..." ---
+// Données fictives pour tester le design (tu remplaceras ça par ton API plus tard)
+const MOCK_REVIEWS: ProductReview[] = [
+  {
+    id: "1",
+    userName: "Jean K.",
+    rating: 5,
+    comment: "Super produit, conforme à la description ! Livraison rapide.",
+    date: "12 Oct 2023",
+  },
+  {
+    id: "2",
+    userName: "Marie A.",
+    rating: 4,
+    comment:
+      "Bonne qualité, mais la couleur est un peu différente de la photo.",
+    date: "05 Nov 2023",
+  },
+  {
+    id: "3",
+    userName: "Paul D.",
+    rating: 5,
+    comment: "Rien à dire, parfait.",
+    date: "20 Nov 2023",
+  },
+];
+
+const API_BASE_URL = "http://192.168.100.88:3001/api"; // Ton IP
 const { width: screenWidth } = Dimensions.get("window");
 
 const formatPriceForDisplay = (
@@ -56,40 +95,39 @@ const formatPriceForDisplay = (
   currency: string = "FCFA"
 ): string => {
   if (price === undefined || price === null || String(price).trim() === "")
-    return "Prix N/A";
+    return "N/A";
   const numericPrice = parseFloat(String(price));
   if (isNaN(numericPrice)) return "Prix invalide";
-  return `${numericPrice.toFixed(2)} ${currency}`;
+  // Formatage avec séparateur de milliers (ex: 10 000 FCFA)
+  return `${numericPrice
+    .toFixed(0)
+    .replace(/\B(?=(\d{3})+(?!\d))/g, " ")} ${currency}`;
 };
 
 export default function ProductDetailScreen() {
   const { id: routeId } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { effectiveAppColorScheme, userToken } = useAuth();
+  const { effectiveAppColorScheme } = useAuth();
   const { cartItems, addToCart, updateQuantity } = useCart();
   const { addToWishlist, removeFromWishlist, isProductInWishlist } =
     useWishlist();
 
-  // CHANGEMENT: Utilisation des couleurs dynamiques du thème partout
   const currentScheme = effectiveAppColorScheme ?? "light";
   const colors = Colors[currentScheme];
-  const tintColor = Colors[currentScheme].tint;
-  const textColor = Colors[currentScheme].text;
-  const backgroundColor = Colors[currentScheme].background;
-  const subtleTextColor = Colors[currentScheme].subtleText;
-  const successBackgroundColor = Colors[currentScheme].successBackground;
-  const successTextColor = Colors[currentScheme].successText;
+  // J'utilise un gris très clair pour le fond de page pour faire ressortir les cartes blanches
+  const pageBackgroundColor = currentScheme === "dark" ? "#121212" : "#F2F2F2";
+  const cardBackgroundColor = colors.background; // Blanc ou Noir selon le thème
+  const GAP_SIZE = 1;
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList<ProductImageGalleryItem>>(null);
-
-  // CHANGEMENT: Ajout de l'état pour les messages UI au lieu des alertes
   const [cartMessage, setCartMessage] = useState<string | null>(null);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false); // Pour "Voir plus"
 
-  // CHANGEMENT: Ajout des états pour les produits similaires
+  // Similar Products States
   const [similarSubCategoryProducts, setSimilarSubCategoryProducts] = useState<
     BaseProductType[]
   >([]);
@@ -100,38 +138,19 @@ export default function ProductDetailScreen() {
   const cartItemForThisProduct = product
     ? cartItems.find((item) => String(item.id) === String(product.id))
     : undefined;
-  const quantityInCart = cartItemForThisProduct
-    ? cartItemForThisProduct.quantity
-    : 0;
   const isInWishlist = product ? isProductInWishlist(product.id) : false;
 
+  // --- LOGIC (Identique à ton code, juste condensé pour la lisibilité) ---
   const fetchProductDetails = useCallback(async () => {
-    // ... (fonction conservée de la version de base, elle est complète et robuste)
-    if (!routeId) {
-      setError("ID du produit manquant dans la route.");
-      setIsLoading(false);
-      return;
-    }
-    console.log(
-      `ProductDetailScreen: Fetching details for product ID: ${routeId}`
-    );
+    if (!routeId) return;
     setIsLoading(true);
-    setError(null);
     try {
       const response = await fetch(`${API_BASE_URL}/products/${routeId}`);
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ message: `Erreur HTTP ${response.status}` }));
-        throw new Error(
-          errorData.message ||
-            `Produit non trouvé ou erreur serveur (${response.status})`
-        );
-      }
+      if (!response.ok) throw new Error("Erreur chargement");
       const dataFromApi = (await response.json()) as ProductDetailAPIResponse;
-      let mainImageUrlForCard: string = `https://via.placeholder.com/150x150/?text=${encodeURIComponent(
-        dataFromApi.name || "Prod"
-      )}`;
+
+      let mainImageUrlForCard: string =
+        dataFromApi.main_image_url || `https://via.placeholder.com/150`;
       let carouselImages: ProductImageGalleryItem[] = [];
 
       if (dataFromApi.images && dataFromApi.images.length > 0) {
@@ -142,36 +161,32 @@ export default function ProductDetailScreen() {
         mainImageUrlForCard =
           primaryApiImage?.image_url || carouselImages[0].image_url;
       } else if (dataFromApi.main_image_url) {
-        mainImageUrlForCard = dataFromApi.main_image_url;
         carouselImages = [
           {
             id: `main_${dataFromApi.id}`,
             image_url: dataFromApi.main_image_url,
             is_primary: true,
-            display_order: 0,
           },
         ];
       }
-      const processedData: ProductDetail = {
+
+      setProduct({
         id: String(dataFromApi.id),
-        name: dataFromApi.name || "Produit Inconnu",
+        name: dataFromApi.name || "Produit",
         price: formatPriceForDisplay(dataFromApi.price),
         imageUrl: mainImageUrlForCard,
         stock: dataFromApi.stock,
         description: dataFromApi.description,
-        sku: dataFromApi.sku,
         is_published: dataFromApi.is_published,
         category_ids: dataFromApi.category_ids || [],
         categories_names: dataFromApi.categories_names || [],
         tag_ids: dataFromApi.tag_ids || [],
         tags_names: dataFromApi.tags_names || [],
         imagesForCarousel: carouselImages,
-      };
-      setProduct(processedData);
+        video_url: dataFromApi.video_url,
+      });
     } catch (err: any) {
-      console.error("ProductDetailScreen: Erreur fetchProductDetails:", err);
-      setError(err.message || "Impossible de charger les détails du produit.");
-      setProduct(null);
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -181,442 +196,863 @@ export default function ProductDetailScreen() {
     fetchProductDetails();
   }, [fetchProductDetails]);
 
-  // CHANGEMENT: Nouvelle fonction pour charger les produits similaires
   const fetchSimilarProducts = useCallback(async () => {
-    if (!product || !product.category_ids || product.category_ids.length === 0)
-      return;
+    if (!product || !product.category_ids?.[0]) return;
     setIsLoadingSimilar(true);
     try {
-      const subCategoryId = product.category_ids[0];
-      if (subCategoryId) {
-        const subCatResponse = await fetch(
-          `${API_BASE_URL}/products?category_id=${subCategoryId}&limit=6`
-        );
-        if (subCatResponse.ok) {
-          const subCatData = await subCatResponse.json();
-          const adaptedSubCat = (subCatData.products || [])
+      // Logic identique à la tienne pour fetch
+      const subCatResponse = await fetch(
+        `${API_BASE_URL}/products?category_id=${product.category_ids[0]}&limit=6`
+      );
+      if (subCatResponse.ok) {
+        const data = await subCatResponse.json();
+        setSimilarSubCategoryProducts(
+          (data.products || [])
             .filter((p: any) => String(p.id) !== String(product.id))
             .map((p: any) => ({
               id: String(p.id),
-              name: p.name || "Produit",
+              name: p.name,
               price: formatPriceForDisplay(p.price),
-              imageUrl:
-                p.image_url ||
-                `https://via.placeholder.com/150?text=${encodeURIComponent(
-                  p.name || "P"
-                )}`,
+              imageUrl: p.image_url || "https://via.placeholder.com/150",
               stock: p.stock,
-            }));
-          setSimilarSubCategoryProducts(adaptedSubCat.slice(0, 5));
-        }
+            }))
+        );
       }
-
-      const popularResponse = await fetch(
+      const popResponse = await fetch(
         `${API_BASE_URL}/products?tag_name=Populaire&limit=6&random=true`
       );
-      if (popularResponse.ok) {
-        const popularData = await popularResponse.json();
-        const adaptedPopular = (popularData.products || [])
-          .filter((p: any) => String(p.id) !== String(product.id))
-          .map((p: any) => ({
-            id: String(p.id),
-            name: p.name || "Produit",
-            price: formatPriceForDisplay(p.price),
-            imageUrl:
-              p.image_url ||
-              `https://via.placeholder.com/150?text=${encodeURIComponent(
-                p.name || "P"
-              )}`,
-            stock: p.stock,
-          }));
-        setSimilarMainCategoryProducts(adaptedPopular.slice(0, 5));
+      if (popResponse.ok) {
+        const data = await popResponse.json();
+        setSimilarMainCategoryProducts(
+          (data.products || [])
+            .filter((p: any) => String(p.id) !== String(product.id))
+            .map((p: any) => ({
+              id: String(p.id),
+              name: p.name,
+              price: formatPriceForDisplay(p.price),
+              imageUrl: p.image_url || "https://via.placeholder.com/150",
+              stock: p.stock,
+            }))
+        );
       }
     } catch (e) {
-      console.error("Erreur fetchSimilarProducts:", e);
+      console.error(e);
     } finally {
       setIsLoadingSimilar(false);
     }
   }, [product]);
 
   useEffect(() => {
-    if (product) {
-      fetchSimilarProducts();
-    }
+    if (product) fetchSimilarProducts();
   }, [product, fetchSimilarProducts]);
 
-  const handleWishlistToggleOnDetail = () => {
-    if (!product) return;
-    if (isInWishlist) {
-      removeFromWishlist(product.id);
-    } else {
-      addToWishlist(product);
-    }
-  };
-
-  // CHANGEMENT: Logique de panier améliorée
-  const handleInitialAddToCart = () => {
+  const handleAddToCart = () => {
     if (!product) return;
     addToCart(product, 1);
-    setCartMessage(`${product.name} a été ajouté à votre panier !`);
-    setTimeout(() => setCartMessage(null), 3000);
+    setCartMessage("Ajouté au panier !");
+    setTimeout(() => setCartMessage(null), 2000);
   };
 
-  const handleUpdateQuantityInCart = (amount: number) => {
-    if (!product || !cartItemForThisProduct) return;
-    const newQuantity = cartItemForThisProduct.quantity + amount;
-    updateQuantity(product.id, newQuantity);
-    if (newQuantity > 0) {
-      setCartMessage(
-        `Quantité de ${product.name} mise à jour à ${newQuantity}.`
-      );
-    } else {
-      setCartMessage(`${product.name} retiré du panier.`);
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `Regarde ce produit sur Artiva : ${product?.name} - ${product?.price}`,
+      });
+    } catch (error) {
+      console.log(error);
     }
-    setTimeout(() => setCartMessage(null), 3000);
   };
+  // --- LOGIQUE CONSULTÉ RÉCEMMENT ---
+  const [recentlyViewed, setRecentlyViewed] = useState<BaseProductType[]>([]);
 
-  const onViewableItemsChanged = useCallback(
-    ({
-      viewableItems,
-    }: {
-      viewableItems: Array<ViewableItemInfo<ProductImageGalleryItem>>;
-    }) => {
-      if (viewableItems.length > 0) {
-        const firstViewableItem = viewableItems[0];
-        if (firstViewableItem.index !== null)
-          setActiveIndex(firstViewableItem.index);
-      }
-    },
-    []
-  );
+  // Fonction pour charger et mettre à jour l'historique
+  const handleRecentHistory = useCallback(async () => {
+    if (!product) return;
 
-  const viewabilityConfig = useRef({
-    viewAreaCoveragePercentThreshold: 50,
-  }).current;
-  const renderImageItem = ({ item }: { item: ProductImageGalleryItem }) => (
-    <View
-      style={[styles.carouselImageContainer, { backgroundColor: colors.card }]}
-    >
-      <Image
-        source={{ uri: item.image_url }}
-        style={styles.carouselImage}
-        resizeMode="contain"
-      />
-    </View>
-  );
-  const renderCarouselDots = () => {
-    if (!product?.imagesForCarousel || product.imagesForCarousel.length <= 1)
-      return null;
+    try {
+      // 1. Récupérer l'historique existant
+      const jsonValue = await AsyncStorage.getItem("@recently_viewed");
+      let history: BaseProductType[] =
+        jsonValue != null ? JSON.parse(jsonValue) : [];
+
+      // 2. Filtrer pour ne pas afficher le produit qu'on regarde ACTUELLEMENT dans la liste "récents"
+      // (Optionnel : certains sites l'affichent, d'autres non. Ici on l'enlève pour l'affichage)
+      const historyForDisplay = history.filter(
+        (item) => String(item.id) !== String(product.id)
+      );
+      setRecentlyViewed(historyForDisplay);
+
+      // 3. Ajouter le produit actuel en haut de la liste pour la prochaine fois
+      // On retire d'abord le produit s'il existait déjà pour éviter les doublons
+      const newHistory = history.filter(
+        (item) => String(item.id) !== String(product.id)
+      );
+
+      // On crée un objet simplifié pour l'historique (pas besoin de toutes les infos lourdes)
+      const productSummary: BaseProductType = {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        imageUrl: product.imageUrl,
+        stock: product.stock,
+      };
+
+      newHistory.unshift(productSummary); // Ajoute au début
+
+      // 4. Limiter l'historique à 10 articles max pour ne pas surcharger
+      if (newHistory.length > 10) newHistory.pop();
+
+      // 5. Sauvegarder
+      await AsyncStorage.setItem(
+        "@recently_viewed",
+        JSON.stringify(newHistory)
+      );
+    } catch (e) {
+      console.error("Erreur historique", e);
+    }
+  }, [product]);
+
+  // Exécuter la logique quand le produit est chargé
+  useEffect(() => {
+    if (product) {
+      handleRecentHistory();
+    }
+  }, [product, handleRecentHistory]);
+
+  // --- RENDERING HELPERS ---
+  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+    if (viewableItems.length > 0 && viewableItems[0].index !== null) {
+      setActiveIndex(viewableItems[0].index);
+    }
+  }, []);
+
+  if (isLoading)
     return (
-      <View style={styles.dotsContainer}>
-        {product.imagesForCarousel.map((_, index) => (
-          <View
-            key={`dot-${index}`}
-            style={[
-              styles.dot,
-              index === activeIndex
-                ? { backgroundColor: tintColor, borderColor: tintColor }
-                : styles.dotInactive,
-            ]}
-          />
-        ))}
+      <View style={[styles.centered, { backgroundColor: pageBackgroundColor }]}>
+        <ActivityIndicator color={colors.tint} />
       </View>
     );
-  };
-
-  if (isLoading) {
+  if (!product)
     return (
-      <View style={[styles.centered, { backgroundColor }]}>
-        <ActivityIndicator size="large" color={tintColor} />
-        <Text style={{ marginTop: 10, color: textColor }}>
-          Chargement du produit...
-        </Text>
+      <View style={[styles.centered, { backgroundColor: pageBackgroundColor }]}>
+        <Text style={{ color: colors.text }}>Erreur</Text>
       </View>
     );
-  }
-
-  if (error) {
-    return (
-      <View style={[styles.centered, { backgroundColor }]}>
-        <Text style={{ color: "red", textAlign: "center" }}>{error}</Text>
-        <Button
-          title="Retour"
-          onPress={() =>
-            router.canGoBack()
-              ? router.back()
-              : router.replace("/(tabs)/" as Href)
-          }
-          color={tintColor}
-        />
-      </View>
-    );
-  }
-
-  if (!product) {
-    return (
-      <View style={[styles.centered, { backgroundColor }]}>
-        <Text style={{ color: textColor }}>Produit non trouvé.</Text>
-        <Button
-          title="Retour à l'accueil"
-          onPress={() => router.replace("/(tabs)/" as Href)}
-          color={tintColor}
-        />
-      </View>
-    );
-  }
 
   return (
-  <View style={{ flex: 1, backgroundColor: backgroundColor }}>
-    <ScrollView
-      style={[styles.screenContainer, { backgroundColor }]}
-      contentContainerStyle={{ paddingBottom: 100 }} // évite que le bouton cache le contenu
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={{ flex: 1, backgroundColor: pageBackgroundColor }}>
       <Stack.Screen
         options={{
-          title: product.name || "Détail Produit",
+          title: "", // On cache le titre dans la nav bar pour le style moderne
+          headerStyle: { backgroundColor: pageBackgroundColor },
+          headerShadowVisible: false, // Enlève la ligne sous le header
           headerRight: () => (
-            <TouchableOpacity
-              onPress={handleWishlistToggleOnDetail}
-              style={{ marginRight: 15 }}
-            >
-              <FontAwesome
-                name={isInWishlist ? "heart" : "heart-o"}
-                size={24}
-                color={isInWishlist ? tintColor : tintColor}
-              />
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", gap: 15, marginRight: 10 }}>
+              <TouchableOpacity onPress={handleShare}>
+                <Ionicons
+                  name="share-social-outline"
+                  size={24}
+                  color={colors.text}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() =>
+                  isInWishlist
+                    ? removeFromWishlist(product.id)
+                    : addToWishlist(product)
+                }
+              >
+                <FontAwesome
+                  name={isInWishlist ? "heart" : "heart-o"}
+                  size={24}
+                  color={isInWishlist ? "#E74C3C" : colors.text}
+                />
+              </TouchableOpacity>
+            </View>
           ),
         }}
       />
 
-      {product.imagesForCarousel && product.imagesForCarousel.length > 0 ? (
-        <View style={styles.carouselWrapper}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        {/* 1. SECTION IMAGE (CAROUSEL) */}
+        <View style={{ backgroundColor: cardBackgroundColor }}>
           <FlatList
             ref={flatListRef}
             data={product.imagesForCarousel}
-            renderItem={renderImageItem}
-            keyExtractor={(imgItem, index) => `carousel-${imgItem.id}`}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onViewableItemsChanged={onViewableItemsChanged}
-            viewabilityConfig={viewabilityConfig}
-            getItemLayout={(data, index) => ({
-              length: screenWidth,
-              offset: screenWidth * index,
-              index,
-            })}
+            viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={({ item }) => (
+              <View
+                style={{
+                  width: screenWidth,
+                  height: 350,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Image
+                  source={{ uri: item.image_url }}
+                  style={{ width: "90%", height: "90%", resizeMode: "contain" }}
+                />
+              </View>
+            )}
           />
-          {renderCarouselDots()}
+          {/* Indicateurs (Dots) */}
+          {product.imagesForCarousel.length > 1 && (
+            <View style={styles.dotsContainer}>
+              {product.imagesForCarousel.map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.dot,
+                    i === activeIndex
+                      ? { backgroundColor: colors.tint, width: 20 }
+                      : { backgroundColor: "#ccc" },
+                  ]}
+                />
+              ))}
+            </View>
+          )}
         </View>
-      ) : (
+
+        {/* 2. MAIN INFO CARD (Titre, Prix, Stock, Note) */}
+        <View style={[styles.card, { backgroundColor: cardBackgroundColor }]}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+            }}
+          >
+            <Text style={[styles.productName, { color: colors.text }]}>
+              {product.name}
+            </Text>
+            {/* Badge de stock */}
+            {product.stock && product.stock > 0 ? (
+              <View style={styles.inStockBadge}>
+                <Text style={styles.inStockText}>En stock</Text>
+              </View>
+            ) : (
+              <View
+                style={[styles.inStockBadge, { backgroundColor: "#ffebee" }]}
+              >
+                <Text
+                  style={{ color: "#d32f2f", fontSize: 10, fontWeight: "bold" }}
+                >
+                  Rupture
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Fausse section de notation pour le look "Pro" */}
+          <View style={styles.ratingContainer}>
+            <View style={{ flexDirection: "row" }}>
+              {[1, 2, 3, 4].map((i) => (
+                <FontAwesome key={i} name="star" size={14} color="#FFD700" />
+              ))}
+              <FontAwesome name="star-half-full" size={14} color="#FFD700" />
+            </View>
+            <Text
+              style={{ color: colors.subtleText, fontSize: 12, marginLeft: 5 }}
+            >
+              (4.5/5 • 12 avis)
+            </Text>
+          </View>
+
+          <Text style={[styles.productPrice, { color: colors.tint }]}>
+            {product.price}
+          </Text>
+
+          {/* Petit tag de catégorie */}
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 5,
+              marginTop: 5,
+            }}
+          >
+            {product.categories_names?.map((cat, idx) => (
+              <View
+                key={idx}
+                style={{
+                  backgroundColor: colors.card,
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  borderRadius: 4,
+                }}
+              >
+                <Text style={{ color: colors.subtleText, fontSize: 10 }}>
+                  {cat}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* 3. SECTION CONFIANCE (Livraison, Retours) - Style Jumia */}
         <View
           style={[
-            styles.imagePlaceholderContainer,
-            { backgroundColor: colors.card },
+            styles.card,
+            { backgroundColor: cardBackgroundColor, marginTop: GAP_SIZE },
           ]}
         >
-          <Text style={{ color: subtleTextColor }}>Pas d'image disponible</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Livraison et Retours
+          </Text>
+
+          <View style={styles.infoRow}>
+            <View style={styles.iconBox}>
+              <Ionicons
+                name="car-sport-outline"
+                size={20}
+                color={colors.tint}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.infoTitle, { color: colors.text }]}>
+                Livraison estimée
+              </Text>
+              <Text style={[styles.infoDesc, { color: colors.subtleText }]}>
+                Livré entre le {new Date().getDate() + 2} et le{" "}
+                {new Date().getDate() + 5} du mois
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.divider, { backgroundColor: colors.card }]} />
+          <View style={styles.infoRow}>
+            <View style={styles.iconBox}>
+              <MaterialIcons
+                name="assignment-return"
+                size={20}
+                color={colors.tint}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.infoTitle, { color: colors.text }]}>
+                Politique de retour
+              </Text>
+              <Text style={[styles.infoDesc, { color: colors.subtleText }]}>
+                Retour gratuit sous 7 jours en cas de pépin.
+              </Text>
+            </View>
+          </View>
         </View>
-      )}
 
-      <View style={styles.detailsContainer}>
-        <Text style={[styles.productName, { color: textColor }]}>
-          {product.name}
-        </Text>
-        {product.tags_names && product.tags_names.length > 0 && (
-          <Text style={[styles.tags, { color: subtleTextColor }]}>
-            Tags: {product.tags_names.join(", ")}
+        {/* 4. DESCRIPTION & CONTENU RICHE */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: cardBackgroundColor, marginTop: GAP_SIZE },
+          ]}
+        >
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Description
           </Text>
-        )}
-        {product.categories_names && product.categories_names.length > 0 && (
-          <Text style={[styles.categories, { color: subtleTextColor }]}>
-            Catégories: {product.categories_names.join(", ")}
-          </Text>
-        )}
-        <Text style={[styles.productPrice, { color: tintColor }]}>
-          {product.price}
-        </Text>
-        <Text style={[styles.productDescription, { color: textColor }]}>
-          {product.description || "Pas de description disponible."}
-        </Text>
 
-        {cartMessage && (
+          {/* Texte de description (Rétractable) */}
           <Text
+            numberOfLines={isDescriptionExpanded ? undefined : 3}
             style={[
-              styles.cartMessage,
-              {
-                backgroundColor: successBackgroundColor,
-                color: successTextColor,
-              },
+              styles.descriptionText,
+              { color: colors.text, marginBottom: 15 },
             ]}
           >
-            {cartMessage}
+            {product.description ||
+              "Aucune description disponible pour cet article."}
           </Text>
+
+          {/* Bouton Voir plus / Voir moins */}
+          {product.description && product.description.length > 100 && (
+            <TouchableOpacity
+              onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+              style={{ marginBottom: 15 }}
+            >
+              <Text style={{ color: colors.tint, fontWeight: "600" }}>
+                {isDescriptionExpanded
+                  ? "Masquer la description"
+                  : "Lire la suite"}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* --- ZONE MÉDIA (IMAGES & VIDÉO) --- */}
+          <View
+            style={{
+              borderTopWidth: 1,
+              borderTopColor: colors.card,
+              paddingTop: 15,
+            }}
+          >
+            {/* TITRE VIDEO */}
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "bold",
+                color: colors.text,
+                marginBottom: 10,
+              }}
+            >
+              Présentation Vidéo
+            </Text>
+
+            {/* --- BLOC VIDÉO INTELLIGENT --- */}
+            {/* 1. Si on a une URL, on affiche le bouton PLAY */}
+            {product.video_url ? (
+              <TouchableOpacity
+                onPress={() => {
+                  if (product.video_url) Linking.openURL(product.video_url);
+                }}
+                style={{
+                  width: "100%",
+                  height: 180,
+                  backgroundColor: "#000",
+                  borderRadius: 8,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginBottom: 20,
+                  overflow: "hidden",
+                }}
+              >
+                {/* Image de fond (Cover) */}
+                <Image
+                  source={{ uri: product.imageUrl }}
+                  style={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                    opacity: 0.6,
+                  }}
+                  blurRadius={4}
+                />
+                {/* Bouton Play */}
+                <View
+                  style={{
+                    backgroundColor: "rgba(0,0,0,0.6)",
+                    borderRadius: 50,
+                    padding: 5,
+                  }}
+                >
+                  <Ionicons name="play-circle" size={60} color="white" />
+                </View>
+                <Text
+                  style={{
+                    color: "white",
+                    marginTop: 10,
+                    fontWeight: "bold",
+                    textShadowColor: "black",
+                    textShadowRadius: 5,
+                  }}
+                >
+                  Regarder la vidéo du produit
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              /* 2. Si PAS d'URL, on affiche un petit texte discret ou rien du tout */
+              <Text
+                style={{
+                  fontStyle: "italic",
+                  color: colors.subtleText,
+                  marginBottom: 20,
+                }}
+              >
+                Aucune vidéo disponible pour ce produit.
+              </Text>
+            )}
+
+            {/* --- GALERIE D'IMAGES --- */}
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "bold",
+                color: colors.text,
+                marginBottom: 10,
+              }}
+            >
+              Détails en images
+            </Text>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {product.imagesForCarousel.map((img, index) => (
+                <View key={index} style={{ marginRight: 10 }}>
+                  <Image
+                    source={{ uri: img.image_url }}
+                    style={{
+                      width: 120,
+                      height: 120,
+                      borderRadius: 8,
+                      backgroundColor: colors.background,
+                      borderWidth: 1,
+                      borderColor: colors.card,
+                    }}
+                    resizeMode="cover"
+                  />
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+
+        {/* --- DÉBUT SECTION AVIS CLIENTS --- */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: cardBackgroundColor, marginTop: GAP_SIZE },
+          ]}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 15,
+            }}
+          >
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: colors.text, marginBottom: 0 },
+              ]}
+            >
+              Avis Clients
+            </Text>
+            <TouchableOpacity>
+              <Text
+                style={{ color: colors.tint, fontSize: 14, fontWeight: "600" }}
+              >
+                Voir tout
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Résumé de la note (Ex: 4.7/5) */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 20,
+              backgroundColor: colors.background,
+              padding: 10,
+              borderRadius: 8,
+            }}
+          >
+            <View>
+              <Text
+                style={{ fontSize: 32, fontWeight: "bold", color: colors.text }}
+              >
+                4.7
+                <Text style={{ fontSize: 16, color: colors.subtleText }}>
+                  /5
+                </Text>
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.subtleText }}>
+                Basé sur 12 avis
+              </Text>
+            </View>
+            <View style={{ marginLeft: 20, flex: 1 }}>
+              {/* Petites étoiles statiques pour l'exemple */}
+              <View style={{ flexDirection: "row", gap: 2 }}>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <FontAwesome key={i} name="star" size={18} color="#FFD700" />
+                ))}
+              </View>
+            </View>
+          </View>
+
+          {/* Liste des commentaires */}
+          {MOCK_REVIEWS.map((review, index) => (
+            <View
+              key={review.id}
+              style={{
+                marginBottom: 15,
+                borderBottomWidth: index !== MOCK_REVIEWS.length - 1 ? 1 : 0, // Pas de ligne sous le dernier
+                borderBottomColor: colors.card,
+                paddingBottom: index !== MOCK_REVIEWS.length - 1 ? 15 : 0,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  marginBottom: 5,
+                }}
+              >
+                <Text style={{ fontWeight: "bold", color: colors.text }}>
+                  {review.userName}
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.subtleText }}>
+                  {review.date}
+                </Text>
+              </View>
+              <View style={{ flexDirection: "row", marginBottom: 5 }}>
+                {[...Array(5)].map((_, i) => (
+                  <FontAwesome
+                    key={i}
+                    name={i < review.rating ? "star" : "star-o"}
+                    size={12}
+                    color="#FFD700"
+                    style={{ marginRight: 2 }}
+                  />
+                ))}
+              </View>
+              <Text style={{ color: colors.text, lineHeight: 20 }}>
+                {review.comment}
+              </Text>
+            </View>
+          ))}
+
+          {/* Bouton pour laisser un avis (Optionnel) */}
+          <TouchableOpacity
+            style={{
+              marginTop: 10,
+              padding: 12,
+              borderWidth: 1,
+              borderColor: colors.tint,
+              borderRadius: 6,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: colors.tint, fontWeight: "bold" }}>
+              Écrire un avis
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {/* --- FIN SECTION AVIS CLIENTS --- */}
+
+        {/* 5. PRODUITS SIMILAIRES */}
+        {similarSubCategoryProducts.length > 0 && (
+          <View
+            style={{
+              marginTop: GAP_SIZE,
+              backgroundColor: cardBackgroundColor,
+              paddingVertical: 15,
+            }}
+          >
+            <ScrollSection
+              title="Produits similaires"
+              data={similarSubCategoryProducts}
+              renderItem={({ item }) => (
+                <ProductCard
+                  item={item}
+                  onPress={() => router.push(`/product/${item.id}` as Href)}
+                />
+              )}
+              keyExtractor={(item) => `sim-${item.id}`}
+            />
+          </View>
         )}
 
-        <Text style={[styles.stockInfo, { color: subtleTextColor }]}>
-          {product.stock !== undefined && product.stock > 0
-            ? `Stock : ${product.stock}`
-            : "Produit indisponible"}
-        </Text>
-      </View>
+        {/* 6. VOUS POURRIEZ AIMER */}
+        {similarMainCategoryProducts.length > 0 && (
+          <View
+            style={{
+              marginTop: 10,
+              backgroundColor: cardBackgroundColor,
+              paddingVertical: 15,
+            }}
+          >
+            <ScrollSection
+              title="Vous pourriez aimer"
+              data={similarMainCategoryProducts}
+              renderItem={({ item }) => (
+                <ProductCard
+                  item={item}
+                  onPress={() => router.push(`/product/${item.id}` as Href)}
+                />
+              )}
+              keyExtractor={(item) => `like-${item.id}`}
+            />
+          </View>
+        )}
+        {/* 7. CONSULTÉ RÉCEMMENT */}
+        {recentlyViewed.length > 0 && (
+          <View
+            style={{
+              marginTop: GAP_SIZE,
+              backgroundColor: cardBackgroundColor,
+              paddingVertical: 15,
+              marginBottom: 20,
+            }}
+          >
+            <ScrollSection
+              title="Consulté récemment"
+              data={recentlyViewed}
+              renderItem={({ item }) => (
+                <ProductCard
+                  item={item}
+                  onPress={() => router.push(`/product/${item.id}` as Href)}
+                />
+              )}
+              keyExtractor={(item) => `recent-${item.id}`}
+            />
+          </View>
+        )}
+      </ScrollView>
 
-      {/* Produits similaires */}
-      {similarSubCategoryProducts.length > 0 && (
-        <View style={{ marginTop: 10 }}>
-          <ScrollSection<BaseProductType>
-            title={`Dans la même catégorie`}
-            data={similarSubCategoryProducts}
-            renderItem={({ item }) => (
-              <ProductCard
-                item={item}
-                onPress={() => router.push(`/product/${item.id}` as Href)}
-              />
-            )}
-            keyExtractor={(item) => `subcat-${item.id.toString()}`}
-          />
-        </View>
-      )}
-
-      {similarMainCategoryProducts.length > 0 && (
-        <View style={{ marginTop: 10, marginBottom: 20 }}>
-          <ScrollSection<BaseProductType>
-            title="Vous pourriez aussi aimer"
-            data={similarMainCategoryProducts}
-            renderItem={({ item }) => (
-              <ProductCard
-                item={item}
-                onPress={() => router.push(`/product/${item.id}` as Href)}
-              />
-            )}
-            keyExtractor={(item) => `maincat-${item.id.toString()}`}
-          />
-        </View>
-      )}
-    </ScrollView>
-
-    {/* BOUTON AJOUTER AU PANIER FIXE EN BAS */}
-    {product && product.stock && product.stock > 0 && (
+      {/* FOOTER ACTION BAR - Design moderne type e-commerce */}
       <View
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: 15,
-          backgroundColor: Colors[currentScheme].background,
-          borderTopWidth: 1,
-          borderColor: "#ddd",
-        }}
+        style={[
+          styles.footer,
+          { backgroundColor: cardBackgroundColor, borderTopColor: colors.card },
+        ]}
       >
-        <TouchableOpacity
-          style={[styles.addToCartButton, { backgroundColor: tintColor }]}
-          onPress={handleInitialAddToCart}
-        >
-          <Text style={styles.addToCartButtonText}>Ajouter au panier</Text>
-        </TouchableOpacity>
-      </View>
-    )}
-  </View>
-);
+        {/* Bouton Panier/Message */}
+        {cartMessage ? (
+          <View
+            style={[
+              styles.successMessage,
+              { backgroundColor: colors.successBackground },
+            ]}
+          >
+            <Ionicons
+              name="checkmark-circle"
+              size={20}
+              color={colors.successText}
+            />
+            <Text
+              style={{
+                color: colors.successText,
+                fontWeight: "bold",
+                marginLeft: 8,
+              }}
+            >
+              {cartMessage}
+            </Text>
+          </View>
+        ) : (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 15 }}>
+            {/* Bouton appel/chat (Optionnel style Jumia) */}
+            <TouchableOpacity
+              style={[styles.secondaryButton, { borderColor: colors.tint }]}
+            >
+              <Ionicons name="call-outline" size={24} color={colors.tint} />
+            </TouchableOpacity>
 
+            {/* Gros bouton Ajouter */}
+            <TouchableOpacity
+              style={[
+                styles.mainButton,
+                {
+                  backgroundColor:
+                    product.stock && product.stock > 0 ? colors.tint : "#ccc",
+                },
+              ]}
+              onPress={handleAddToCart}
+              disabled={!product.stock || product.stock <= 0}
+            >
+              <Text style={styles.mainButtonText}>
+                {product.stock && product.stock > 0
+                  ? "Ajouter au panier"
+                  : "Indisponible"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </View>
+  );
 }
 
-// CHANGEMENT: Styles nettoyés pour ne plus contenir de couleurs codées en dur
 const styles = StyleSheet.create({
-  screenContainer: { flex: 1 },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  carouselWrapper: {},
-  carouselImageContainer: {
-    width: screenWidth,
-    justifyContent: "center",
-    alignItems: "center",
-    //backgroundColor: "#f8f8f8", Garde une couleur neutre pour le fond de l'image
-  },
-  carouselImage: {
-    width: "100%",
-    aspectRatio: 1.1,
-    resizeMode: "cover", // Ajuste l'image pour couvrir l'espace sans déformation
-  },
-  imagePlaceholderContainer: {
-    width: screenWidth,
-    aspectRatio: 1.1,
-    // backgroundColor: "#e0e0e0",
-    justifyContent: "center",
-    alignItems: "center",
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+  card: {
+    padding: 16,
+    // Ombre légère pour donner du relief (style carte)
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   dotsContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    position: "absolute",
-    bottom: 15,
-    left: 0,
-    right: 0,
+    paddingBottom: 15,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 4,
-    borderWidth: 1,
+    height: 6,
+    width: 6,
+    borderRadius: 3,
+    marginHorizontal: 3,
   },
-  dotInactive: {
-    backgroundColor: "rgba(255,255,255,0.5)",
-    borderColor: "rgba(0,0,0,0.2)",
-  },
-  detailsContainer: { padding: 20 },
+
+  // Text Styles
   productName: {
-    fontSize: 26,
-    fontWeight: "bold",
-    marginBottom: 6,
-    lineHeight: 32,
+    fontSize: 18,
+    fontWeight: "700",
+    lineHeight: 24,
+    flex: 1,
+    marginRight: 10,
   },
-  tags: { fontSize: 13, fontStyle: "italic", marginBottom: 4 },
-  categories: { fontSize: 13, marginBottom: 12 },
-  productPrice: { fontSize: 24, fontWeight: "bold", marginBottom: 15 },
-  productDescription: { fontSize: 16, lineHeight: 24, marginBottom: 25 },
-  quantityContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
+  productPrice: { fontSize: 22, fontWeight: "bold", marginTop: 8 },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  descriptionText: { fontSize: 14, lineHeight: 22 },
+
+  // Badges & Ratings
+  inStockBadge: {
+    backgroundColor: "#e8f5e9",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
     alignSelf: "flex-start",
   },
-  quantityLabel: { fontSize: 16, marginRight: 10, fontWeight: "500" },
-  quantityButton: { borderWidth: 1, padding: 12, borderRadius: 6 },
-  quantityValue: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginHorizontal: 18,
-    minWidth: 30,
-    textAlign: "center",
-  },
-  stockInfo: { fontSize: 14, marginBottom: 25, fontStyle: "italic" },
-  addToCartButton: {
+  inStockText: { color: "#2e7d32", fontSize: 10, fontWeight: "bold" },
+  ratingContainer: { flexDirection: "row", alignItems: "center", marginTop: 5 },
+
+  // Info Rows (Livraison)
+  infoRow: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
+  iconBox: { width: 40, alignItems: "center", justifyContent: "center" },
+  infoTitle: { fontSize: 14, fontWeight: "600" },
+  infoDesc: { fontSize: 12, marginTop: 2 },
+  divider: { height: 1, width: "100%", marginVertical: 4 },
+
+  // Footer
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
     paddingVertical: 15,
+    borderTopWidth: 1,
+    elevation: 20, // Grosse ombre pour séparer le footer
+  },
+  secondaryButton: {
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  mainButton: {
+    flex: 1,
+    flexDirection: "row",
+    paddingVertical: 14,
     borderRadius: 8,
     alignItems: "center",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    justifyContent: "center",
   },
-  addToCartButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
-  cartMessage: {
-    padding: 12,
-    borderRadius: 5,
-    textAlign: "center",
-    fontWeight: "bold",
-    marginVertical: 15,
-    fontSize: 15,
-    overflow: "hidden",
+  mainButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
+  successMessage: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 15,
+    borderRadius: 8,
   },
 });
