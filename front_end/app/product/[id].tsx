@@ -12,6 +12,7 @@ import {
   TextInput, // Ajouté pour le formulaire
   Share,
   Linking,
+  Modal,
 } from "react-native";
 import { Stack, useLocalSearchParams, useRouter, Href } from "expo-router";
 import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
@@ -23,6 +24,7 @@ import { useWishlist } from "../../context/WishlistContext";
 import ScrollSection from "../../components/ScrollSection";
 import ProductCard from "../../components/ProductCard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 
 // --- INTERFACES ---
 
@@ -66,8 +68,10 @@ interface Review {
 
 // --- CONSTANTES ---
 
+const API_BASE_URL =
+  Constants.expoConfig?.extra?.API_BASE_URL ?? "http://localhost:3001/api";
 // J'ai gardé l'IP du fichier 1 qui semble être celle de ton backend actif
-const API_BASE_URL = "http://192.168.11.120:3001/api"; 
+// const API_BASE_URL = "http://192.168.100.88:3001/api";
 const { width: screenWidth } = Dimensions.get("window");
 
 const formatPriceForDisplay = (
@@ -89,29 +93,39 @@ export default function ProductDetailScreen() {
   const router = useRouter();
   const { effectiveAppColorScheme, userToken } = useAuth(); // Ajout userToken
   const { cartItems, addToCart } = useCart();
-  const { addToWishlist, removeFromWishlist, isProductInWishlist } = useWishlist();
+  const { addToWishlist, removeFromWishlist, isProductInWishlist } =
+    useWishlist();
 
   // Thème
   const currentScheme = effectiveAppColorScheme ?? "light";
   const colors = Colors[currentScheme];
   const pageBackgroundColor = currentScheme === "dark" ? "#121212" : "#F2F2F2";
   const cardBackgroundColor = colors.background;
-  const GAP_SIZE = 10; // Espacement entre les sections
+  const GAP_SIZE = 4; // Espacement entre les sections
 
   // États Produit
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // États UI
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList<ProductImageGalleryItem>>(null);
   const [cartMessage, setCartMessage] = useState<string | null>(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isMenuVisible, setIsMenuVisible] = useState(false); // Pour le menu 3 points
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // AJOUTE CECI : Pour stocker l'URL de l'image qu'on veut voir en grand (null = rien d'ouvert)
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
 
   // États Produits Similaires / Historique
-  const [similarSubCategoryProducts, setSimilarSubCategoryProducts] = useState<BaseProductType[]>([]);
-  const [similarMainCategoryProducts, setSimilarMainCategoryProducts] = useState<BaseProductType[]>([]);
+  const [similarSubCategoryProducts, setSimilarSubCategoryProducts] = useState<
+    BaseProductType[]
+  >([]);
+  const [similarMainCategoryProducts, setSimilarMainCategoryProducts] =
+    useState<BaseProductType[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<BaseProductType[]>([]);
   const [isLoadingSimilar, setIsLoadingSimilar] = useState(false);
 
@@ -313,11 +327,43 @@ export default function ProductDetailScreen() {
   };
 
   // --- AUTRES ACTIONS ---
+  // --- MODIFICATION ICI : Vérification de la connexion ---
   const handleAddToCart = () => {
     if (!product) return;
-    addToCart(product, 1);
+
+    // Si pas de token (pas connecté)
+    if (!userToken) {
+      setCartMessage("Connectez-vous pour commander !");
+      setTimeout(() => setCartMessage(null), 3000);
+      return; // On arrête la fonction ici, on n'ajoute rien au panier
+    }
+
+    // Si connecté, on ajoute au panier avec la quantité choisie
+    addToCart(product, quantity);
     setCartMessage("Ajouté au panier !");
     setTimeout(() => setCartMessage(null), 2000);
+  };
+
+  // --- ACTION APPEL SERVICE CLIENT ---
+  const handleCallSupport = () => {
+    // Remplace ce numéro par le vrai numéro du service client
+    const phoneNumber = "+2250759738873";
+
+    // Ouvre l'application téléphone
+    Linking.openURL(`tel:${phoneNumber}`);
+  };
+
+  const handleQuantityChange = (type: "increase" | "decrease") => {
+    if (!product) return;
+
+    if (type === "decrease") {
+      if (quantity > 1) setQuantity(quantity - 1);
+    } else {
+      // On vérifie le stock (si stock disponible)
+      if (product.stock && quantity < product.stock) {
+        setQuantity(quantity + 1);
+      }
+    }
   };
 
   const handleShare = async () => {
@@ -330,6 +376,14 @@ export default function ProductDetailScreen() {
     }
   };
 
+  const handleSearch = () => {
+    if (searchQuery.trim().length > 0) {
+      // On redirige vers l'accueil (ou ta page de liste) avec le paramètre de recherche
+      // Adapte le chemin "/(tabs)/" si ta page d'accueil est ailleurs
+      router.push(`/(tabs)/?search=${encodeURIComponent(searchQuery)}` as Href);
+    }
+  };
+
   // --- RENDU HELPER ---
   const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
     if (viewableItems.length > 0 && viewableItems[0].index !== null) {
@@ -339,7 +393,9 @@ export default function ProductDetailScreen() {
 
   // Calcul moyenne notes
   const averageRating = reviews.length
-    ? (reviews.reduce((acc, curr) => acc + curr.etoiles, 0) / reviews.length).toFixed(1)
+    ? (
+        reviews.reduce((acc, curr) => acc + curr.etoiles, 0) / reviews.length
+      ).toFixed(1)
     : "N/A";
 
   if (isLoading)
@@ -357,19 +413,391 @@ export default function ProductDetailScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: pageBackgroundColor }}>
-      <Stack.Screen
-        options={{
-          title: "",
-          headerStyle: { backgroundColor: pageBackgroundColor },
-          headerShadowVisible: false,
-          headerRight: () => (
-            <View style={{ flexDirection: "row", gap: 15, marginRight: 10 }}>
+      {/* 1. On cache le header par défaut */}
+      <Stack.Screen options={{ headerShown: false }} />
+
+      {/* 2. Notre Header Personnalisé */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingTop: 50,
+          paddingBottom: 10,
+          paddingHorizontal: 15,
+          backgroundColor: pageBackgroundColor,
+          zIndex: 100,
+        }}
+      >
+        {/* Flèche Retour */}
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={{ marginRight: 10 }}
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
+        </TouchableOpacity>
+
+        {/* Champ de Recherche */}
+        <View
+          style={{
+            flex: 1,
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: colors.card,
+            borderRadius: 20,
+            paddingHorizontal: 10,
+            height: 40,
+            marginRight: 10,
+            borderWidth: 1,
+            borderColor: "#ddd",
+          }}
+        >
+          <Ionicons name="search" size={20} color={colors.subtleText} />
+          <TextInput
+            placeholder="Rechercher..."
+            placeholderTextColor={colors.subtleText}
+            style={{ flex: 1, marginLeft: 5, color: colors.text }}
+            value={searchQuery} // 1. La valeur
+            onChangeText={setSearchQuery} // 2. Mise à jour du texte
+            onSubmitEditing={handleSearch} // 3. Lancer quand on appuie sur "Entrée"
+            returnKeyType="search"
+          />
+        </View>
+
+        {/* Panier - AFFICHÉ UNIQUEMENT SI CONNECTÉ */}
+        {userToken && (
+          <TouchableOpacity
+            onPress={() => router.push("/cart" as Href)}
+            style={{ marginRight: 15 }}
+          >
+            <View>
+              <Ionicons name="cart-outline" size={26} color={colors.text} />
+              {cartItems.length > 0 && (
+                <View
+                  style={{
+                    position: "absolute",
+                    top: -5,
+                    right: -5,
+                    backgroundColor: "red",
+                    borderRadius: 10,
+                    width: 18,
+                    height: 18,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "white",
+                      fontSize: 10,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {cartItems.length}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* Menu 3 points */}
+        <TouchableOpacity onPress={() => setIsMenuVisible(!isMenuVisible)}>
+          <Ionicons name="ellipsis-vertical" size={24} color={colors.text} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Le petit Menu Déroulant (s'affiche si isMenuVisible est true) */}
+      {isMenuVisible && (
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setIsMenuVisible(false)}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 99,
+          }}
+        >
+          <View
+            style={{
+              position: "absolute",
+              top: 90,
+              right: 15,
+              backgroundColor: cardBackgroundColor,
+              borderRadius: 8,
+              padding: 10,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 5,
+              zIndex: 101,
+              minWidth: 150,
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => {
+                setIsMenuVisible(false);
+                router.push("/" as Href);
+              }}
+              style={{
+                paddingVertical: 10,
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons
+                name="home-outline"
+                size={20}
+                color={colors.text}
+                style={{ marginRight: 10 }}
+              />
+              <Text style={{ color: colors.text }}>Accueil</Text>
+            </TouchableOpacity>
+            <View style={{ height: 1, backgroundColor: "#eee" }} />
+            <TouchableOpacity
+              onPress={() => {
+                setIsMenuVisible(false);
+                handleShare();
+              }}
+              style={{
+                paddingVertical: 10,
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons
+                name="share-social-outline"
+                size={20}
+                color={colors.text}
+                style={{ marginRight: 10 }}
+              />
+              <Text style={{ color: colors.text }}>Partager</Text>
+            </TouchableOpacity>
+            <View style={{ height: 1, backgroundColor: "#eee" }} />
+            <TouchableOpacity
+              onPress={() => {
+                setIsMenuVisible(false);
+                isInWishlist
+                  ? removeFromWishlist(product.id)
+                  : addToWishlist(product);
+              }}
+              style={{
+                paddingVertical: 10,
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <FontAwesome
+                name={isInWishlist ? "heart" : "heart-o"}
+                size={20}
+                color={isInWishlist ? "#E74C3C" : colors.text}
+                style={{ marginRight: 10 }}
+              />
+              <Text style={{ color: colors.text }}>
+                {isInWishlist ? "Retirer des favoris" : "Ajouter aux favoris"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      )}
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        {/* --- BLOC 1 : CAROUSEL IMAGE (CORRIGÉ) --- */}
+        <View
+          style={{
+            backgroundColor: "#F9F9F9",
+            height: 380,
+            width: screenWidth,
+          }}
+        >
+          {product.imagesForCarousel && product.imagesForCarousel.length > 0 ? (
+            <>
+              <FlatList
+                ref={flatListRef}
+                data={product.imagesForCarousel}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onViewableItemsChanged={onViewableItemsChanged}
+                viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
+                keyExtractor={(item) => String(item.id)}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => setSelectedImage(item.image_url)}
+                    style={{
+                      width: screenWidth,
+                      height: 380,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Image
+                      source={{ uri: item.image_url }}
+                      // Essaye 'cover' si tu veux que ça remplisse tout, ou 'contain' pour voir l'image entière
+                      resizeMode="contain"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                      }}
+                    />
+                  </TouchableOpacity>
+                )}
+              />
+              {/* Pagination (Points) */}
+              <View style={styles.dotsContainer}>
+                {product.imagesForCarousel.map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.dot,
+                      i === activeIndex
+                        ? {
+                            backgroundColor: colors.tint,
+                            width: 24,
+                            height: 6,
+                            borderRadius: 3,
+                          }
+                        : {
+                            backgroundColor: "#D1D1D6",
+                            width: 6,
+                            height: 6,
+                            borderRadius: 3,
+                          },
+                    ]}
+                  />
+                ))}
+              </View>
+            </>
+          ) : (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons name="image-outline" size={60} color="#CCC" />
+              <Text style={{ color: "#999", marginTop: 10 }}>
+                Image indisponible
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* --- 2. MAIN INFO CARD (VERSION FINALE) --- */}
+        <View style={[styles.card, { backgroundColor: "#F9F9F9", borderRadius: 8 }]}>
+          
+          {/* LIGNE 1 : Nom du produit (Noir, pas gras) */}
+          <Text
+            style={{
+              fontSize: 22,
+              fontWeight: "400",
+              color: "black",
+              marginBottom: 5,
+              lineHeight: 30,
+            }}
+          >
+            {product.name}
+          </Text>
+
+          {/* LIGNE 2 : Catégorie */}
+          <Text style={{ fontSize: 14, color: colors.subtleText, marginBottom: 12 }}>
+            <Text style={{fontWeight: '600'}}>Catégorie : </Text> 
+            {product.categories_names && product.categories_names.length > 0
+              ? product.categories_names[0]
+              : "Général"}
+          </Text>
+
+          {/* LIGNE 3 : Prix + Prix Barré + Badge Promo */}
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+            {/* Prix actuel */}
+            <Text style={{ fontSize: 26, fontWeight: "bold", color: colors.tint, marginRight: 10 }}>
+              {product.price}
+            </Text>
+
+            {/* Prix barré */}
+            <Text
+              style={{
+                fontSize: 16,
+                color: "#999",
+                textDecorationLine: "line-through",
+                marginRight: 10,
+              }}
+            >
+              {(parseInt(product.price.replace(/\D/g, '')) * 3)
+                .toString()
+                .replace(/\B(?=(\d{3})+(?!\d))/g, " ")}{" "}
+              FCFA
+            </Text>
+
+            {/* Badge Promo Ajusté */}
+            <View
+              style={{
+                backgroundColor: colors.tint, // Fond orange pour ressortir
+                paddingHorizontal: 6,
+                paddingVertical: 3,
+                borderRadius: 4,
+              }}
+            >
+              <Text style={{ color: "white", fontSize: 12, fontWeight: "bold" }}>
+                -66%
+              </Text>
+            </View>
+          </View>
+
+          {/* LIGNE 4 : État du stock (Gris moyen) */}
+          <View style={{ marginBottom: 10 }}>
+            {product.stock && product.stock > 0 ? (
+              <Text style={{ color: "#666", fontWeight: "500", fontSize: 14 }}>
+                 Disponible en stock
+              </Text>
+            ) : (
+              <Text style={{ color: "#D32F2F", fontWeight: "500", fontSize: 14 }}>
+                 Actuellement indisponible
+              </Text>
+            )}
+          </View>
+
+          {/* LIGNE 5 : Avis (Gauche) + Icônes (Droite) */}
+          <View 
+            style={{ 
+                flexDirection: "row", 
+                justifyContent: "space-between", 
+                alignItems: "center",
+                // borderTopWidth: 1,      // Petite ligne de séparation
+                borderTopColor: "#E0E0E0",
+                paddingTop: 2
+            }}
+          >
+            {/* GAUCHE : Étoiles + Nombre d'avis */}
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View style={{ flexDirection: "row", marginRight: 8 }}>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <FontAwesome
+                    key={i}
+                    name={i <= Math.round(Number(averageRating)) ? "star" : "star-o"}
+                    size={16}
+                    color="#FFD700"
+                    style={{ marginRight: 2 }}
+                  />
+                ))}
+              </View>
+              <Text style={{ color: colors.subtleText, fontSize: 14 }}>
+                ({reviews.length} avis)
+              </Text>
+            </View>
+
+            {/* DROITE : Icônes Partage et Coeur (ORANGE) */}
+            <View style={{ flexDirection: "row", gap: 20 }}>
               <TouchableOpacity onPress={handleShare}>
-                <Ionicons
-                  name="share-social-outline"
-                  size={24}
-                  color={colors.text}
-                />
+                <Ionicons name="share-social-outline" size={24} color={colors.tint} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() =>
@@ -381,150 +809,103 @@ export default function ProductDetailScreen() {
                 <FontAwesome
                   name={isInWishlist ? "heart" : "heart-o"}
                   size={24}
-                  color={isInWishlist ? "#E74C3C" : colors.text}
+                  color={isInWishlist ? "#E74C3C" : colors.tint} // Coeur plein rouge, sinon Orange
                 />
               </TouchableOpacity>
             </View>
-          ),
-        }}
-      />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
-      >
-        {/* --- CAROUSEL --- */}
-        <View style={{ backgroundColor: cardBackgroundColor }}>
-          <FlatList
-            ref={flatListRef}
-            data={product.imagesForCarousel}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onViewableItemsChanged={onViewableItemsChanged}
-            viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
-            keyExtractor={(item) => String(item.id)}
-            renderItem={({ item }) => (
-              <View
-                style={{
-                  width: screenWidth,
-                  height: 350,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Image
-                  source={{ uri: item.image_url }}
-                  style={{ width: "90%", height: "90%", resizeMode: "contain" }}
-                />
-              </View>
-            )}
-          />
-          {product.imagesForCarousel.length > 1 && (
-            <View style={styles.dotsContainer}>
-              {product.imagesForCarousel.map((_, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.dot,
-                    i === activeIndex
-                      ? { backgroundColor: colors.tint, width: 20 }
-                      : { backgroundColor: "#ccc" },
-                  ]}
-                />
-              ))}
-            </View>
-          )}
+          </View>
         </View>
 
-        {/* --- MAIN INFO CARD --- */}
-        <View style={[styles.card, { backgroundColor: cardBackgroundColor }]}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-            }}
-          >
-            <Text style={[styles.productName, { color: colors.text }]}>
-              {product.name}
-            </Text>
-            {/* Badge de stock */}
-            {product.stock && product.stock > 0 ? (
-              <View style={styles.inStockBadge}>
-                <Text style={styles.inStockText}>En stock</Text>
-              </View>
-            ) : (
-              <View
-                style={[styles.inStockBadge, { backgroundColor: "#ffebee" }]}
-              >
-                <Text
-                  style={{ color: "#d32f2f", fontSize: 10, fontWeight: "bold" }}
-                >
-                  Rupture
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Note globale dynamique */}
-          <View style={styles.ratingContainer}>
-            <View style={{ flexDirection: "row" }}>
-              <FontAwesome name="star" size={14} color="#FFD700" />
-            </View>
-            <Text
-              style={{ color: colors.subtleText, fontSize: 12, marginLeft: 5 }}
-            >
-              {averageRating}/5 • {reviews.length} avis
-            </Text>
-          </View>
-
-          <Text style={[styles.productPrice, { color: colors.tint }]}>
-            {product.price}
+        {/* --- 3. SECTION OFFRES & SERVICES --- */}
+        <View style={[styles.card, { backgroundColor: cardBackgroundColor, marginTop: GAP_SIZE }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Nos offres
           </Text>
-
-          {/* Tags Catégories */}
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 5 }}>
-            {product.categories_names?.map((cat, idx) => (
-              <View
-                key={idx}
-                style={{
-                  backgroundColor: colors.card,
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                  borderRadius: 4,
-                }}
-              >
-                <Text style={{ color: colors.subtleText, fontSize: 10 }}>
-                  {cat}
+          {/* Offre 1 : Besoin d'aide (Cliquable pour appeler) */}
+          <TouchableOpacity 
+            onPress={handleCallSupport}
+            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 5 }}
+          >
+            <View style={{ width: 40, alignItems: 'center' }}>
+                <Ionicons name="headset-outline" size={26} color={colors.tint} />
+            </View>
+            <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.text, fontSize: 14, fontWeight: '500' }}>
+                    Besoin d'aide ? Contactez le
+                    <Text> </Text>
+                    <Text style={{ color: colors.tint, fontWeight: 'bold' }}>
+                    +225 07 59 73 88 73
                 </Text>
-              </View>
-            ))}
+                </Text>
+                
+            </View>
+          </TouchableOpacity>
+
+          {/* Séparateur */}
+          <View style={{ height: 1, backgroundColor: '#eee', marginVertical: 10 }} />
+
+          {/* Offre 2 : Moins de frais */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 5 }}>
+            <View style={{ width: 40, alignItems: 'center' }}>
+                <Ionicons name="wallet-outline" size={26} color={colors.tint} />
+            </View>
+            <Text style={{ color: colors.text, fontSize: 14, flex: 1, lineHeight: 20 }}>
+                Payez moins de frais en choisissant la livraison chez nous
+            </Text>
           </View>
+
+          {/* Séparateur */}
+          <View style={{ height: 1, backgroundColor: '#eee', marginVertical: 10 }} />
+
+          {/* Offre 3 : Livraison gratuite */}
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 5 }}>
+            <View style={{ width: 40, alignItems: 'center', marginTop: 2 }}>
+                <Ionicons name="cube-outline" size={26} color={colors.tint} />
+            </View>
+            <Text style={{ color: colors.text, fontSize: 14, flex: 1, lineHeight: 20 }}>
+                Livraison gratuite sur des centaines d'articles dans les villes ci-dessous, commande minimum 10 000 FCFA
+            </Text>
+          </View>
+
         </View>
 
         {/* --- LIVRAISON ET RETOURS --- */}
-        <View style={[styles.card, { backgroundColor: cardBackgroundColor, marginTop: GAP_SIZE }]}>
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: cardBackgroundColor, marginTop: GAP_SIZE },
+          ]}
+        >
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Livraison et Retours
           </Text>
           <View style={styles.infoRow}>
             <View style={styles.iconBox}>
-              <Ionicons name="car-sport-outline" size={20} color={colors.tint} />
+              <Ionicons
+                name="car-sport-outline"
+                size={20}
+                color={colors.tint}
+              />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.infoTitle, { color: colors.text }]}>
                 Livraison estimée
               </Text>
               <Text style={[styles.infoDesc, { color: colors.subtleText }]}>
-                Livré entre le {new Date().getDate() + 2} et le {new Date().getDate() + 5} du mois
+                Livré entre le {new Date().getDate() + 2} et le{" "}
+                {new Date().getDate() + 5} du mois
               </Text>
             </View>
           </View>
           <View style={[styles.divider, { backgroundColor: colors.card }]} />
           <View style={styles.infoRow}>
             <View style={styles.iconBox}>
-              <MaterialIcons name="assignment-return" size={20} color={colors.tint} />
+              <MaterialIcons
+                name="assignment-return"
+                size={20}
+                color={colors.tint}
+              />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.infoTitle, { color: colors.text }]}>
@@ -538,14 +919,22 @@ export default function ProductDetailScreen() {
         </View>
 
         {/* --- DESCRIPTION & VIDEO --- */}
-        <View style={[styles.card, { backgroundColor: cardBackgroundColor, marginTop: GAP_SIZE }]}>
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: cardBackgroundColor, marginTop: GAP_SIZE },
+          ]}
+        >
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Description
+            Détails sur le produit
           </Text>
 
           <Text
             numberOfLines={isDescriptionExpanded ? undefined : 3}
-            style={[styles.descriptionText, { color: colors.text, marginBottom: 15 }]}
+            style={[
+              styles.descriptionText,
+              { color: colors.text, marginBottom: 15 },
+            ]}
           >
             {product.description || "Aucune description disponible."}
           </Text>
@@ -556,13 +945,28 @@ export default function ProductDetailScreen() {
               style={{ marginBottom: 15 }}
             >
               <Text style={{ color: colors.tint, fontWeight: "600" }}>
-                {isDescriptionExpanded ? "Masquer la description" : "Lire la suite"}
+                {isDescriptionExpanded
+                  ? "Masquer la description"
+                  : "Lire la suite"}
               </Text>
             </TouchableOpacity>
           )}
 
-          <View style={{ borderTopWidth: 1, borderTopColor: colors.card, paddingTop: 15 }}>
-            <Text style={{ fontSize: 14, fontWeight: "bold", color: colors.text, marginBottom: 10 }}>
+          <View
+            style={{
+              borderTopWidth: 1,
+              borderTopColor: colors.card,
+              paddingTop: 15,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "bold",
+                color: colors.text,
+                marginBottom: 10,
+              }}
+            >
               Présentation Vidéo
             </Text>
 
@@ -575,7 +979,12 @@ export default function ProductDetailScreen() {
               >
                 <Image
                   source={{ uri: product.imageUrl }}
-                  style={{ position: "absolute", width: "100%", height: "100%", opacity: 0.6 }}
+                  style={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                    opacity: 0.6,
+                  }}
                   blurRadius={4}
                 />
                 <View style={styles.playButton}>
@@ -584,40 +993,73 @@ export default function ProductDetailScreen() {
                 <Text style={styles.videoText}>Regarder la vidéo</Text>
               </TouchableOpacity>
             ) : (
-              <Text style={{ fontStyle: "italic", color: colors.subtleText, marginBottom: 20 }}>
+              <Text
+                style={{
+                  fontStyle: "italic",
+                  color: colors.subtleText,
+                  marginBottom: 20,
+                }}
+              >
                 Aucune vidéo disponible.
               </Text>
             )}
 
-            <Text style={{ fontSize: 14, fontWeight: "bold", color: colors.text, marginBottom: 10 }}>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "bold",
+                color: colors.text,
+                marginBottom: 10,
+              }}
+            >
               Détails en images
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {product.imagesForCarousel.map((img, index) => (
-                <View key={index} style={{ marginRight: 10 }}>
+                <TouchableOpacity
+                  key={index}
+                  style={{ marginRight: 10 }}
+                  onPress={() => setSelectedImage(img.image_url)}
+                >
                   <Image
                     source={{ uri: img.image_url }}
                     style={{
-                      width: 120, height: 120, borderRadius: 8,
-                      backgroundColor: colors.background, borderWidth: 1, borderColor: colors.card
+                      width: 120,
+                      height: 120,
+                      borderRadius: 8,
+                      backgroundColor: colors.background,
+                      borderWidth: 1,
+                      borderColor: colors.card,
                     }}
                     resizeMode="cover"
                   />
-                </View>
+                </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
         </View>
 
         {/* --- AVIS CLIENTS (Dynamique et Design) --- */}
-        <View style={[styles.card, { backgroundColor: cardBackgroundColor, marginTop: GAP_SIZE }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Avis Clients</Text>
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: cardBackgroundColor, marginTop: GAP_SIZE },
+          ]}
+        >
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Avis Clients
+          </Text>
 
           {/* Résumé Note */}
           <View style={styles.ratingSummaryBox}>
             <View>
-              <Text style={{ fontSize: 32, fontWeight: "bold", color: colors.text }}>
-                {averageRating}<Text style={{ fontSize: 16, color: colors.subtleText }}>/5</Text>
+              <Text
+                style={{ fontSize: 32, fontWeight: "bold", color: colors.text }}
+              >
+                {averageRating}
+                <Text style={{ fontSize: 16, color: colors.subtleText }}>
+                  /5
+                </Text>
               </Text>
               <Text style={{ fontSize: 12, color: colors.subtleText }}>
                 Basé sur {reviews.length} avis
@@ -634,7 +1076,13 @@ export default function ProductDetailScreen() {
 
           {/* Liste des avis */}
           {reviews.length === 0 ? (
-            <Text style={{ color: colors.subtleText, fontStyle: "italic", marginBottom: 15 }}>
+            <Text
+              style={{
+                color: colors.subtleText,
+                fontStyle: "italic",
+                marginBottom: 15,
+              }}
+            >
               Soyez le premier à donner votre avis !
             </Text>
           ) : (
@@ -648,8 +1096,16 @@ export default function ProductDetailScreen() {
                   paddingBottom: index !== reviews.length - 1 ? 15 : 0,
                 }}
               >
-                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 5 }}>
-                  <Text style={{ fontWeight: "bold", color: colors.text }}>{review.user_name}</Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    marginBottom: 5,
+                  }}
+                >
+                  <Text style={{ fontWeight: "bold", color: colors.text }}>
+                    {review.user_name}
+                  </Text>
                   <Text style={{ fontSize: 12, color: colors.subtleText }}>
                     {new Date(review.created_at).toLocaleDateString()}
                   </Text>
@@ -665,15 +1121,30 @@ export default function ProductDetailScreen() {
                     />
                   ))}
                 </View>
-                <Text style={{ color: colors.text, lineHeight: 20 }}>{review.commentaire}</Text>
+                <Text style={{ color: colors.text, lineHeight: 20 }}>
+                  {review.commentaire}
+                </Text>
               </View>
             ))
           )}
 
           {/* Formulaire d'ajout d'avis */}
           {userToken ? (
-            <View style={{ marginTop: 15, borderTopWidth: 1, borderTopColor: colors.card, paddingTop: 15 }}>
-              <Text style={{ fontWeight: "bold", color: colors.text, marginBottom: 10 }}>
+            <View
+              style={{
+                marginTop: 15,
+                borderTopWidth: 1,
+                borderTopColor: colors.card,
+                paddingTop: 15,
+              }}
+            >
+              <Text
+                style={{
+                  fontWeight: "bold",
+                  color: colors.text,
+                  marginBottom: 10,
+                }}
+              >
                 Laisser un avis
               </Text>
               <View style={{ flexDirection: "row", marginBottom: 10 }}>
@@ -693,7 +1164,10 @@ export default function ProductDetailScreen() {
                 placeholderTextColor={colors.subtleText}
                 value={reviewText}
                 onChangeText={setReviewText}
-                style={[styles.reviewInput, { color: colors.text, borderColor: colors.card }]}
+                style={[
+                  styles.reviewInput,
+                  { color: colors.text, borderColor: colors.card },
+                ]}
                 multiline
               />
               <TouchableOpacity
@@ -704,23 +1178,38 @@ export default function ProductDetailScreen() {
                 {isSubmittingReview ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={{ color: "#fff", fontWeight: "bold" }}>Publier l'avis</Text>
+                  <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                    Publier l'avis
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => router.push("/(auth)/login" as Href)}
-              style={{ padding: 10, backgroundColor: colors.card, borderRadius: 5, alignItems: 'center' }}
+              style={{
+                padding: 10,
+                backgroundColor: colors.card,
+                borderRadius: 5,
+                alignItems: "center",
+              }}
             >
-              <Text style={{ color: colors.tint }}>Connectez-vous pour laisser un avis</Text>
+              <Text style={{ color: colors.tint }}>
+                Connectez-vous pour laisser un avis
+              </Text>
             </TouchableOpacity>
           )}
         </View>
 
         {/* --- PRODUITS SIMILAIRES --- */}
         {similarSubCategoryProducts.length > 0 && (
-          <View style={{ marginTop: GAP_SIZE, backgroundColor: cardBackgroundColor, paddingVertical: 15 }}>
+          <View
+            style={{
+              marginTop: GAP_SIZE,
+              backgroundColor: cardBackgroundColor,
+              paddingVertical: 15,
+            }}
+          >
             <ScrollSection
               title="Produits similaires"
               data={similarSubCategoryProducts}
@@ -737,7 +1226,13 @@ export default function ProductDetailScreen() {
 
         {/* --- VOUS POURRIEZ AIMER --- */}
         {similarMainCategoryProducts.length > 0 && (
-          <View style={{ marginTop: 10, backgroundColor: cardBackgroundColor, paddingVertical: 15 }}>
+          <View
+            style={{
+              marginTop: 10,
+              backgroundColor: cardBackgroundColor,
+              paddingVertical: 15,
+            }}
+          >
             <ScrollSection
               title="Vous pourriez aimer"
               data={similarMainCategoryProducts}
@@ -754,7 +1249,14 @@ export default function ProductDetailScreen() {
 
         {/* --- CONSULTÉ RÉCEMMENT --- */}
         {recentlyViewed.length > 0 && (
-          <View style={{ marginTop: GAP_SIZE, backgroundColor: cardBackgroundColor, paddingVertical: 15, marginBottom: 20 }}>
+          <View
+            style={{
+              marginTop: GAP_SIZE,
+              backgroundColor: cardBackgroundColor,
+              paddingVertical: 15,
+              marginBottom: 20,
+            }}
+          >
             <ScrollSection
               title="Consulté récemment"
               data={recentlyViewed}
@@ -771,34 +1273,193 @@ export default function ProductDetailScreen() {
       </ScrollView>
 
       {/* --- FOOTER (STICKY) --- */}
-      <View style={[styles.footer, { backgroundColor: cardBackgroundColor, borderTopColor: colors.card }]}>
+      <View
+        style={[
+          styles.footer,
+          { backgroundColor: cardBackgroundColor, borderTopColor: colors.card },
+        ]}
+      >
         {cartMessage ? (
-          <View style={[styles.successMessage, { backgroundColor: colors.successBackground }]}>
-            <Ionicons name="checkmark-circle" size={20} color={colors.successText} />
-            <Text style={{ color: colors.successText, fontWeight: "bold", marginLeft: 8 }}>
+          <View
+            style={[
+              styles.successMessage,
+              {
+                backgroundColor: cartMessage.includes("panier")
+                  ? "#E8F5E9"
+                  : "#FFF3E0",
+              },
+            ]}
+          >
+            <Ionicons
+              name={
+                cartMessage.includes("panier")
+                  ? "checkmark-circle"
+                  : "alert-circle"
+              }
+              size={20}
+              color={cartMessage.includes("panier") ? "#2E7D32" : "#E65100"}
+            />
+            <Text
+              style={{
+                color: cartMessage.includes("panier") ? "#2E7D32" : "#E65100",
+                fontWeight: "bold",
+                marginLeft: 8,
+              }}
+            >
               {cartMessage}
             </Text>
           </View>
         ) : (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 15 }}>
-            <TouchableOpacity style={[styles.secondaryButton, { borderColor: colors.tint }]}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "stretch",
+              height: 50,
+              gap: 10,
+            }}
+          >
+            {/* 1. Bouton MAISON (En premier + Contour Orange) */}
+            <TouchableOpacity
+              style={{
+                width: 50,
+                justifyContent: "center",
+                alignItems: "center",
+                borderWidth: 1,
+                borderColor: colors.tint, // Contour Orange
+                borderRadius: 8,
+                backgroundColor: cardBackgroundColor,
+              }}
+              onPress={() => router.push("/" as Href)}
+            >
+              <Ionicons name="home-outline" size={24} color={colors.tint} />
+            </TouchableOpacity>
+
+            {/* 2. Bouton TÉLÉPHONE (En deuxième + Contour Orange) */}
+            <TouchableOpacity
+              style={{
+                width: 50,
+                justifyContent: "center",
+                alignItems: "center",
+                borderWidth: 1,
+                borderColor: colors.tint, // Contour Orange
+                borderRadius: 8,
+                backgroundColor: cardBackgroundColor,
+              }}
+              onPress={handleCallSupport}
+            >
               <Ionicons name="call-outline" size={24} color={colors.tint} />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.mainButton,
-                { backgroundColor: product.stock && product.stock > 0 ? colors.tint : "#ccc" },
-              ]}
-              onPress={handleAddToCart}
-              disabled={!product.stock || product.stock <= 0}
-            >
-              <Text style={styles.mainButtonText}>
-                {product.stock && product.stock > 0 ? "Ajouter au panier" : "Indisponible"}
-              </Text>
-            </TouchableOpacity>
+
+            {/* 3. Bouton PRINCIPAL (Dynamique) */}
+            {userToken ? (
+              // --- CAS CONNECTÉ : Bouton avec + et - intégrés ---
+              <View
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  backgroundColor: colors.tint,
+                  borderRadius: 8,
+                  overflow: "hidden",
+                }}
+              >
+                {/* Zone Moins */}
+                <TouchableOpacity
+                  onPress={() => handleQuantityChange("decrease")}
+                  style={{
+                    width: 50,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    backgroundColor: "rgba(0,0,0,0.1)",
+                  }}
+                >
+                  <Ionicons name="remove" size={24} color="white" />
+                </TouchableOpacity>
+
+                {/* Zone Centrale (Ajouter) */}
+                <TouchableOpacity
+                  onPress={handleAddToCart}
+                  style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                  disabled={!product.stock || product.stock <= 0}
+                >
+                  <Text
+                    style={{ color: "white", fontSize: 14, fontWeight: "bold" }}
+                  >
+                    AJOUTER
+                  </Text>
+                  <Text
+                    style={{ color: "rgba(255,255,255,0.8)", fontSize: 12 }}
+                  >
+                    (Qté: {quantity})
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Zone Plus */}
+                <TouchableOpacity
+                  onPress={() => handleQuantityChange("increase")}
+                  style={{
+                    width: 50,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    backgroundColor: "rgba(0,0,0,0.1)",
+                  }}
+                >
+                  <Ionicons name="add" size={24} color="white" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              // --- CAS NON CONNECTÉ : Bouton simple ---
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: colors.tint,
+                  borderRadius: 8,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  // borderWidth: 1,
+                  // borderColor: colors.tint // Contour orange aussi ici pour harmoniser
+                }}
+                onPress={handleAddToCart}
+              >
+                <Text
+                  style={{
+                    color: colors.card,
+                    fontSize: 14,
+                    fontWeight: "bold",
+                  }}
+                >
+                  Se connecter pour commander
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </View>
+
+      {/* --- MODAL IMAGE PLEIN ÉCRAN --- */}
+      <Modal visible={!!selectedImage} transparent={true} animationType="fade">
+        <View style={styles.modalContainer}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setSelectedImage(null)}
+          >
+            <Ionicons name="close" size={30} color="white" />
+          </TouchableOpacity>
+
+          {selectedImage && (
+            <Image
+              source={{ uri: selectedImage }}
+              style={styles.fullScreenImage}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
+
+      {/* Fin du Return principal */}
     </View>
   );
 }
@@ -820,9 +1481,21 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
   },
   dot: { height: 6, width: 6, borderRadius: 3, marginHorizontal: 3 },
-  productName: { fontSize: 18, fontWeight: "700", lineHeight: 24, flex: 1, marginRight: 10 },
+  productName: {
+    fontSize: 18,
+    fontWeight: "700",
+    lineHeight: 24,
+    flex: 1,
+    marginRight: 10,
+  },
   productPrice: { fontSize: 22, fontWeight: "bold", marginTop: 8 },
-  sectionTitle: { fontSize: 16, fontWeight: "700", marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
   descriptionText: { fontSize: 14, lineHeight: 22 },
   inStockBadge: {
     backgroundColor: "#e8f5e9",
@@ -838,33 +1511,107 @@ const styles = StyleSheet.create({
   infoTitle: { fontSize: 14, fontWeight: "600" },
   infoDesc: { fontSize: 12, marginTop: 2 },
   divider: { height: 1, width: "100%", marginVertical: 4 },
-  
+
   // Video Styles
   videoPlaceholder: {
-    width: "100%", height: 180, backgroundColor: "#000", borderRadius: 8,
-    justifyContent: "center", alignItems: "center", marginBottom: 20, overflow: "hidden"
+    width: "100%",
+    height: 180,
+    backgroundColor: "#000",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+    overflow: "hidden",
   },
-  playButton: { backgroundColor: "rgba(0,0,0,0.6)", borderRadius: 50, padding: 5 },
-  videoText: { color: "white", marginTop: 10, fontWeight: "bold", textShadowColor: "black", textShadowRadius: 5 },
+  playButton: {
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 50,
+    padding: 5,
+  },
+  videoText: {
+    color: "white",
+    marginTop: 10,
+    fontWeight: "bold",
+    textShadowColor: "black",
+    textShadowRadius: 5,
+  },
 
   // Avis Styles
   ratingSummaryBox: {
-    flexDirection: "row", alignItems: "center", marginBottom: 20,
-    backgroundColor: "rgba(0,0,0,0.03)", padding: 10, borderRadius: 8
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    backgroundColor: "rgba(0,0,0,0.03)",
+    padding: 10,
+    borderRadius: 8,
   },
   reviewInput: {
-    borderWidth: 1, borderRadius: 6, padding: 10,
-    marginBottom: 10, height: 80, textAlignVertical: "top"
+    borderWidth: 1,
+    borderRadius: 6,
+    padding: 10,
+    marginBottom: 10,
+    height: 80,
+    textAlignVertical: "top",
   },
-  submitButton: { padding: 12, borderRadius: 6, alignItems: "center", justifyContent: "center" },
+  submitButton: {
+    padding: 12,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   // Footer Styles
   footer: {
-    position: "absolute", bottom: 0, left: 0, right: 0,
-    paddingHorizontal: 20, paddingVertical: 15, borderTopWidth: 1, elevation: 20
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderTopWidth: 1,
+    elevation: 20,
   },
-  secondaryButton: { padding: 12, borderWidth: 1, borderRadius: 8, justifyContent: "center", alignItems: "center" },
-  mainButton: { flex: 1, flexDirection: "row", paddingVertical: 14, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  secondaryButton: {
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  mainButton: {
+    flex: 1,
+    flexDirection: "row",
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   mainButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
-  successMessage: { flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 15, borderRadius: 8 },
+  successMessage: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 15,
+    borderRadius: 8,
+  },
+  // Ajoute ça à la fin de tes styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)", // Fond noir quasi opaque
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  closeButton: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    padding: 10,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 20,
+  },
+  fullScreenImage: {
+    width: "100%",
+    height: "80%",
+  },
 });
