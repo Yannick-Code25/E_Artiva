@@ -863,135 +863,163 @@ export default function CheckoutScreen() {
     );
   }
 
-  function renderStep2() {
-    return (
-      <View style={styles.stepContainer}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          2. Informations de Livraison
+function renderStep2() {
+  return (
+    <View style={styles.stepContainer}>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        2. Informations de Livraison
+      </Text>
+      <TextInput
+        style={{
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+          paddingVertical: 8,
+          fontSize: 16,
+          color: colors.text,
+          marginBottom: 20, // espacement ajouté
+        }}
+        placeholderTextColor={colors.subtleText}
+        placeholder="Nom complet *"
+        value={formData.fullName}
+        onChangeText={(text) => handleInputChange("fullName", text)}
+      />
+      <TextInput
+        style={{
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+          paddingVertical: 8,
+          fontSize: 16,
+          color: colors.text,
+          marginBottom: 20,
+        }}
+        placeholderTextColor={colors.subtleText}
+        placeholder="Email de contact *"
+        value={formData.email}
+        onChangeText={(text) => handleInputChange("email", text)}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
+      <TextInput
+        style={{
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+          paddingVertical: 8,
+          fontSize: 16,
+          color: colors.text,
+          marginBottom: 20,
+        }}
+        placeholderTextColor={colors.subtleText}
+        placeholder="Téléphone de contact *"
+        value={formData.phone}
+        onChangeText={(text) => handleInputChange("phone", text)}
+        keyboardType="phone-pad"
+      />
+      <TextInput
+        style={{
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+          paddingVertical: 8,
+          fontSize: 16,
+          color: colors.text,
+          marginBottom: 20,
+        }}
+        placeholderTextColor={colors.subtleText}
+        placeholder="Adresse (Ligne 1) *"
+        value={formData.addressLine1}
+        onChangeText={(text) => handleInputChange("addressLine1", text)}
+      />
+      <TextInput
+        style={{
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+          paddingVertical: 8,
+          fontSize: 16,
+          color: colors.text,
+          marginBottom: 20,
+        }}
+        placeholderTextColor={colors.subtleText}
+        placeholder="Adresse (Ligne 2, optionnel)"
+        value={formData.addressLine2 || ""}
+        onChangeText={(text) => handleInputChange("addressLine2", text)}
+      />
+      <TextInput
+        style={{
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+          paddingVertical: 8,
+          fontSize: 16,
+          color: colors.text,
+          marginBottom: 20,
+        }}
+        placeholderTextColor={colors.subtleText}
+        placeholder="Ville *"
+        value={formData.city}
+        onChangeText={(text) => handleInputChange("city", text)}
+      />
+      <TextInput
+        style={{
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+          paddingVertical: 8,
+          fontSize: 16,
+          color: colors.text,
+          backgroundColor: colors.card,
+          marginBottom: 20,
+        }}
+        placeholderTextColor={colors.subtleText}
+        placeholder="Pays *"
+        value={formData.country}
+        onChangeText={(text) => handleInputChange("country", text)}
+        editable={false}
+      />
+      {submissionError && (
+        <Text style={[styles.errorText, { color: colors.errorText, marginBottom: 20 }]}>
+          {submissionError}
         </Text>
-        <TextInput
-          style={[
-            styles.input,
-            { color: colors.text, borderColor: colors.border },
-          ]}
-          placeholderTextColor={colors.subtleText}
-          placeholder="Nom complet *"
-          value={formData.fullName}
-          onChangeText={(text) => handleInputChange("fullName", text)}
-        />
-        <TextInput
-          style={[
-            styles.input,
-            { color: colors.text, borderColor: colors.border },
-          ]}
-          placeholderTextColor={colors.subtleText}
-          placeholder="Email de contact *"
-          value={formData.email}
-          onChangeText={(text) => handleInputChange("email", text)}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        <TextInput
-          style={[
-            styles.input,
-            { color: colors.text, borderColor: colors.border },
-          ]}
-          placeholderTextColor={colors.subtleText}
-          placeholder="Téléphone de contact *"
-          value={formData.phone}
-          onChangeText={(text) => handleInputChange("phone", text)}
-          keyboardType="phone-pad"
-        />
-        <TextInput
-          style={[
-            styles.input,
-            { color: colors.text, borderColor: colors.border },
-          ]}
-          placeholderTextColor={colors.subtleText}
-          placeholder="Adresse (Ligne 1) *"
-          value={formData.addressLine1}
-          onChangeText={(text) => handleInputChange("addressLine1", text)}
-        />
-        <TextInput
-          style={[
-            styles.input,
-            { color: colors.text, borderColor: colors.border },
-          ]}
-          placeholderTextColor={colors.subtleText}
-          placeholder="Adresse (Ligne 2, optionnel)"
-          value={formData.addressLine2 || ""}
-          onChangeText={(text) => handleInputChange("addressLine2", text)}
-        />
-        <TextInput
-          style={[
-            styles.input,
-            { color: colors.text, borderColor: colors.border },
-          ]}
-          placeholderTextColor={colors.subtleText}
-          placeholder="Ville *"
-          value={formData.city}
-          onChangeText={(text) => handleInputChange("city", text)}
-        />
-        <TextInput
-          style={[
-            styles.input,
-            {
-              color: colors.text,
-              borderColor: colors.border,
-              backgroundColor: colors.card,
-            },
-          ]}
-          placeholderTextColor={colors.subtleText}
-          placeholder="Pays *"
-          value={formData.country}
-          onChangeText={(text) => handleInputChange("country", text)}
-          editable={false}
-        />
-        {submissionError && (
-          <Text style={[styles.errorText, { color: colors.errorText }]}>
-            {submissionError}
+      )}
+      <View style={styles.navigationButtons}>
+        <TouchableOpacity
+          style={[styles.navButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={handlePrevStep}
+        >
+          <Text style={[styles.navButtonText, { color: colors.text }]}>
+            Précédent
           </Text>
-        )}
-        <View style={styles.navigationButtons}>
-          <TouchableOpacity
-            style={[
-              styles.navButton,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-            onPress={handlePrevStep}
-          >
-            <Text style={[styles.navButtonText, { color: colors.text }]}>
-              Précédent
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.navButton,
-              { backgroundColor: colors.tint, borderColor: colors.tint },
-            ]}
-            onPress={handleNextStep}
-          >
-            <Text style={styles.navButtonText}>Suivant : Paiement</Text>
-          </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.navButton, { backgroundColor: colors.tint, borderColor: colors.tint }]}
+          onPress={handleNextStep}
+        >
+          <Text style={styles.navButtonText}>Suivant : Paiement</Text>
+        </TouchableOpacity>
       </View>
-    );
-  }
-
-  function renderStep3() {
-    return (
-      <View style={styles.stepContainer}>
+    </View>
+  );
+}
+function renderStep3() {
+  return (
+    <View style={{ flex: 1 }}>
+      {/** Contenu scrollable */}
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: 15,
+          paddingVertical: 20,
+          paddingBottom: 120, // pour éviter que le dernier contenu soit caché par les boutons
+        }}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
           3. Paiement et Confirmation
         </Text>
-        <Text style={[styles.subSectionTitle, { color: colors.text }]}>
+
+        <Text style={[styles.subSectionTitle, { color: colors.text, marginBottom: 10 }]}>
           Méthode de paiement
         </Text>
-        <View>
+        <View style={{ marginBottom: 30 }}>
           <TouchableOpacity
             style={[
               styles.paymentOption,
-              { borderColor: colors.tint, backgroundColor: colors.card },
+              { borderColor: colors.tint, backgroundColor: colors.card, marginBottom: 10 },
             ]}
           >
             <FontAwesome name="check-circle" size={20} color={colors.tint} />
@@ -1002,10 +1030,7 @@ export default function CheckoutScreen() {
           <TouchableOpacity
             style={[
               styles.paymentOption,
-              {
-                borderColor: colors.border,
-                backgroundColor: colors.background,
-              },
+              { borderColor: colors.border, backgroundColor: colors.background },
             ]}
             disabled
           >
@@ -1015,83 +1040,89 @@ export default function CheckoutScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-        <Text
-          style={[
-            styles.subSectionTitle,
-            { color: colors.text, marginTop: 30 },
-          ]}
-        >
+
+        <Text style={[styles.subSectionTitle, { color: colors.text, marginBottom: 15 }]}>
           Récapitulatif Final
         </Text>
         <View
           style={[
             styles.finalRecap,
-            { backgroundColor: colors.card, borderColor: colors.border },
+            { backgroundColor: colors.card, borderColor: colors.border, padding: 20 },
           ]}
         >
-          <Text style={{ color: colors.text, fontWeight: "bold" }}>
+          <Text style={{ color: colors.text, fontWeight: "bold", marginBottom: 5 }}>
             Livraison à :
           </Text>
-          <Text style={{ color: colors.subtleText, lineHeight: 20 }}>
-            {formData.fullName}, {formData.addressLine1}, {formData.city}
-            .\nContact : {formData.phone}
+          <Text style={{ color: colors.subtleText, lineHeight: 22, marginBottom: 15 }}>
+            {formData.fullName}, {formData.addressLine1}, {formData.city}.{"\n"}Contact : {formData.phone}
           </Text>
+
           <View
-            style={[
-              styles.totalRow,
-              {
-                marginTop: 15,
-                paddingTop: 15,
-                borderTopWidth: 1,
-                borderTopColor: colors.border,
-              },
-            ]}
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              borderTopWidth: 1,
+              borderTopColor: colors.border,
+              paddingTop: 15,
+            }}
           >
-            <Text style={[styles.totalText, { color: colors.text }]}>
-              Total à payer
-            </Text>
+            <Text style={[styles.totalText, { color: colors.text }]}>Total à payer</Text>
             <Text style={[styles.totalAmount, { color: colors.tint }]}>
               {getTotalPrice().toFixed(2)} FCFA
             </Text>
           </View>
         </View>
+
         {submissionError && (
-          <Text style={[styles.errorText, { color: colors.errorText }]}>
+          <Text style={[styles.errorText, { color: colors.errorText, marginTop: 20 }]}>
             {submissionError}
           </Text>
         )}
-        <View style={styles.navigationButtons}>
-          <TouchableOpacity
-            style={[
-              styles.navButton,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-            onPress={handlePrevStep}
-            disabled={isSubmitting}
-          >
-            <Text style={[styles.navButtonText, { color: colors.text }]}>
-              Précédent
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.navButton,
-              { backgroundColor: colors.tint, borderColor: colors.tint },
-              isSubmitting && { backgroundColor: colors.disabled },
-            ]}
-            onPress={handleSubmitOrder}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.navButtonText}>Confirmer la Commande</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+      </ScrollView>
+
+      {/** Boutons fixes en bas */}
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          paddingHorizontal: 15,
+          paddingVertical: 12,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          backgroundColor: colors.background,
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+        }}
+      >
+        <TouchableOpacity
+          style={[styles.navButton, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={handlePrevStep}
+          disabled={isSubmitting}
+        >
+          <Text style={[styles.navButtonText, { color: colors.text }]}>Précédent</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.navButton,
+            { flex: 1, backgroundColor: colors.tint, borderColor: colors.tint, marginLeft: 10 },
+            isSubmitting && { backgroundColor: colors.disabled },
+          ]}
+          onPress={handleSubmitOrder}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.navButtonText}>Confirmer la Commande</Text>
+          )}
+        </TouchableOpacity>
       </View>
-    );
-  }
+    </View>
+  );
+}
 
   function renderOrderConfirmation() {
     return (
@@ -1188,149 +1219,286 @@ export default function CheckoutScreen() {
     </KeyboardAvoidingView>
   );
 }
-
 // --- STYLES ---
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  contentContainer: {
-    paddingHorizontal: 15,
-    paddingVertical: 20,
-    paddingBottom: 50,
+  screen: {
+    flex: 1,
   },
+
+  contentContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 80,
+  },
+
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: 24,
   },
+
+  /** ---------------- STEP INDICATOR ---------------- */
   stepIndicatorContainer: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 30,
+    marginBottom: 35,
   },
-  stepItem: { alignItems: "center", flexShrink: 1, paddingHorizontal: 4 },
+
+  stepItem: {
+    alignItems: "center",
+    flexShrink: 1,
+    width: 80,
+  },
+
   stepCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     borderWidth: 2,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 5,
+    marginBottom: 6,
   },
-  stepNumber: { fontSize: 14, fontWeight: "bold" },
-  stepLabel: { fontSize: 12, textAlign: "center" },
-  stepLine: { flex: 1, height: 2, marginTop: 14, marginHorizontal: -15 },
-  stepContainer: { paddingVertical: 10 },
-  sectionTitle: { fontSize: 22, fontWeight: "700", marginBottom: 20 },
-  subSectionTitle: { fontSize: 18, fontWeight: "600", marginBottom: 15 },
+
+  stepNumber: {
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+
+  stepLabel: {
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 2,
+  },
+
+  stepLine: {
+    flex: 1,
+    height: 2,
+    marginTop: 17,
+    marginHorizontal: -10,
+    borderRadius: 10,
+  },
+
+  /** ---------------- SECTIONS ---------------- */
+  stepContainer: {
+    marginBottom: 30,
+  },
+
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 18,
+  },
+
+  subSectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 12,
+  },
+
+  /** ---------------- INPUTS ---------------- */
   input: {
     borderWidth: 1,
-    paddingHorizontal: 15,
-    paddingVertical: Platform.OS === "ios" ? 14 : 10,
-    borderRadius: 8,
-    marginBottom: 15,
+    paddingHorizontal: 16,
+    paddingVertical: Platform.OS === "ios" ? 14 : 12,
+    borderRadius: 12,
+    marginBottom: 14,
     fontSize: 16,
+    backgroundColor: "transparent",
   },
-  promoContainer: { flexDirection: "row", marginTop: 20 },
-  promoButton: {
-    paddingHorizontal: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 8,
-  },
-  promoButtonText: { color: "white", fontWeight: "bold" },
+
+  /** ---------------- PANIER ---------------- */
   recapItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
   },
-  itemImage: { width: 50, height: 50, borderRadius: 8, marginRight: 15 },
-  totalSection: { marginTop: 20, padding: 15, borderRadius: 8 },
+
+  itemImage: {
+    width: 54,
+    height: 54,
+    borderRadius: 12,
+    marginRight: 14,
+  },
+
+  promoContainer: {
+    flexDirection: "row",
+    marginTop: 18,
+  },
+
+  promoButton: {
+    paddingHorizontal: 22,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 12,
+  },
+
+  promoButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+
+  /** ---------------- TOTAL CARD ---------------- */
+  totalSection: {
+    marginTop: 22,
+    padding: 18,
+    borderRadius: 14,
+  },
+
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
-  grandTotalRow: { paddingTop: 15, marginTop: 10, borderTopWidth: 1 },
-  totalText: { fontSize: 18, fontWeight: "bold" },
-  totalAmount: { fontSize: 18, fontWeight: "bold" },
+
+  grandTotalRow: {
+    paddingTop: 14,
+    marginTop: 14,
+    borderTopWidth: 1,
+  },
+
+  totalText: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+
+  totalAmount: {
+    fontSize: 20,
+    fontWeight: "800",
+  },
+
+  /** ---------------- NAVIGATION BUTTONS ---------------- */
   navigationButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 30,
+    marginTop: 34,
   },
+
   navButton: {
     flex: 1,
-    paddingVertical: 15,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 14,
     alignItems: "center",
-    marginHorizontal: 5,
+    marginHorizontal: 6,
     borderWidth: 1,
   },
-  navButtonText: { color: "white", fontSize: 13, fontWeight: "bold" },
+
+  navButtonText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+
+  submitButton: {
+    flexDirection: "row",
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 30,
+  },
+
+  submitButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+
+  /** ---------------- PAYMENT ---------------- */
   paymentOption: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 22,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
     borderWidth: 2,
-    borderRadius: 8,
-    marginBottom: 10,
+    borderRadius: 14,
+    marginBottom: 14,
   },
-  paymentText: { marginLeft: 15, fontSize: 16 },
-  finalRecap: { padding: 15, borderRadius: 8, borderWidth: 1, marginTop: 10 },
-  errorText: { textAlign: "center", marginVertical: 10, fontSize: 15 },
-  submitButton: {
-    flexDirection: "row",
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 25,
+
+  paymentText: {
+    marginLeft: 14,
+    fontSize: 16,
+    fontWeight: "600",
   },
-  submitButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
-  // Confirmation Screen Styles
+
+  finalRecap: {
+    padding: 18,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 12,
+  },
+
+  /** ---------------- ERRORS ---------------- */
+  errorText: {
+    textAlign: "center",
+    marginVertical: 12,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+
+  /** ---------------- CONFIRMATION ---------------- */
   confirmationTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
+    fontSize: 30,
+    fontWeight: "800",
     marginTop: 20,
     textAlign: "center",
   },
+
   confirmationSubText: {
     fontSize: 16,
     textAlign: "center",
-    marginTop: 10,
+    marginTop: 12,
     paddingHorizontal: 20,
     lineHeight: 24,
   },
-  qrSection: { alignItems: "center", width: "100%", paddingVertical: 30 },
+
+  qrSection: {
+    alignItems: "center",
+    width: "100%",
+    paddingVertical: 30,
+  },
+
   qrInstruction: {
     fontSize: 15,
     textAlign: "center",
     marginBottom: 20,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
+    fontWeight: "500",
   },
+
   qrCodeContainer: {
-    padding: 15,
+    padding: 18,
     backgroundColor: "white",
-    borderRadius: 10,
-    elevation: 5,
+    borderRadius: 18,
+    elevation: 6,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
   },
+
   downloadButton: {
     flexDirection: "row",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 26,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 25,
+    marginTop: 28,
     gap: 10,
   },
-  homeButton: { marginTop: 20, padding: 10 },
-  homeButtonText: { fontSize: 16, fontWeight: "bold" },
+
+  homeButton: {
+    marginTop: 30,
+    padding: 12,
+  },
+
+  homeButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
 });

@@ -117,7 +117,7 @@
 2.  Installer les dépendances : `npm install`
 3.  Créer un fichier `.env` basé sur `.env.example` (si fourni) et configurer les variables (BDD, JWT_SECRET).
 4.  S'assurer que PostgreSQL est lancé et que la base de données et les tables sont créées (exécuter les scripts SQL fournis).
-5.  Lancer le serveur : `npm run dev` (tournera sur `http://localhost:3001` par défaut).
+5.  Lancer le serveur : `npm run dev` (tournera sur `http://192.168.11.103:3001` par défaut).
 
 ### Frontend Mobile (Expo)
 1.  Naviguer vers le dossier `front_end`.
@@ -130,7 +130,7 @@
 1.  Naviguer vers le dossier `admin_panel`.
 2.  Installer les dépendances : `npm install`
 3.  Mettre à jour la variable `API_BASE_URL` dans les fichiers de page (ex: `LoginPage.js`, `ProductManagementPage.js`, etc.).
-4.  Lancer le serveur de développement : `npm start` (tournera sur `http://localhost:3000` par défaut).
+4.  Lancer le serveur de développement : `npm start` (tournera sur `http://192.168.11.103:3001` par défaut).
 5.  Ouvrir un navigateur à cette adresse.
 
 ## Prochaines Étapes Prévues (non exhaustif)

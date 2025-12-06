@@ -91,7 +91,7 @@ function ProductTagsPage() {
   const [selectedTag, setSelectedTag] = useState(null); // Pour l'ajout ou la modification
 
   const adminToken = localStorage.getItem('adminToken');
-  const API_BASE_URL = 'http://localhost:3001/api'; // Assure-toi que c'est correct
+  const API_BASE_URL = 'http://192.168.11.103:3001/api'; // Assure-toi que c'est correct
 
   const fetchTags = useCallback(async () => {
     if (!adminToken) {

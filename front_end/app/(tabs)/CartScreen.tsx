@@ -190,55 +190,266 @@ export default function TabCartScreen() {
     </View>
   );
 }
-
-// Styles (ceux que tu as fournis en dernier)
 const styles = StyleSheet.create({
-  screenContainer: { flex: 1 },
-  customHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10, paddingVertical: Platform.OS === 'ios' ? 12: 15, paddingTop: Platform.OS === 'android' ? 40 : 15, borderBottomWidth: 1, },
-  actionButton: { paddingVertical: 12, paddingHorizontal: 30, borderRadius: 25, elevation: 2, shadowOpacity: 0.1, shadowRadius: 3, marginTop: 10 },
-  actionButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
-  backButton: { padding: 5, width: 40, alignItems: 'flex-start',},
-  customHeaderTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', flex: 1,},
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' , backgroundColor: "#fff"},
-  emptyCartContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  emptyCartText: { fontSize: 18, marginTop: 20, marginBottom: 30, textAlign: 'center' },
-  shopButton: { paddingVertical: 12, paddingHorizontal: 30, borderRadius: 8, },
-  shopButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-  listContainer: { paddingVertical: 10, paddingHorizontal: 10 },
-  itemContainer: { flexDirection: 'row', alignItems: 'center', padding: 12, marginBottom: 10, borderRadius: 10, elevation: 1.5, shadowColor: '#000000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 2, borderWidth:1, },
-  itemImage: { width: 75, height: 75, borderRadius: 8, marginRight: 15, backgroundColor: '#e0e0e0' },
-  itemDetails: { flex: 1, justifyContent: 'center' },
-  itemName: { fontSize: 15, fontWeight: '600', marginBottom: 5 },
-  itemPrice: { fontSize: 14, fontWeight: 'bold' },
-  quantityControls: { flexDirection: 'row', alignItems: 'center' },
-  controlButton: { padding: 8, borderWidth:1, borderRadius: 4, marginHorizontal: 5 },
-  controlButtonDisabled: { borderColor: '#e0e0e0' },
-  itemQuantity: { fontSize: 16, fontWeight: 'bold', marginHorizontal: 10, minWidth: 25, textAlign: 'center' },
-  itemSubtotalActions: { justifyContent: 'space-between', alignItems: 'flex-end', paddingLeft: 10 },
-  itemSubtotal: { fontSize: 14, fontWeight: '500', marginBottom: 10 },
-  removeItemButton: { padding: 5, /* backgroundColor: '#ffdddd', borderRadius: 4*/ },
-  summaryContainer: { padding: 20, borderTopWidth: 1, },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8, },
-  summaryText: { fontSize: 16, },
-  summaryAmount: { fontSize: 16, fontWeight: '500'},
-  totalRow: { paddingTop: 10, borderTopWidth: 1, borderTopColor: '#eee', marginTop:10},
-  summaryTotalText: { fontSize: 18, fontWeight: 'bold'},
-  summaryTotalAmount: { fontSize: 20, fontWeight: 'bold'},
-  checkoutButton: { paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginTop: 15},
-  checkoutButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+  screenContainer: {
+    flex: 1,
+  },
+
+  customHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === "ios" ? 14 : 16,
+    paddingTop: Platform.OS === "android" ? 42 : 16,
+    borderBottomWidth: 0.8,
+    backgroundColor: "rgba(255,255,255,0.98)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+
+  backButton: {
+    padding: 8,
+    width: 44,
+    alignItems: "flex-start",
+  },
+
+  customHeaderTitle: {
+    fontSize: 21,
+    fontWeight: "700",
+    textAlign: "center",
+    flex: 1,
+    letterSpacing: 0.3,
+  },
+
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+
+  emptyCartContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 25,
+  },
+
+  emptyCartText: {
+    fontSize: 20,
+    marginTop: 20,
+    marginBottom: 15,
+    textAlign: "center",
+    fontWeight: "700",
+  },
+
+  emptySubText: {
+    fontSize: 15,
+    marginBottom: 30,
+    textAlign: "center",
+    opacity: 0.75,
+    lineHeight: 22,
+  },
+
+  shopButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 28,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+  },
+
+  shopButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 0.4,
+  },
+
+  listContainer: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+
+  itemContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    marginBottom: 14,
+    borderRadius: 16,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    borderWidth: 0.6,
+  },
+
+  itemImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 14,
+    marginRight: 16,
+    backgroundColor: "#f1f1f1",
+  },
+
+  itemDetails: {
+    flex: 1,
+    justifyContent: "center",
+  },
+
+  itemName: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 6,
+    lineHeight: 20,
+  },
+
+  itemPrice: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+
+  quantityControls: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  controlButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderRadius: 8,
+    marginHorizontal: 6,
+  },
+
+  controlButtonDisabled: {
+    borderColor: "#e0e0e0",
+    opacity: 0.5,
+  },
+
+  itemQuantity: {
+    fontSize: 17,
+    fontWeight: "700",
+    marginHorizontal: 10,
+    minWidth: 28,
+    textAlign: "center",
+  },
+
+  itemSubtotalActions: {
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    paddingLeft: 10,
+  },
+
+  itemSubtotal: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 10,
+    opacity: 0.85,
+  },
+
+  removeItemButton: {
+    padding: 6,
+  },
+
+  summaryContainer: {
+    padding: 22,
+    borderTopWidth: 1,
+    backgroundColor: "#fafafa",
+  },
+
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+
+  summaryText: {
+    fontSize: 16,
+    opacity: 0.85,
+  },
+
+  summaryAmount: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  totalRow: {
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    marginTop: 12,
+  },
+
+  summaryTotalText: {
+    fontSize: 19,
+    fontWeight: "800",
+  },
+
+  summaryTotalAmount: {
+    fontSize: 21,
+    fontWeight: "800",
+  },
+
+  checkoutButton: {
+    paddingVertical: 16,
+    borderRadius: 30,
+    alignItems: "center",
+    marginTop: 18,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+  },
+
+  checkoutButtonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+  },
+
+  actionButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 34,
+    borderRadius: 30,
+    elevation: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    marginTop: 12,
+  },
+
+  actionButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "800",
+    textAlign: "center",
+    letterSpacing: 0.3,
+  },
+
   cartMessage: {
-    padding: 10,
-    borderRadius: 5,
-    textAlign: 'center',
-    fontWeight: 'bold',
-    marginVertical: 15,
+    padding: 14,
+    borderRadius: 12,
+    textAlign: "center",
+    fontWeight: "700",
+    marginVertical: 18,
     fontSize: 15,
   },
-   emptySubText: { fontSize: 15, marginBottom: 30, textAlign: 'center', },
-    errorText: {
+
+  errorText: {
     fontSize: 15,
     textAlign: "center",
-    marginVertical: 15,
-    paddingHorizontal: 10,
+    marginVertical: 18,
+    paddingHorizontal: 14,
+    opacity: 0.85,
   },
 });
