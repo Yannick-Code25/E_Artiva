@@ -69,7 +69,7 @@ interface Review {
 // --- CONSTANTES ---
 
 const API_BASE_URL =
-  Constants.expoConfig?.extra?.API_BASE_URL ?? "http://localhost:3001/api";
+  Constants.expoConfig?.extra?.API_BASE_URL ?? "http://192.168.11.103:3001/api";
 // J'ai gardé l'IP du fichier 1 qui semble être celle de ton backend actif
 // const API_BASE_URL = "http://192.168.100.88:3001/api";
 const { width: screenWidth } = Dimensions.get("window");
@@ -1130,60 +1130,61 @@ export default function ProductDetailScreen() {
 
           {/* Formulaire d'ajout d'avis */}
           {userToken ? (
-            <View
-              style={{
-                marginTop: 15,
-                borderTopWidth: 1,
-                borderTopColor: colors.card,
-                paddingTop: 15,
-              }}
-            >
-              <Text
-                style={{
-                  fontWeight: "bold",
-                  color: colors.text,
-                  marginBottom: 10,
-                }}
-              >
-                Laisser un avis
-              </Text>
-              <View style={{ flexDirection: "row", marginBottom: 10 }}>
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <TouchableOpacity key={i} onPress={() => setReviewetoiles(i)}>
-                    <FontAwesome
-                      name={i <= reviewetoiles ? "star" : "star-o"}
-                      size={24}
-                      color={colors.tint}
-                      style={{ marginRight: 8 }}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <TextInput
-                placeholder="Partagez votre expérience..."
-                placeholderTextColor={colors.subtleText}
-                value={reviewText}
-                onChangeText={setReviewText}
-                style={[
-                  styles.reviewInput,
-                  { color: colors.text, borderColor: colors.card },
-                ]}
-                multiline
-              />
-              <TouchableOpacity
-                onPress={submitReview}
-                disabled={isSubmittingReview || !reviewText.trim()}
-                style={[styles.submitButton, { backgroundColor: colors.tint }]}
-              >
-                {isSubmittingReview ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                    Publier l'avis
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
+           <View
+  style={{
+    marginTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: colors.card,
+    paddingTop: 15,
+  }}
+>
+  <Text
+    style={{
+      fontWeight: "bold",
+      color: colors.text,
+      marginBottom: 10,
+    }}
+  >
+    Laisser un avis
+  </Text>
+
+  <View style={{ flexDirection: "row", marginBottom: 10 }}>
+    {[1, 2, 3, 4, 5].map((i) => (
+      <TouchableOpacity key={i} onPress={() => setReviewetoiles(i)}>
+        <FontAwesome
+          name={i <= reviewetoiles ? "star" : "star-o"}
+          size={24}
+          color={colors.tint}
+          style={{ marginRight: 8 }}
+        />
+      </TouchableOpacity>
+    ))}
+  </View>
+
+  {/* Conteneur TextInput + icône */}
+  <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: colors.card, borderRadius: 8 }}>
+    <TextInput
+      placeholder="Partagez votre expérience..."
+      placeholderTextColor={colors.subtleText}
+      value={reviewText}
+      onChangeText={setReviewText}
+      multiline
+      style={{ flex: 1, padding: 10, color: colors.text }}
+    />
+    <TouchableOpacity
+      onPress={submitReview}
+      disabled={isSubmittingReview || !reviewText.trim()}
+      style={{ padding: 10 }}
+    >
+      {isSubmittingReview ? (
+        <ActivityIndicator color={colors.tint} size="small" />
+      ) : (
+        <FontAwesome name="send" size={20} color={colors.tint} />
+      )}
+    </TouchableOpacity>
+  </View>
+</View>
+
           ) : (
             <TouchableOpacity
               onPress={() => router.push("/(auth)/login" as Href)}

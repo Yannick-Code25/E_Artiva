@@ -21,7 +21,7 @@
 // import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // // **ATTENTION: METS TON ADRESSE IP LOCALE CORRECTE ICI**
-// const API_BASE_URL = "http://192.168.11.120:3001/api";
+// const API_BASE_URL = "http://192.168.11.103:3001/api";
 // // Exemple: const API_BASE_URL = 'http://192.168.1.105:3001/api';
 
 // // Types pour les données du formulaire
@@ -500,7 +500,7 @@ import { useAuth } from "../context/AuthContext";
 import Colors from "../constants/Colors";
 
 // **ATTENTION: METS TON ADRESSE IP LOCALE CORRECTE ICI**
-const API_BASE_URL = "http://192.168.11.120:3001/api";
+const API_BASE_URL = "http://192.168.11.103:3001/api";
 
 // --- TYPES ---
 interface CheckoutFormData {
