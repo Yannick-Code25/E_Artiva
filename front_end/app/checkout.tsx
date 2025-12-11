@@ -21,7 +21,7 @@
 // import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // // **ATTENTION: METS TON ADRESSE IP LOCALE CORRECTE ICI**
-// const API_BASE_URL = "http://192.168.11.103:3001/api";
+// const API_BASE_URL = "http://192.168.11.116:3001/api";
 // // Exemple: const API_BASE_URL = 'http://192.168.1.105:3001/api';
 
 // // Types pour les données du formulaire
@@ -500,7 +500,7 @@ import { useAuth } from "../context/AuthContext";
 import Colors from "../constants/Colors";
 
 // **ATTENTION: METS TON ADRESSE IP LOCALE CORRECTE ICI**
-const API_BASE_URL = "http://192.168.11.103:3001/api";
+const API_BASE_URL = "http://192.168.11.116:3001/api";
 
 // --- TYPES ---
 interface CheckoutFormData {
@@ -845,20 +845,24 @@ export default function CheckoutScreen() {
             </Text>
           </View>
         </View>
-        <TouchableOpacity
-          style={[styles.submitButton, { backgroundColor: colors.tint }]}
-          onPress={handleNextStep}
-        >
-          <Text style={styles.submitButtonText}>
-            Suivant : Informations de Livraison
-          </Text>
-          <FontAwesome
-            name="arrow-right"
-            size={16}
-            color="white"
-            style={{ marginLeft: 10 }}
-          />
-        </TouchableOpacity>
+<TouchableOpacity
+  style={[
+    styles.submitButton,
+    { backgroundColor: colors.tint, marginTop: 30 } // ⬅️ AJOUT ICI
+  ]}
+  onPress={handleNextStep}
+>
+  <Text style={styles.submitButtonText}>
+    Suivant : Informations de Livraison
+  </Text>
+  <FontAwesome
+    name="arrow-right"
+    size={16}
+    color="white"
+    style={{ marginLeft: 10 }}
+  />
+</TouchableOpacity>
+
       </View>
     );
   }
@@ -1399,7 +1403,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 30,
+    marginTop: 80,
   },
 
   submitButtonText: {

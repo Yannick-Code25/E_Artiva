@@ -8,8 +8,11 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
 
   const [formData, setFormData] = useState({
     name: '', description: '', price: '', stock: '', image_url: '',
-    sku: '', is_published: false, category_ids: [], tag_ids: [], images: [{ ...initialImageState, temp_id: `img-0-${Date.now()}` }]
+    sku: '', is_published: false, category_ids: [], tag_ids: [],
+    images: [{ ...initialImageState, temp_id: `img-0-${Date.now()}` }],
+    videos: ['']
   });
+
   const [allTags, setAllTags] = useState([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -19,43 +22,43 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
   const [isFetchingFullProduct, setIsFetchingFullProduct] = useState(false);
 
   // Create formData from a full product object (expects product.images array)
-  const buildFormDataFromFullProduct = useCallback((prod) => {
-    // Ensure images: keep ids, image_url, alt_text, is_primary, display_order
-    const imagesFromProd = (prod.images || []).map((img, idx) => ({
-      ...img,
-      // normalize fields and ensure temp_id exists for React keys
-      image_url: img.image_url || '',
-      alt_text: img.alt_text || '',
-      is_primary: Boolean(img.is_primary),
-      display_order: img.display_order !== undefined ? img.display_order : 0,
-      temp_id: img.temp_id || `img-${idx}-${Date.now()}`
-    }));
+const buildFormDataFromFullProduct = useCallback((prod) => {
+  const imagesFromProd = (prod.images || []).map((img, idx) => ({
+    ...img,
+    image_url: img.image_url || '',
+    alt_text: img.alt_text || '',
+    is_primary: Boolean(img.is_primary),
+    display_order: img.display_order !== undefined ? img.display_order : 0,
+    temp_id: img.temp_id || `img-${idx}-${Date.now()}`
+  }));
 
-    // If product.images is empty but product.image_url exists, create a primary image entry
-    if ((imagesFromProd.length === 0) && prod.image_url) {
-      imagesFromProd.push({
-        id: undefined,
-        image_url: prod.image_url,
-        alt_text: '',
-        is_primary: true,
-        display_order: 0,
-        temp_id: `img-0-${Date.now()}`
-      });
-    }
+  if ((imagesFromProd.length === 0) && prod.image_url) {
+    imagesFromProd.push({
+      id: undefined,
+      image_url: prod.image_url,
+      alt_text: '',
+      is_primary: true,
+      display_order: 0,
+      temp_id: `img-0-${Date.now()}`
+    });
+  }
 
-    return {
-      name: prod.name || '',
-      description: prod.description || '',
-      price: prod.price !== undefined ? String(prod.price) : '',
-      stock: prod.stock !== undefined ? String(prod.stock) : '',
-      image_url: prod.image_url || '',
-      sku: prod.sku || '',
-      is_published: prod.is_published || false,
-      category_ids: prod.category_ids || [],
-      tag_ids: prod.tag_ids || [],
-      images: imagesFromProd.length > 0 ? imagesFromProd : [{ ...initialImageState, temp_id: `img-0-${Date.now()}` }]
-    };
-  }, []);
+  return {
+    name: prod.name || '',
+    description: prod.description || '',
+    price: prod.price !== undefined ? String(prod.price) : '',
+    stock: prod.stock !== undefined ? String(prod.stock) : '',
+    image_url: prod.image_url || '',
+    sku: prod.sku || '',
+    is_published: prod.is_published || false,
+    category_ids: prod.category_ids || [],
+    tag_ids: prod.tag_ids || [],
+    images: imagesFromProd.length > 0 ? imagesFromProd : [{ ...initialImageState, temp_id: `img-0-${Date.now()}` }],
+    videos: (prod.videos && Array.isArray(prod.videos) && prod.videos.length > 0) 
+              ? prod.videos 
+              : (prod.video_url ? [prod.video_url] : [''])
+  };
+}, []);
 
   // fetch tags options
   const fetchTags = useCallback(async () => {
@@ -97,9 +100,7 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
       if (!isOpen) return;
 
       if (productToEdit && productToEdit.id) {
-        // If productToEdit already contains a rich images array, use it.
         const hasImagesArray = Array.isArray(productToEdit.images) && productToEdit.images.length > 0;
-        // If images array is missing or only has primary from product.image_url, fetch full product from API
         if (!hasImagesArray || (hasImagesArray && productToEdit.images.length === 1 && productToEdit.images[0].image_url === productToEdit.image_url)) {
           try {
             setIsFetchingFullProduct(true);
@@ -111,27 +112,24 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
             setFormData(buildFormDataFromFullProduct(fullProd));
           } catch (err) {
             console.warn('ProductFormModal: unable to fetch full product, falling back to productToEdit', err);
-            // fallback to what we have (still ensure images keep ids if present)
             setFormData(buildFormDataFromFullProduct(productToEdit));
           } finally {
             setIsFetchingFullProduct(false);
           }
         } else {
-          // productToEdit already has images array -> use it
           setFormData(buildFormDataFromFullProduct(productToEdit));
         }
       } else {
-        // New product
         setFormData({
           name: '', description: '', price: '', stock: '', image_url: '',
           sku: '', is_published: false, category_ids: [], tag_ids: [],
-          images: [{ ...initialImageState, temp_id: `img-0-${Date.now()}` }]
+          images: [{ ...initialImageState, temp_id: `img-0-${Date.now()}` }],
+          videos: ['']
         });
       }
     };
 
     loadProductIfNeeded();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productToEdit, isOpen, buildFormDataFromFullProduct]);
 
   const handleImageChange = (index, field, value, type = 'text') => {
@@ -159,7 +157,6 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
     setFormData(prev => {
       const imgToRemove = prev.images[index];
       const newImages = prev.images.filter((_, i) => i !== index);
-      // If the image had an id (persisted), add to deletedImageIds
       if (imgToRemove && imgToRemove.id) {
         setDeletedImageIds(prevIds => [...prevIds, imgToRemove.id]);
       }
@@ -188,16 +185,18 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
     setIsSubmitting(true);
 
     try {
-      // build images payload preserving id when present
       const imagesPayload = formData.images
         .map(({ temp_id, id, ...imgData }) => ({
-          id: id ?? undefined, // keep undefined if no id (backend will create)
+          id: id ?? undefined,
           image_url: imgData.image_url,
           alt_text: imgData.alt_text || null,
           is_primary: Boolean(imgData.is_primary),
           display_order: parseInt(String(imgData.display_order), 10) || 0
         }))
         .filter(img => img.image_url && img.image_url.trim() !== '');
+
+      const videosPayload = formData.videos
+        .filter(v => v && v.trim() !== '');
 
       const payload = {
         name: formData.name,
@@ -209,10 +208,11 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
         category_ids: formData.category_ids || [],
         tag_ids: formData.tag_ids || [],
         images: imagesPayload,
-        deleted_image_ids: deletedImageIds.length ? deletedImageIds : undefined
+        deleted_image_ids: deletedImageIds.length ? deletedImageIds : undefined,
+        videos: videosPayload,
+        video_url: videosPayload.length > 0 ? videosPayload[0] : null
       };
 
-      // determine image_url from primary if provided
       const primaryImage = imagesPayload.find(img => img.is_primary);
       if (primaryImage) payload.image_url = primaryImage.image_url;
       else if (imagesPayload.length > 0 && !payload.image_url) payload.image_url = imagesPayload[0].image_url;
@@ -229,7 +229,6 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
         });
       }
 
-      // success
       onSave();
     } catch (err) {
       console.error('ProductFormModal: save error', err);
@@ -320,12 +319,51 @@ function ProductFormModal({ isOpen, onClose, onSave, productToEdit, apiBaseUrl, 
                     )}
                   </div>
 
-                  {/* debug small line to show persisted id */}
                   {img.id && <small style={{ display: 'block', marginTop: '6px' }}>persisted id: {img.id}</small>}
                 </div>
               ))}
 
               <button type="button" onClick={addImageField} style={{ marginTop: '5px', padding: '8px' }}>+ Ajouter une autre image</button>
+            </div>
+
+            {/* Vidéos */}
+            <div className="form-group">
+              <label>Vidéos (optionnel) :</label>
+
+              {formData.videos.map((vid, index) => (
+                <div key={index} style={{ marginBottom: '10px', display: 'flex', gap: '10px' }}>
+                  <input
+                    type="text"
+                    placeholder={`URL vidéo ${index + 1}`}
+                    value={vid}
+                    onChange={(e) => {
+                      const copy = [...formData.videos];
+                      copy[index] = e.target.value;
+                      setFormData(prev => ({ ...prev, videos: copy }));
+                    }}
+                    style={{ flex: 1 }}
+                  />
+                  {formData.videos.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const copy = formData.videos.filter((_, i) => i !== index);
+                        setFormData(prev => ({ ...prev, videos: copy }));
+                      }}
+                      style={{ color: 'red', background: 'none', border: 'none', cursor: 'pointer' }}
+                    >
+                      Supprimer
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              <button type="button"
+                onClick={() => setFormData(prev => ({ ...prev, videos: [...prev.videos, ''] }))}
+                style={{ marginTop: '5px', padding: '8px' }}
+              >
+                + Ajouter une autre vidéo
+              </button>
             </div>
 
             {/* Categories */}

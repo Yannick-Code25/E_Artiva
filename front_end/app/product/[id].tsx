@@ -14,6 +14,7 @@ import {
   Linking,
   Modal,
 } from "react-native";
+
 import { Stack, useLocalSearchParams, useRouter, Href } from "expo-router";
 import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import Colors from "../../constants/Colors";
@@ -25,6 +26,8 @@ import ScrollSection from "../../components/ScrollSection";
 import ProductCard from "../../components/ProductCard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
+import { Video, ResizeMode } from 'expo-av';
+
 
 // --- INTERFACES ---
 
@@ -69,7 +72,7 @@ interface Review {
 // --- CONSTANTES ---
 
 const API_BASE_URL =
-  Constants.expoConfig?.extra?.API_BASE_URL ?? "http://192.168.11.103:3001/api";
+  Constants.expoConfig?.extra?.API_BASE_URL ?? "http://192.168.11.116:3001/api";
 // J'ai gardé l'IP du fichier 1 qui semble être celle de ton backend actif
 // const API_BASE_URL = "http://192.168.100.88:3001/api";
 const { width: screenWidth } = Dimensions.get("window");
@@ -918,126 +921,113 @@ export default function ProductDetailScreen() {
           </View>
         </View>
 
-        {/* --- DESCRIPTION & VIDEO --- */}
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: cardBackgroundColor, marginTop: GAP_SIZE },
-          ]}
+{/* --- DESCRIPTION & VIDEO --- */}
+<View
+  style={[
+    styles.card,
+    { backgroundColor: cardBackgroundColor, marginTop: GAP_SIZE },
+  ]}
+>
+  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+    Détails sur le produit
+  </Text>
+
+  <Text
+    numberOfLines={isDescriptionExpanded ? undefined : 3}
+    style={[
+      styles.descriptionText,
+      { color: colors.text, marginBottom: 15 },
+    ]}
+  >
+    {product.description || "Aucune description disponible."}
+  </Text>
+
+  {product.description && product.description.length > 100 && (
+    <TouchableOpacity
+      onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+      style={{ marginBottom: 15 }}
+    >
+      <Text style={{ color: colors.tint, fontWeight: "600" }}>
+        {isDescriptionExpanded ? "Masquer la description" : "Lire la suite"}
+      </Text>
+    </TouchableOpacity>
+  )}
+
+  <View
+    style={{
+      borderTopWidth: 1,
+      borderTopColor: colors.card,
+      paddingTop: 15,
+    }}
+  >
+    <Text
+      style={{
+        fontSize: 14,
+        fontWeight: "bold",
+        color: colors.text,
+        marginBottom: 10,
+      }}
+    >
+      Présentation Vidéo
+    </Text>
+
+    {product.video_url ? (
+<Video
+  source={{ uri: product.video_url }}
+  style={{ width: screenWidth, height: 200, borderRadius: 8, marginBottom: 15 }}
+  resizeMode={"contain" as unknown as ResizeMode} // force TS
+  shouldPlay
+  isLooping
+  useNativeControls={false}
+/>
+
+
+    ) : (
+      <Text
+        style={{
+          fontStyle: "italic",
+          color: colors.subtleText,
+          marginBottom: 20,
+        }}
+      >
+        Aucune vidéo disponible.
+      </Text>
+    )}
+
+    <Text
+      style={{
+        fontSize: 14,
+        fontWeight: "bold",
+        color: colors.text,
+        marginBottom: 10,
+      }}
+    >
+      Détails en images
+    </Text>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      {product.imagesForCarousel.map((img, index) => (
+        <TouchableOpacity
+          key={index}
+          style={{ marginRight: 10 }}
+          onPress={() => setSelectedImage(img.image_url)}
         >
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Détails sur le produit
-          </Text>
-
-          <Text
-            numberOfLines={isDescriptionExpanded ? undefined : 3}
-            style={[
-              styles.descriptionText,
-              { color: colors.text, marginBottom: 15 },
-            ]}
-          >
-            {product.description || "Aucune description disponible."}
-          </Text>
-
-          {product.description && product.description.length > 100 && (
-            <TouchableOpacity
-              onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-              style={{ marginBottom: 15 }}
-            >
-              <Text style={{ color: colors.tint, fontWeight: "600" }}>
-                {isDescriptionExpanded
-                  ? "Masquer la description"
-                  : "Lire la suite"}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          <View
+          <Image
+            source={{ uri: img.image_url }}
             style={{
-              borderTopWidth: 1,
-              borderTopColor: colors.card,
-              paddingTop: 15,
+              width: 120,
+              height: 120,
+              borderRadius: 8,
+              backgroundColor: colors.background,
+              borderWidth: 1,
+              borderColor: colors.card,
             }}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "bold",
-                color: colors.text,
-                marginBottom: 10,
-              }}
-            >
-              Présentation Vidéo
-            </Text>
-
-            {product.video_url ? (
-              <TouchableOpacity
-                onPress={() => {
-                  if (product.video_url) Linking.openURL(product.video_url);
-                }}
-                style={styles.videoPlaceholder}
-              >
-                <Image
-                  source={{ uri: product.imageUrl }}
-                  style={{
-                    position: "absolute",
-                    width: "100%",
-                    height: "100%",
-                    opacity: 0.6,
-                  }}
-                  blurRadius={4}
-                />
-                <View style={styles.playButton}>
-                  <Ionicons name="play-circle" size={60} color="white" />
-                </View>
-                <Text style={styles.videoText}>Regarder la vidéo</Text>
-              </TouchableOpacity>
-            ) : (
-              <Text
-                style={{
-                  fontStyle: "italic",
-                  color: colors.subtleText,
-                  marginBottom: 20,
-                }}
-              >
-                Aucune vidéo disponible.
-              </Text>
-            )}
-
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "bold",
-                color: colors.text,
-                marginBottom: 10,
-              }}
-            >
-              Détails en images
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {product.imagesForCarousel.map((img, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={{ marginRight: 10 }}
-                  onPress={() => setSelectedImage(img.image_url)}
-                >
-                  <Image
-                    source={{ uri: img.image_url }}
-                    style={{
-                      width: 120,
-                      height: 120,
-                      borderRadius: 8,
-                      backgroundColor: colors.background,
-                      borderWidth: 1,
-                      borderColor: colors.card,
-                    }}
-                    resizeMode="cover"
-                  />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  </View>
+</View>
 
         {/* --- AVIS CLIENTS (Dynamique et Design) --- */}
         <View

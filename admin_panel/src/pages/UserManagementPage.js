@@ -6,7 +6,7 @@ import UserFormModal from '../components/UserFormModal';
 // Importer les styles généraux si besoin (ex: ProductManagementPage.css)
 import './ProductManagementPage.css'; // Réutilisation pour la structure de base
 
-const API_BASE_URL = 'http://192.168.11.103:3001/api';
+const API_BASE_URL = 'http://localhost:3001/api';
 
 function UserManagementPage() {
   const [users, setUsers] = useState([]);

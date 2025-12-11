@@ -5,7 +5,7 @@
 // import CategoryFormModal from '../components/CategoryFormModal';
 // import './ProductManagementPage.css';
 
-// const API_BASE_URL = 'http://192.168.11.103:3001/api';
+// const API_BASE_URL = 'http://192.168.11.116:3001/api';
 
 // function CategoryManagementPage() {
 //   const [mainCategories, setMainCategories] = useState([]);
@@ -210,7 +210,7 @@ import { Link } from 'react-router-dom';
 import CategoryFormModal from '../components/CategoryFormModal';
 import './ProductManagementPage.css';
 
-const API_BASE_URL = 'http://192.168.11.103:3001/api';
+const API_BASE_URL = 'http://localhost:3001/api';
 
 function CategoryManagementPage() {
   const [mainCategories, setMainCategories] = useState([]);

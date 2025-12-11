@@ -8,7 +8,7 @@ import { AlertCircle, CheckCircle, Loader2, ScanLine, ShoppingBag, UserCircle, T
 // Si vous utilisez create-react-app, vous pouvez créer un fichier .env à la racine
 // du répertoire admin_panel avec le contenu REACT_APP_API_URL=http://votre_ip:votre_port/api
 // Sinon, remplacez la valeur ci-dessous par l'adresse correcte de votre backend.
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.11.103:3001/api'; // Adaptez à votre IP/Port backend
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api'; // Adaptez à votre IP/Port backend
 
 const ScanOrderPage = () => {
   const [orderDetails, setOrderDetails] = useState(null);

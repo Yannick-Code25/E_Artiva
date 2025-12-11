@@ -24,7 +24,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 
-const API_BASE_URL = "http://192.168.11.103:3001/api";
+const API_BASE_URL = "http://192.168.11.116:3001/api";
 
 interface TaggedProductsStore {
   tagId: string | number;

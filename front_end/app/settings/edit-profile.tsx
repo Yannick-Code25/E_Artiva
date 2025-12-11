@@ -22,7 +22,7 @@
 //   phone: string;
 // }
 
-// const API_BASE_URL = "http://192.168.11.103:3001/api"; // **METS TON IP**
+// const API_BASE_URL = "http://192.168.11.116:3001/api"; // **METS TON IP**
 
 // export default function EditProfileScreen() {
 //   const { user, userToken, updateUserInContext, effectiveAppColorScheme } =
@@ -335,7 +335,7 @@ interface ProfileFormData {
   phone: string;
 }
 
-const API_BASE_URL = "http://192.168.11.103:3001/api";
+const API_BASE_URL = "http://192.168.11.116:3001/api";
 
 export default function EditProfileScreen() {
   const { user, userToken, updateUserInContext, effectiveAppColorScheme } =
