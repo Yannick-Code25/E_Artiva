@@ -1,6 +1,6 @@
 // ARTIVA/front_end/app/(tabs)/index.tsx
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   StyleSheet,
   View,
@@ -12,6 +12,8 @@ import {
   Button,
   Platform,
   Linking,
+  Image,
+  Dimensions,
 } from "react-native";
 import ScrollSection from "../../components/ScrollSection";
 import CategoryCard, {
@@ -24,7 +26,9 @@ import { useAuth } from "../../context/AuthContext";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 
-const API_BASE_URL = "http://192.168.11.116:3001/api";
+const API_BASE_URL = "http://192.168.11.103:3001/api";
+
+const { width } = Dimensions.get("window");
 
 interface TaggedProductsStore {
   tagId: string | number;
@@ -55,6 +59,30 @@ export default function TabAccueilScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  // 🔥 CARROUSEL
+  const carouselRef = useRef<ScrollView>(null);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+
+  const carouselImages = [
+    "https://i.pinimg.com/1200x/c5/20/51/c52051b79281ee5b9c9c6f4701cd852f.jpg",
+    "https://i.pinimg.com/736x/ca/6e/82/ca6e826d10df23c7b65dc7f124353559.jpg",
+    "https://i.pinimg.com/736x/dc/73/2a/dc732ae5b28015fe0790ce89085a8b3b.jpg",
+    "https://chatgpt.com/s/m_694afdc8e66881918d0737ad25b43d86",
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const nextIndex = (carouselIndex + 1) % carouselImages.length;
+      carouselRef.current?.scrollTo({
+        x: nextIndex * width,
+        animated: true,
+      });
+      setCarouselIndex(nextIndex);
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [carouselIndex]);
 
   const FEATURED_TAG_NAMES = [
     "Nouveauté",
@@ -102,54 +130,29 @@ export default function TabAccueilScreen() {
         if (!prodResponse.ok) return null;
 
         const productsForTagData = await prodResponse.json();
-        let actualProductArray = [];
-
-        if (Array.isArray(productsForTagData)) {
-          actualProductArray = productsForTagData;
-        } else if (
-          productsForTagData &&
-          Array.isArray(productsForTagData.products)
-        ) {
-          actualProductArray = productsForTagData.products;
-        } else {
-          return null;
-        }
+        const actualProductArray = Array.isArray(productsForTagData)
+          ? productsForTagData
+          : productsForTagData.products || [];
 
         const adaptedProducts = actualProductArray.map((prod: any) => ({
           id: String(prod.id),
           name: prod.name || "Produit",
-          price:
-            prod.price !== undefined && prod.price !== null
-              ? `${String(prod.price)} FCFA`
-              : "N/A",
-          imageUrl:
-            prod.image_url ||
-            `https://via.placeholder.com/150x150/BFDBFE/000?text=${encodeURIComponent(
-              (prod.name || "").substring(0, 3)
-            )}`,
+          price: prod.price ? `${prod.price} FCFA` : "N/A",
+          imageUrl: prod.image_url,
           stock: prod.stock,
           description: prod.description,
-          category_ids: (prod.category_ids || []).map((id: any) => String(id)),
-          categories_names: prod.categories_names || [],
-          tag_ids: prod.tag_ids || [],
-          tags_names: prod.tags_names || [],
-          is_published: prod.is_published,
         }));
 
-        return {
-          tagId: tagName,
-          tagName,
-          products: adaptedProducts,
-        };
+        return { tagId: tagName, tagName, products: adaptedProducts };
       });
 
       const resolved = (await Promise.all(productSectionsPromises)).filter(
-        (section) => section && section.products.length > 0
+        (s) => s && s.products.length > 0
       ) as TaggedProductsStore[];
 
       setFeaturedProductSections(resolved);
     } catch (err: any) {
-      setError(err.message || "Une erreur est survenue.");
+      setError(err.message);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -165,175 +168,116 @@ export default function TabAccueilScreen() {
     fetchData();
   }, [fetchData]);
 
-  const handleCategoryPress = (categoryId: string, categoryName?: string) => {
-    let path = `/category-products/${categoryId}`;
-    path += `?categoryName=${encodeURIComponent(categoryName ?? `Catégorie ${categoryId}`)}`;
-    router.push(path as Href);
+  const handleCategoryPress = (id: string, name?: string) => {
+    router.push(`/category-products/${id}?categoryName=${name}` as Href);
   };
 
-  const handleProductPress = (productId: string | number) => {
-    router.push(`/product/${String(productId)}` as Href);
+  const handleProductPress = (id: string | number) => {
+    router.push(`/product/${id}` as Href);
   };
 
-  const handleSeeAllTagProducts = (tagName: string) => {
-    router.push(`/tag/${encodeURIComponent(tagName)}` as Href);
-  };
-
-  // 🔥 Bouton WhatsApp
   const openWhatsApp = () => {
-    const url = "https://wa.me/2290149326514";
-    Linking.openURL(url).catch(() =>
+    Linking.openURL("https://wa.me/2290149326514").catch(() =>
       Alert.alert("Erreur", "Impossible d'ouvrir WhatsApp.")
     );
   };
 
-  if (
-    isLoading &&
-    mainCategories.length === 0 &&
-    featuredProductSections.length === 0 &&
-    !refreshing
-  ) {
-    return (
-      <View style={[styles.centeredLoader, { backgroundColor: pageBackgroundColor }]}>
-        <ActivityIndicator size="large" color={tintColor} />
-        <DefaultText style={{ marginTop: 10, color: textColor }}>
-          {t("loadingData", "Chargement des données...")}
-        </DefaultText>
-      </View>
-    );
-  }
-
   return (
     <>
       <ScrollView
-        style={[styles.container, { backgroundColor: pageBackgroundColor }]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tintColor} />
-        }
+        style={{ flex: 1, backgroundColor: pageBackgroundColor }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Stack.Screen options={{ title: t("tabHeaders.home", "Accueil") }} />
+        <Stack.Screen options={{ title: "Accueil" }} />
 
-        <View
-          style={[styles.headerContainer, { borderBottomColor: cardBorderColor }]}
-        >
+        {/* HEADER */}
+        <View style={[styles.headerContainer, { borderBottomColor: cardBorderColor }]}>
           <DefaultText style={[styles.siteName, { color: siteNameColor }]}>
             Artiva
           </DefaultText>
-          <DefaultText style={{ color: textColor, marginTop: 5 }}>
-            {t("welcome")}
+          <DefaultText style={[styles.welcomeText, { color: textColor }]}>
+            Bienvenue !
           </DefaultText>
         </View>
 
-        {error && !isLoading && (
-          <View
-            style={[
-              styles.errorContainer,
-              { backgroundColor: errorBgColor, borderColor: errorTextColor + "80" },
-            ]}
-          >
-            <DefaultText style={[styles.errorText, { color: errorTextColor }]}>
-              {error}
-            </DefaultText>
-            <Button title="Réessayer" onPress={onRefresh} color={tintColor} />
-          </View>
-        )}
+        {/* CATEGORIES */}
+        <ScrollSection<CategoryType>
+          title="Catégories"
+          data={mainCategories}
+          renderItem={({ item }) => (
+            <CategoryCard item={item} onPress={() => handleCategoryPress(item.id, item.name)} />
+          )}
+          keyExtractor={(item) => item.id}
+        />
 
-        {(mainCategories.length > 0 || (isLoading && !refreshing)) && !error && (
-          <ScrollSection<CategoryType>
-            title={t("homePage.sections.categories", "Catégories")}
-            data={mainCategories}
-            renderItem={({ item }) => (
-              <CategoryCard item={item} onPress={() => handleCategoryPress(item.id, item.name)} />
-            )}
-            keyExtractor={(item) => item.id.toString()}
-          />
-        )}
+        {/* 🔥 CARROUSEL IMAGES */}
+{/* 🔥 CARROUSEL IMAGES */}
+<ScrollView
+  ref={carouselRef}
+  horizontal
+  pagingEnabled
+  showsHorizontalScrollIndicator={false}
+  contentContainerStyle={{ alignItems: "center" }} // centre verticalement si besoin
+  style={styles.carousel}
+>
+  {carouselImages.map((img, index) => (
+    <Image
+      key={index}
+      source={{ uri: img }}
+      style={styles.carouselImage}
+    />
+  ))}
+</ScrollView>
 
-        {!isLoading && !error && mainCategories.length === 0 && (
-          <DefaultText style={[styles.noDataText, { color: noDataTextColor }]}>
-            Aucune catégorie à afficher.
-          </DefaultText>
-        )}
 
+        {/* PRODUITS */}
         {featuredProductSections.map((section) => (
           <ScrollSection<ProductType>
             key={section.tagId.toString()}
-            title={t(
-              `homePage.sections.tag_${section.tagName.toLowerCase().replace(/\s+/g, "")}`,
-              section.tagName
-            )}
+            title={section.tagName}
             data={section.products}
             renderItem={({ item }) => (
               <ProductCard item={item} onPress={handleProductPress} />
             )}
             keyExtractor={(item) => item.id.toString()}
-            onSeeAllPress={() => handleSeeAllTagProducts(section.tagName)}
           />
         ))}
 
-        {!isLoading &&
-          !error &&
-          featuredProductSections.length === 0 &&
-          mainCategories.length > 0 && (
-            <DefaultText style={[styles.noDataText, { color: noDataTextColor }]}>
-              Découvrez bientôt nos sélections spéciales !
-            </DefaultText>
-          )}
-
-        <View style={{ height: 30 }} />
+        <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* --- BOUTON FLOTTANT WHATSAPP SERVICE CLIENT --- */}
+      {/* WHATSAPP */}
       <View style={styles.fabContainer}>
-        <Feather
-          name="headphones"  // 🎧 Icône casque support
-          size={32}
-          color="#fff"
-          onPress={openWhatsApp}
-        />
+        <Feather name="headphones" size={32} color="#fff" onPress={openWhatsApp} />
       </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  centeredLoader: { flex: 1, justifyContent: "center", alignItems: "center" },
+headerContainer: {
+  padding: 16,
+  borderBottomWidth: 1,
+  paddingTop: Platform.OS === "android" ? 40 : 30, // ici on augmente l’espace en haut
+},
 
-  headerContainer: {
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === "android" ? 40 : 30,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-  },
-
-  siteName: {
-    fontSize: 26,
-    fontWeight: "700",
-  },
-
-  errorContainer: {
-    marginHorizontal: 16,
-    marginVertical: 15,
-    padding: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    borderWidth: 1,
-  },
-
-  errorText: {
+  siteName: { fontSize: 26, fontWeight: "700" },
+  welcomeText: {
     fontSize: 16,
-    marginBottom: 10,
-    textAlign: "center",
+    marginTop: 5,
   },
 
-  noDataText: {
-    textAlign: "center",
-    marginVertical: 25,
-    fontSize: 15,
-    fontStyle: "italic",
+  carousel: {
+    marginVertical: 15,
   },
+carouselImage: {
+  width: width - 32, // marge de chaque côté
+  height: 180,
+  resizeMode: "cover",
+  borderRadius: 12,
+  marginHorizontal: 16, // pour laisser un petit espace à gauche/droite
+},
+
 
   fabContainer: {
     position: "absolute",
@@ -345,10 +289,6 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
     elevation: 6,
   },
 });

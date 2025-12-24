@@ -15,7 +15,7 @@ import ProductCard, {
 import Colors from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext"; // CHANGEMENT: Utilisation du hook d'authentification pour le thème
 
-const API_BASE_URL = "http://192.168.11.116:3001/api"; // **TON IP**
+const API_BASE_URL = "http://192.168.11.103:3001/api"; // **TON IP**
 
 export default function CategoryProductsScreen() {
   const { categoryId, categoryName } = useLocalSearchParams<{

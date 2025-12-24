@@ -18,7 +18,7 @@
 // import { useColorScheme } from "../../components/useColorScheme";
 // import { useAuth } from "../../context/AuthContext"; // Pour le token
 
-// const API_BASE_URL = "http://192.168.11.116:3001/api"; // **METS TON IP**
+// const API_BASE_URL = "http://192.168.11.103:3001/api"; // **METS TON IP**
 
 // export default function ChangePasswordScreen() {
 //   const router = useRouter();
@@ -330,7 +330,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import Colors from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext"; // Pour le token
 
-const API_BASE_URL = "http://192.168.11.116:3001/api"; // **METS TON IP**
+const API_BASE_URL = "http://192.168.11.103:3001/api"; // **METS TON IP**
 
 export default function ChangePasswordScreen() {
   const router = useRouter();

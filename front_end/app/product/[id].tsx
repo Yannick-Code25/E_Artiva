@@ -71,8 +71,8 @@ interface Review {
 
 // --- CONSTANTES ---
 
-const API_BASE_URL =
-  Constants.expoConfig?.extra?.API_BASE_URL ?? "http://192.168.11.116:3001/api";
+const API_BASE_URL = "http://192.168.11.103:3001/api";
+  Constants.expoConfig?.extra?.API_BASE_URL ?? "http://192.168.11.103:3001/api";
 // J'ai gardé l'IP du fichier 1 qui semble être celle de ton backend actif
 // const API_BASE_URL = "http://192.168.100.88:3001/api";
 const { width: screenWidth } = Dimensions.get("window");
@@ -350,7 +350,7 @@ export default function ProductDetailScreen() {
   // --- ACTION APPEL SERVICE CLIENT ---
   const handleCallSupport = () => {
     // Remplace ce numéro par le vrai numéro du service client
-    const phoneNumber = "+2250759738873";
+    const phoneNumber = "+2290149326514";
 
     // Ouvre l'application téléphone
     Linking.openURL(`tel:${phoneNumber}`);
@@ -838,7 +838,7 @@ export default function ProductDetailScreen() {
                     Besoin d'aide ? Contactez le
                     <Text> </Text>
                     <Text style={{ color: colors.tint, fontWeight: 'bold' }}>
-                    +225 07 59 73 88 73
+                    +229 01 49 32 65 14
                 </Text>
                 </Text>
                 
