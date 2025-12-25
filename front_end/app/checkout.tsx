@@ -848,20 +848,20 @@ export default function CheckoutScreen() {
 <TouchableOpacity
   style={[
     styles.submitButton,
-    { backgroundColor: colors.tint, marginTop: 30 } // ⬅️ AJOUT ICI
+    {
+      backgroundColor: colors.tint,
+      marginTop: 65,        // ⬅️ plus bas
+      borderRadius: 10,     // ⬅️ plus arrondi
+      paddingVertical: 16, // ⬅️ bouton plus confortable
+    },
   ]}
   onPress={handleNextStep}
 >
   <Text style={styles.submitButtonText}>
-    Suivant : Informations de Livraison
+    Informations de Livraison
   </Text>
-  <FontAwesome
-    name="arrow-right"
-    size={16}
-    color="white"
-    style={{ marginLeft: 10 }}
-  />
 </TouchableOpacity>
+
 
       </View>
     );
@@ -873,257 +873,185 @@ function renderStep2() {
       <Text style={[styles.sectionTitle, { color: colors.text }]}>
         2. Informations de Livraison
       </Text>
+
       <TextInput
-        style={{
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-          paddingVertical: 8,
-          fontSize: 16,
-          color: colors.text,
-          marginBottom: 20, // espacement ajouté
-        }}
-        placeholderTextColor={colors.subtleText}
+        style={styles.inputLine}
         placeholder="Nom complet *"
+        placeholderTextColor={colors.subtleText}
         value={formData.fullName}
         onChangeText={(text) => handleInputChange("fullName", text)}
       />
+
       <TextInput
-        style={{
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-          paddingVertical: 8,
-          fontSize: 16,
-          color: colors.text,
-          marginBottom: 20,
-        }}
-        placeholderTextColor={colors.subtleText}
+        style={styles.inputLine}
         placeholder="Email de contact *"
+        placeholderTextColor={colors.subtleText}
         value={formData.email}
         onChangeText={(text) => handleInputChange("email", text)}
         keyboardType="email-address"
         autoCapitalize="none"
       />
+
       <TextInput
-        style={{
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-          paddingVertical: 8,
-          fontSize: 16,
-          color: colors.text,
-          marginBottom: 20,
-        }}
-        placeholderTextColor={colors.subtleText}
+        style={styles.inputLine}
         placeholder="Téléphone de contact *"
+        placeholderTextColor={colors.subtleText}
         value={formData.phone}
         onChangeText={(text) => handleInputChange("phone", text)}
         keyboardType="phone-pad"
       />
+
       <TextInput
-        style={{
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-          paddingVertical: 8,
-          fontSize: 16,
-          color: colors.text,
-          marginBottom: 20,
-        }}
-        placeholderTextColor={colors.subtleText}
+        style={styles.inputLine}
         placeholder="Adresse (Ligne 1) *"
+        placeholderTextColor={colors.subtleText}
         value={formData.addressLine1}
         onChangeText={(text) => handleInputChange("addressLine1", text)}
       />
+
       <TextInput
-        style={{
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-          paddingVertical: 8,
-          fontSize: 16,
-          color: colors.text,
-          marginBottom: 20,
-        }}
-        placeholderTextColor={colors.subtleText}
+        style={styles.inputLine}
         placeholder="Adresse (Ligne 2, optionnel)"
+        placeholderTextColor={colors.subtleText}
         value={formData.addressLine2 || ""}
         onChangeText={(text) => handleInputChange("addressLine2", text)}
       />
+
       <TextInput
-        style={{
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-          paddingVertical: 8,
-          fontSize: 16,
-          color: colors.text,
-          marginBottom: 20,
-        }}
-        placeholderTextColor={colors.subtleText}
+        style={styles.inputLine}
         placeholder="Ville *"
+        placeholderTextColor={colors.subtleText}
         value={formData.city}
         onChangeText={(text) => handleInputChange("city", text)}
       />
+
       <TextInput
-        style={{
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-          paddingVertical: 8,
-          fontSize: 16,
-          color: colors.text,
-          backgroundColor: colors.card,
-          marginBottom: 20,
-        }}
-        placeholderTextColor={colors.subtleText}
+        style={[
+          styles.inputLine,
+          { backgroundColor: colors.card }
+        ]}
         placeholder="Pays *"
+        placeholderTextColor={colors.subtleText}
         value={formData.country}
-        onChangeText={(text) => handleInputChange("country", text)}
         editable={false}
       />
+
       {submissionError && (
-        <Text style={[styles.errorText, { color: colors.errorText, marginBottom: 20 }]}>
+        <Text
+          style={[
+            styles.errorText,
+            { color: colors.errorText, marginBottom: 20 },
+          ]}
+        >
           {submissionError}
         </Text>
       )}
-      <View style={styles.navigationButtons}>
-        <TouchableOpacity
-          style={[styles.navButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={handlePrevStep}
-        >
-          <Text style={[styles.navButtonText, { color: colors.text }]}>
-            Précédent
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.navButton, { backgroundColor: colors.tint, borderColor: colors.tint }]}
-          onPress={handleNextStep}
-        >
-          <Text style={styles.navButtonText}>Suivant : Paiement</Text>
-        </TouchableOpacity>
-      </View>
+
+      {/* 🔥 BOUTON UNIQUE */}
+      <TouchableOpacity
+        style={[
+          styles.submitButton,
+          {
+            backgroundColor: colors.tint,
+            marginTop: 40,
+            borderRadius: 10,
+            paddingVertical: 16,
+          },
+        ]}
+        onPress={handleNextStep}
+      >
+        <Text style={styles.submitButtonText}>
+          Suivant : Paiement
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
 function renderStep3() {
   return (
-    <View style={{ flex: 1 }}>
-      {/** Contenu scrollable */}
-      <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: 15,
-          paddingVertical: 20,
-          paddingBottom: 120, // pour éviter que le dernier contenu soit caché par les boutons
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          3. Paiement et Confirmation
-        </Text>
-
-        <Text style={[styles.subSectionTitle, { color: colors.text, marginBottom: 10 }]}>
-          Méthode de paiement
-        </Text>
-        <View style={{ marginBottom: 30 }}>
-          <TouchableOpacity
-            style={[
-              styles.paymentOption,
-              { borderColor: colors.tint, backgroundColor: colors.card, marginBottom: 10 },
-            ]}
-          >
-            <FontAwesome name="check-circle" size={20} color={colors.tint} />
-            <Text style={[styles.paymentText, { color: colors.text }]}>
-              Paiement à la livraison
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.paymentOption,
-              { borderColor: colors.border, backgroundColor: colors.background },
-            ]}
-            disabled
-          >
-            <FontAwesome name="circle-o" size={20} color={colors.disabled} />
-            <Text style={[styles.paymentText, { color: colors.disabled }]}>
-              Mobile Money (Bientôt)
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={[styles.subSectionTitle, { color: colors.text, marginBottom: 15 }]}>
-          Récapitulatif Final
-        </Text>
-        <View
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 15, paddingTop: 20 }}>
+      
+      {/* 🔹 Paiement */}
+      <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 10 }]}>
+        3. Paiement et Confirmation
+      </Text>
+      <Text style={[styles.subSectionTitle, { color: colors.text, marginBottom: 10 }]}>
+        Méthode de paiement
+      </Text>
+      <View style={{ marginBottom: 20 }}>
+        <TouchableOpacity
           style={[
-            styles.finalRecap,
-            { backgroundColor: colors.card, borderColor: colors.border, padding: 20 },
+            styles.paymentOption,
+            { borderColor: colors.tint, backgroundColor: colors.card, marginBottom: 10, borderRadius: 12, padding: 12 }
           ]}
         >
-          <Text style={{ color: colors.text, fontWeight: "bold", marginBottom: 5 }}>
-            Livraison à :
+          <FontAwesome name="check-circle" size={20} color={colors.tint} />
+          <Text style={[styles.paymentText, { color: colors.text, marginLeft: 10 }]}>
+            Paiement à la livraison
           </Text>
-          <Text style={{ color: colors.subtleText, lineHeight: 22, marginBottom: 15 }}>
-            {formData.fullName}, {formData.addressLine1}, {formData.city}.{"\n"}Contact : {formData.phone}
-          </Text>
-
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              borderTopWidth: 1,
-              borderTopColor: colors.border,
-              paddingTop: 15,
-            }}
-          >
-            <Text style={[styles.totalText, { color: colors.text }]}>Total à payer</Text>
-            <Text style={[styles.totalAmount, { color: colors.tint }]}>
-              {getTotalPrice().toFixed(2)} FCFA
-            </Text>
-          </View>
-        </View>
-
-        {submissionError && (
-          <Text style={[styles.errorText, { color: colors.errorText, marginTop: 20 }]}>
-            {submissionError}
-          </Text>
-        )}
-      </ScrollView>
-
-      {/** Boutons fixes en bas */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          paddingHorizontal: 15,
-          paddingVertical: 12,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          backgroundColor: colors.background,
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-        }}
-      >
-        <TouchableOpacity
-          style={[styles.navButton, { flex: 1, backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={handlePrevStep}
-          disabled={isSubmitting}
-        >
-          <Text style={[styles.navButtonText, { color: colors.text }]}>Précédent</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[
-            styles.navButton,
-            { flex: 1, backgroundColor: colors.tint, borderColor: colors.tint, marginLeft: 10 },
-            isSubmitting && { backgroundColor: colors.disabled },
+            styles.paymentOption,
+            { borderColor: colors.border, backgroundColor: colors.background, borderRadius: 12, padding: 12 }
           ]}
-          onPress={handleSubmitOrder}
-          disabled={isSubmitting}
+          disabled
         >
-          {isSubmitting ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.navButtonText}>Confirmer la Commande</Text>
-          )}
+          <FontAwesome name="circle-o" size={20} color={colors.disabled} />
+          <Text style={[styles.paymentText, { color: colors.disabled, marginLeft: 10 }]}>
+            Mobile Money (Bientôt)
+          </Text>
         </TouchableOpacity>
       </View>
+
+      {/* 🔹 Récapitulatif */}
+      <Text style={[styles.subSectionTitle, { color: colors.text, marginBottom: 10 }]}>
+        Récapitulatif Final
+      </Text>
+      <View style={[styles.finalRecap, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: 12, padding: 16, marginBottom: 20 }]}>
+        <Text style={{ color: colors.text, fontWeight: "bold", marginBottom: 5 }}>Livraison à :</Text>
+        <Text style={{ color: colors.subtleText, lineHeight: 22, marginBottom: 10 }}>
+          {formData.fullName}, {formData.addressLine1}, {formData.city}.{"\n"}Contact : {formData.phone}
+        </Text>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 }}>
+          <Text style={[styles.totalText, { color: colors.text }]}>Total à payer</Text>
+          <Text style={[styles.totalAmount, { color: colors.tint }]}>{getTotalPrice().toFixed(2)} FCFA</Text>
+        </View>
+      </View>
+
+      {submissionError && (
+        <Text style={[styles.errorText, { color: colors.errorText, marginBottom: 10 }]}>
+          {submissionError}
+        </Text>
+      )}
+
+      {/* 🔹 Bouton Confirmer la Commande */}
+      <TouchableOpacity
+        style={{
+          backgroundColor: isSubmitting ? colors.disabled : colors.tint,
+          borderRadius: 12,
+          paddingVertical: 18,
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 40, // augmente l'espace sous le bouton
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 6,
+          elevation: 4,
+        }}
+        onPress={handleSubmitOrder}
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={[styles.submitButtonText, { fontSize: 18, fontWeight: "700" }]}>
+            Confirmer la Commande
+          </Text>
+        )}
+      </TouchableOpacity>
     </View>
   );
 }
@@ -1505,4 +1433,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
+  inputLine: {
+  borderBottomWidth: 1,
+  paddingVertical: 8,
+  fontSize: 16,
+  marginBottom: 15,
+},
+
 });
