@@ -6,10 +6,8 @@ import {
   View,
   ScrollView,
   Text as DefaultText,
-  ActivityIndicator,
   RefreshControl,
   Alert,
-  Button,
   Platform,
   Linking,
   Image,
@@ -23,11 +21,9 @@ import ProductCard, { Product as ProductType } from "../../components/ProductCar
 import Colors from "../../constants/Colors";
 import { useRouter, Href, Stack } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
-import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 
 const API_BASE_URL = "http://192.168.11.103:3001/api";
-
 const { width } = Dimensions.get("window");
 
 interface TaggedProductsStore {
@@ -38,29 +34,19 @@ interface TaggedProductsStore {
 
 export default function TabAccueilScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
   const { effectiveAppColorScheme } = useAuth();
 
   const currentScheme = effectiveAppColorScheme ?? "light";
-  const siteNameColor = Colors[currentScheme].text;
   const pageBackgroundColor = Colors[currentScheme].background;
+  const siteNameColor = Colors[currentScheme].text;
   const textColor = Colors[currentScheme].text;
-  const tintColor = Colors[currentScheme].tint;
-  const errorTextColor = Colors[currentScheme].errorText;
-  const errorBgColor = Colors[currentScheme].errorBackground;
-  const noDataTextColor = Colors[currentScheme].subtleText;
   const cardBorderColor = Colors[currentScheme].cardBorder;
 
   const [mainCategories, setMainCategories] = useState<CategoryType[]>([]);
-  const [featuredProductSections, setFeaturedProductSections] = useState<
-    TaggedProductsStore[]
-  >([]);
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [featuredProductSections, setFeaturedProductSections] = useState<TaggedProductsStore[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  // 🔥 CARROUSEL
+  /* 🔥 CARROUSEL */
   const carouselRef = useRef<ScrollView>(null);
   const [carouselIndex, setCarouselIndex] = useState(0);
 
@@ -68,19 +54,14 @@ export default function TabAccueilScreen() {
     "https://i.pinimg.com/1200x/c5/20/51/c52051b79281ee5b9c9c6f4701cd852f.jpg",
     "https://i.pinimg.com/736x/ca/6e/82/ca6e826d10df23c7b65dc7f124353559.jpg",
     "https://i.pinimg.com/736x/dc/73/2a/dc732ae5b28015fe0790ce89085a8b3b.jpg",
-    "https://chatgpt.com/s/m_694afdc8e66881918d0737ad25b43d86",
   ];
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const nextIndex = (carouselIndex + 1) % carouselImages.length;
-      carouselRef.current?.scrollTo({
-        x: nextIndex * width,
-        animated: true,
-      });
-      setCarouselIndex(nextIndex);
+      const next = (carouselIndex + 1) % carouselImages.length;
+      carouselRef.current?.scrollTo({ x: next * width, animated: true });
+      setCarouselIndex(next);
     }, 3500);
-
     return () => clearInterval(interval);
   }, [carouselIndex]);
 
@@ -95,78 +76,71 @@ export default function TabAccueilScreen() {
   const PRODUCTS_PER_TAG_SECTION = 5;
 
   const fetchData = useCallback(async () => {
-    if (!refreshing) setIsLoading(true);
-    setError(null);
-
     try {
-      const catResponse = await fetch(`${API_BASE_URL}/categories`);
-      if (!catResponse.ok) {
-        const errorText = await catResponse.text();
-        throw new Error(`Erreur catégories (${catResponse.status}): ${errorText}`);
-      }
+      /* CATEGORIES */
+      const catRes = await fetch(`${API_BASE_URL}/categories`);
+      const catData = await catRes.json();
 
-      const allCatData = await catResponse.json();
-      const mainCats = allCatData
-        .filter((cat: any) => cat.parent_id === null)
-        .map((cat: any) => ({
-          id: String(cat.id),
-          name: cat.name || "Catégorie",
-          imageUrl:
-            cat.image_url ||
-            `https://via.placeholder.com/100x100/E2E8F0/4A5568?text=${encodeURIComponent(
-              (cat.name || "Cat").substring(0, 3)
-            )}`,
-        }));
+      setMainCategories(
+        catData
+          .filter((c: any) => c.parent_id === null)
+          .map((c: any) => ({
+            id: String(c.id),
+            name: c.name,
+            imageUrl: c.image_url,
+          }))
+      );
 
-      setMainCategories(mainCats);
+      /* PRODUITS PAR TAG */
+      const sections = await Promise.all(
+        FEATURED_TAG_NAMES.map(async (tagName) => {
+          const res = await fetch(
+            `${API_BASE_URL}/products?tag_name=${encodeURIComponent(
+              tagName
+            )}&limit=${PRODUCTS_PER_TAG_SECTION}&random=true`
+          );
+          if (!res.ok) return null;
 
-      const productSectionsPromises = FEATURED_TAG_NAMES.map(async (tagName) => {
-        const prodResponse = await fetch(
-          `${API_BASE_URL}/products?tag_name=${encodeURIComponent(
-            tagName
-          )}&limit=${PRODUCTS_PER_TAG_SECTION}&random=true`
-        );
+          const data = await res.json();
 
-        if (!prodResponse.ok) return null;
+          const rawProducts = Array.isArray(data)
+            ? data
+            : data.products || [];
 
-        const productsForTagData = await prodResponse.json();
-        const actualProductArray = Array.isArray(productsForTagData)
-          ? productsForTagData
-          : productsForTagData.products || [];
+          const adaptedProducts: ProductType[] = rawProducts.map((p: any) => ({
+            id: String(p.id),
+            name: p.name || "Produit",
+            price:
+              p.price !== undefined && p.price !== null
+                ? `${p.price} FCFA`
+                : "N/A",
+            imageUrl: p.image_url,
+            stock: p.stock,
+            description: p.description,
+          }));
 
-        const adaptedProducts = actualProductArray.map((prod: any) => ({
-          id: String(prod.id),
-          name: prod.name || "Produit",
-          price: prod.price ? `${prod.price} FCFA` : "N/A",
-          imageUrl: prod.image_url,
-          stock: prod.stock,
-          description: prod.description,
-        }));
+          return adaptedProducts.length > 0
+            ? { tagId: tagName, tagName, products: adaptedProducts }
+            : null;
+        })
+      );
 
-        return { tagId: tagName, tagName, products: adaptedProducts };
-      });
-
-      const resolved = (await Promise.all(productSectionsPromises)).filter(
-        (s) => s && s.products.length > 0
-      ) as TaggedProductsStore[];
-
-      setFeaturedProductSections(resolved);
-    } catch (err: any) {
-      setError(err.message);
+      setFeaturedProductSections(
+        sections.filter(Boolean) as TaggedProductsStore[]
+      );
     } finally {
-      setIsLoading(false);
       setRefreshing(false);
     }
-  }, [refreshing]);
+  }, []);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = () => {
     setRefreshing(true);
     fetchData();
-  }, [fetchData]);
+  };
 
   const handleCategoryPress = (id: string, name?: string) => {
     router.push(`/category-products/${id}?categoryName=${name}` as Href);
@@ -174,6 +148,10 @@ export default function TabAccueilScreen() {
 
   const handleProductPress = (id: string | number) => {
     router.push(`/product/${id}` as Href);
+  };
+
+  const handleSeeAllTagProducts = (tagName: string) => {
+    router.push(`/tag/${encodeURIComponent(tagName)}` as Href);
   };
 
   const openWhatsApp = () => {
@@ -190,17 +168,15 @@ export default function TabAccueilScreen() {
       >
         <Stack.Screen options={{ title: "Accueil" }} />
 
-        {/* HEADER */}
         <View style={[styles.headerContainer, { borderBottomColor: cardBorderColor }]}>
           <DefaultText style={[styles.siteName, { color: siteNameColor }]}>
             Artiva
           </DefaultText>
-          <DefaultText style={[styles.welcomeText, { color: textColor }]}>
+          <DefaultText style={{ color: textColor, marginTop: 5 }}>
             Bienvenue !
           </DefaultText>
         </View>
 
-        {/* CATEGORIES */}
         <ScrollSection<CategoryType>
           title="Catégories"
           data={mainCategories}
@@ -210,27 +186,18 @@ export default function TabAccueilScreen() {
           keyExtractor={(item) => item.id}
         />
 
-        {/* 🔥 CARROUSEL IMAGES */}
-{/* 🔥 CARROUSEL IMAGES */}
-<ScrollView
-  ref={carouselRef}
-  horizontal
-  pagingEnabled
-  showsHorizontalScrollIndicator={false}
-  contentContainerStyle={{ alignItems: "center" }} // centre verticalement si besoin
-  style={styles.carousel}
->
-  {carouselImages.map((img, index) => (
-    <Image
-      key={index}
-      source={{ uri: img }}
-      style={styles.carouselImage}
-    />
-  ))}
-</ScrollView>
+        <ScrollView
+          ref={carouselRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          style={styles.carousel}
+        >
+          {carouselImages.map((img, i) => (
+            <Image key={i} source={{ uri: img }} style={styles.carouselImage} />
+          ))}
+        </ScrollView>
 
-
-        {/* PRODUITS */}
         {featuredProductSections.map((section) => (
           <ScrollSection<ProductType>
             key={section.tagId.toString()}
@@ -239,14 +206,14 @@ export default function TabAccueilScreen() {
             renderItem={({ item }) => (
               <ProductCard item={item} onPress={handleProductPress} />
             )}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item.id}
+            onSeeAllPress={() => handleSeeAllTagProducts(section.tagName)}
           />
         ))}
 
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* WHATSAPP */}
       <View style={styles.fabContainer}>
         <Feather name="headphones" size={32} color="#fff" onPress={openWhatsApp} />
       </View>
@@ -255,29 +222,21 @@ export default function TabAccueilScreen() {
 }
 
 const styles = StyleSheet.create({
-headerContainer: {
-  padding: 16,
-  borderBottomWidth: 1,
-  paddingTop: Platform.OS === "android" ? 40 : 30, // ici on augmente l’espace en haut
-},
-
+  headerContainer: {
+    padding: 16,
+    borderBottomWidth: 1,
+    paddingTop: Platform.OS === "android" ? 40 : 30,
+  },
   siteName: { fontSize: 26, fontWeight: "700" },
-  welcomeText: {
-    fontSize: 16,
-    marginTop: 5,
-  },
 
-  carousel: {
-    marginVertical: 15,
+  carousel: { marginVertical: 15 },
+  carouselImage: {
+    width: width - 32,
+    height: 180,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    resizeMode: "cover",
   },
-carouselImage: {
-  width: width - 32, // marge de chaque côté
-  height: 180,
-  resizeMode: "cover",
-  borderRadius: 12,
-  marginHorizontal: 16, // pour laisser un petit espace à gauche/droite
-},
-
 
   fabContainer: {
     position: "absolute",
