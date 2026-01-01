@@ -10,8 +10,8 @@ import {
   Platform,
 } from "react-native";
 import { Stack } from "expo-router";
-import { useAuth } from "../../context/AuthContext";
-import Colors from "../../constants/Colors";
+import { useAuth } from "../context/AuthContext";
+import Colors from "../constants/Colors";
 
 interface OrderItem {
   itemId?: string | number;
@@ -103,7 +103,6 @@ export default function OrdersScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Stack.Screen
         options={{
-          title: "Mes commandes",
           headerStyle: { backgroundColor: colors.card },
           headerTitleStyle: { color: colors.text },
           headerTintColor: colors.primary,
@@ -120,7 +119,6 @@ export default function OrdersScreen() {
           />
         }
       >
-        <Text style={[styles.pageTitle, { color: colors.text }]}>Mes commandes</Text>
 
         {error ? (
           <Text style={[styles.errorText, { color: colors.errorText }]}>

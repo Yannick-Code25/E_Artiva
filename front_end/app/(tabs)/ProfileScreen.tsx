@@ -803,7 +803,7 @@ const menuItemsBaseConfig: {
   icon: ShoppingBag,
   title: "Mes commandes",
   subtitleBase: "Voir l'historique",
-  route: "/orders" as Href,
+  route: "/OrdersScreen",
 },  
   {
     id: "wishlist",
