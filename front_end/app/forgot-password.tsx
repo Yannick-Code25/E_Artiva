@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', paddingHorizontal: 24, backgroundColor: '#fff' },
   title: { fontSize: 26, fontWeight: 'bold', color: '#333', textAlign: 'center', marginBottom: 30 },
   input: { width: '100%', backgroundColor: '#F0F0F0', padding: 15, borderRadius: 10, marginBottom: 20, fontSize: 16 },
-  button: { width: '100%', backgroundColor: 'tomato', padding: 18, borderRadius: 10, alignItems: 'center' },
+  button: { width: '100%', backgroundColor: '#FF6600', padding: 18, borderRadius: 10, alignItems: 'center' },
   buttonDisabled: { backgroundColor: '#FFC0CB' },
   buttonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
 });
