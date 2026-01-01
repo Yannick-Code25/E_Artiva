@@ -19,7 +19,7 @@ export default function ForgotPasswordScreen() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://192.168.11.103:3001/api/auth/forgot-password', {
+      const response = await fetch('http://192.168.11.100:3001/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -49,7 +49,7 @@ export default function ForgotPasswordScreen() {
     setIsLoading(true);
 
     try {
-const response = await fetch('http://192.168.11.103:3001/api/auth/reset-password', {
+const response = await fetch('http://192.168.11.100:3001/api/auth/reset-password', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ email, code, newPassword }),

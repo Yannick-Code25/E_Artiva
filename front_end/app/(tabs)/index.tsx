@@ -23,7 +23,7 @@ import { useRouter, Href, Stack } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { Feather } from "@expo/vector-icons";
 
-const API_BASE_URL = "http://192.168.11.103:3001/api";
+const API_BASE_URL = "http://192.168.11.100:3001/api";
 const { width } = Dimensions.get("window");
 
 interface TaggedProductsStore {
@@ -51,9 +51,11 @@ export default function TabAccueilScreen() {
   const [carouselIndex, setCarouselIndex] = useState(0);
 
   const carouselImages = [
+    "https://chatgpt.com/backend-api/estuary/public_content/enc/eyJpZCI6Im1fNjk1MmRjM2ZlOTk0ODE5MTg4MTljOGM4OTEyNDkxNGI6ZmlsZV8wMDAwMDAwMGM4NTA3MWY3YjU5OWIwNDQzMTZiYjIyNSIsInRzIjoiMjA0NTEiLCJwIjoicHlpIiwiY2lkIjoiMSIsInNpZyI6IjAwMDY2ZTdhOTc5NmQ1YTUxNTdjYzAxNmZkYWNhYzg3YzE4NWRlZmJhYjY1ZjQ1Mjc1MzlmMjhkN2NjNTY0YjAiLCJ2IjoiMCIsImdpem1vX2lkIjpudWxsLCJjcyI6bnVsbCwiY3AiOm51bGwsIm1hIjpudWxsfQ==",
     "https://i.pinimg.com/1200x/c5/20/51/c52051b79281ee5b9c9c6f4701cd852f.jpg",
     "https://i.pinimg.com/736x/ca/6e/82/ca6e826d10df23c7b65dc7f124353559.jpg",
     "https://i.pinimg.com/736x/dc/73/2a/dc732ae5b28015fe0790ce89085a8b3b.jpg",
+    "https://chatgpt.com/backend-api/estuary/public_content/enc/eyJpZCI6Im1fNjk1MmQ5MmQwN2M4ODE5MWJiMmYyMmFjMDBjYjUxNDI6ZmlsZV8wMDAwMDAwMDVmYzQ3MWY3YmJiM2M2OWM2NDFmYmIzMCIsInRzIjoiMjA0NTEiLCJwIjoicHlpIiwiY2lkIjoiMSIsInNpZyI6IjJhZWIxYWI0NDg2YTEzYTRkZjA0NWFkOWJjNzc5ZjQxMWQ4NTYxZTI0M2NhOThlYjk0ZjIxY2EyNGMyOTk3YmIiLCJ2IjoiMCIsImdpem1vX2lkIjpudWxsLCJjcyI6bnVsbCwiY3AiOm51bGwsIm1hIjpudWxsfQ==",
   ];
 
   useEffect(() => {

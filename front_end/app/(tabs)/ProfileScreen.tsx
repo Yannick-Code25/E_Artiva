@@ -103,7 +103,7 @@
 //   },
 // ];
 
-// const API_BASE_URL = "http://192.168.11.103:3001/api"; // TON IP
+// const API_BASE_URL = "http://192.168.11.100:3001/api"; // TON IP
 
 // export default function TabProfileScreen() {
 //   const {
@@ -798,13 +798,13 @@ const menuItemsBaseConfig: {
   route?: Href;
   action?: "toggleOrdersModal";
 }[] = [
-  {
-    id: "orders",
-    icon: ShoppingBag,
-    title: "Mes commandes",
-    subtitleBase: "Voir l'historique",
-    action: "toggleOrdersModal",
-  },
+{
+  id: "orders",
+  icon: ShoppingBag,
+  title: "Mes commandes",
+  subtitleBase: "Voir l'historique",
+  route: "/orders" as Href,
+},  
   {
     id: "wishlist",
     icon: Heart,
@@ -828,7 +828,7 @@ const menuItemsBaseConfig: {
   },
 ];
 
-const API_BASE_URL = "http://192.168.11.103:3001/api";
+const API_BASE_URL = "http://192.168.11.100:3001/api";
 
 export default function TabProfileScreen() {
   const {
@@ -1048,10 +1048,12 @@ export default function TabProfileScreen() {
               index === menuItemsBaseConfig.length - 1 && styles.menuItemLast,
               { borderBottomColor: colors.cardBorder },
             ]}
-            onPress={() => {
-              if (menuItem.action === "toggleOrdersModal") toggleOrdersModal();
-              else if (menuItem.route) router.push(menuItem.route);
-            }}
+onPress={() => {
+  if (menuItem.route) {
+    router.push(menuItem.route);
+  }
+}}
+
           >
             <View
               style={[

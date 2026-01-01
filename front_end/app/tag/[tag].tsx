@@ -19,7 +19,7 @@ import Colors from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext"; // Pour le thème
 import { useTranslation } from "react-i18next"; // Pour la traduction
 
-const API_BASE_URL = "http://192.168.11.103:3001/api"; // **TON IP**
+const API_BASE_URL = "http://192.168.11.100:3001/api"; // **TON IP**
 
 export default function ProductsByTagScreen() {
   const { tag } = useLocalSearchParams<{ tag: string }>();
