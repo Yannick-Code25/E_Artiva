@@ -69,7 +69,7 @@ export default function TabShopScreen() {
       setInitialLoad(false);
     }
   }, []);
-
+  
   const fetchProducts = useCallback(async () => {
     const categoryToFetch = selectedSubCategoryId || selectedMainCategoryId;
     if (!categoryToFetch && !searchTerm) {
@@ -112,13 +112,21 @@ export default function TabShopScreen() {
     await fetchProducts();
   }, [fetchCategories, fetchProducts]);
 
-  const mainCategories = useMemo(() =>
-    allCategories.filter(c => c.parent_id === null).sort((a,b) => (a.display_order||0)-(b.display_order||0)), [allCategories]);
+const mainCategories = useMemo(() =>
+  allCategories.filter(c => c.parent_id === null).sort((a,b) => (a.display_order||0)-(b.display_order||0)), 
+[allCategories]);
 
-  const subCategories = useMemo(() =>
-    selectedMainCategoryId ? allCategories.filter(c => String(c.parent_id) === String(selectedMainCategoryId)).sort((a,b) => (a.display_order||0)-(b.display_order||0)) : [], 
-    [allCategories, selectedMainCategoryId]
-  );
+// ---- Auto-sélection ----
+useEffect(() => {
+  if (!selectedMainCategoryId && mainCategories.length > 0) {
+    setSelectedMainCategoryId(mainCategories[0].id);
+  }
+}, [mainCategories, selectedMainCategoryId]);
+
+const subCategories = useMemo(() =>
+  selectedMainCategoryId ? allCategories.filter(c => String(c.parent_id) === String(selectedMainCategoryId)).sort((a,b) => (a.display_order||0)-(b.display_order||0)) : [], 
+[allCategories, selectedMainCategoryId]);
+
 
   const handleSelectMainCategory = (categoryId: string | number | null) => {
     setProducts([]);
