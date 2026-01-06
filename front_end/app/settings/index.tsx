@@ -22,7 +22,7 @@
 // import { useAuth } from "../../context/AuthContext";
 // import { useTranslation } from "react-i18next"; // Pour traduire les textes des liens
 
-// const API_BASE_URL = "http://192.168.11.111:3001/api"; // **METS TON IP**
+// const API_BASE_URL = "https://e-artiva-htaw.onrender.com/api"; // **METS TON IP**
 
 // interface SettingsItemProps {
 //   icon: React.ElementType;
@@ -296,7 +296,7 @@ const SettingsItem: React.FC<SettingsItemProps> = ({
   );
 };
 
-const API_BASE_URL = "http://192.168.11.111:3001/api"; // **METS TON IP**
+const API_BASE_URL = "https://e-artiva-htaw.onrender.com/api"; // **METS TON IP**
 
 export default function SettingsMainScreen() {
   const router = useRouter();

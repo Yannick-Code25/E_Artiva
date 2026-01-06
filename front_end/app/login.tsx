@@ -17,7 +17,7 @@ import {
 import { useRouter } from "expo-router";
 import Colors from "../constants/Colors";
 
-const API_BASE_URL = "http://192.168.11.111:3001/api";
+const API_BASE_URL = "https://e-artiva-htaw.onrender.com/api";
 
 export default function LoginScreen() {
   const router = useRouter();

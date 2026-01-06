@@ -103,7 +103,7 @@
 //   },
 // ];
 
-// const API_BASE_URL = "http://192.168.11.111:3001/api"; // TON IP
+// const API_BASE_URL = "https://e-artiva-htaw.onrender.com/api"; // TON IP
 
 // export default function TabProfileScreen() {
 //   const {
@@ -828,7 +828,7 @@ const menuItemsBaseConfig: {
   },
 ];
 
-const API_BASE_URL = "http://192.168.11.111:3001/api";
+const API_BASE_URL = "https://e-artiva-htaw.onrender.com/api";
 
 export default function TabProfileScreen() {
   const {
