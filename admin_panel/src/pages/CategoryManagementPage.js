@@ -5,7 +5,7 @@
 // import CategoryFormModal from '../components/CategoryFormModal';
 // import './ProductManagementPage.css';
 
-// const API_BASE_URL = 'http://192.168.11.116:3001/api';
+// const API_BASE_URL = 'https://e-artiva-htaw.onrender.com/api';
 
 // function CategoryManagementPage() {
 //   const [mainCategories, setMainCategories] = useState([]);
