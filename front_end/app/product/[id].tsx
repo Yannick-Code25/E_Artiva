@@ -74,7 +74,7 @@ interface Review {
 const API_BASE_URL = "https://e-artiva-htaw.onrender.com/api";
   Constants.expoConfig?.extra?.API_BASE_URL ?? "https://e-artiva-htaw.onrender.com/api";
 // J'ai gardé l'IP du fichier 1 qui semble être celle de ton backend actif
-// const API_BASE_URL = "http://192.168.100.88:3001/api";
+
 const { width: screenWidth } = Dimensions.get("window");
 
 const formatPriceForDisplay = (
