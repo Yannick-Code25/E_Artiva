@@ -13,7 +13,7 @@ import { useAuth } from "./AuthContext"; // Pour le token utilisateur
 import { Alert } from "react-native";
 
 // L'URL de base de ton API (assure-toi qu'elle est correcte)
-const API_BASE_URL = "http://192.168.11.105:3001/api"; // **METS TON IP ICI**
+const API_BASE_URL = "http://192.168.11.111:3001/api"; // **METS TON IP ICI**
 
 // Un item de la wishlist est essentiellement un produit
 export interface WishlistItem extends BaseProductType {}

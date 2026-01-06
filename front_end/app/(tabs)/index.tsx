@@ -23,7 +23,7 @@ import { useRouter, Href, Stack } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { Feather } from "@expo/vector-icons";
 
-const API_BASE_URL = "http://192.168.11.105:3001/api";
+const API_BASE_URL = "http://192.168.11.111:3001/api";
 const { width } = Dimensions.get("window");
 
 interface TaggedProductsStore {
