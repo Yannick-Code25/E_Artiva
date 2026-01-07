@@ -28,7 +28,7 @@ interface Category {
 
 interface ShopProduct extends BaseProductType {}
 
-const API_BASE_URL = "https://e-artiva-htaw.onrender.com/api";
+const API_BASE_URL = "http://192.168.11.107:3001/api";
 
 export default function TabShopScreen() {
   const router = useRouter();
