@@ -8,16 +8,16 @@ dotenv.config();
 // ------------------------------
 const transporter = nodemailer.createTransport({
   host: "smtp.sendgrid.net",
-  port: 587,          // port standard SendGrid
-  secure: false,      // true si port 465, sinon false pour 587
+  port: 587,
+  secure: false,
   auth: {
-    user: "apikey",   // ⚠️ toujours "apikey" pour SendGrid
-    pass: process.env.SENDGRID_API_KEY, // clé API SendGrid
+    user: "apikey",
+    pass: process.env.SENDGRID_API_KEY,
   },
-  connectionTimeout: 20_000, // 20s
-  greetingTimeout: 20_000,
-  socketTimeout: 20_000,
+  logger: true,      // 👈 logs détaillés
+  debug: true,       // 👈 logs debug SMTP
 });
+
 
 // ------------------------------
 // Envoi du code de connexion (2FA)
