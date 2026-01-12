@@ -3,20 +3,21 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 dotenv.config();
 
-// Transporteur SMTP unique pour tous les mails
+// ------------------------------
+// Transporteur SMTP unique via SendGrid
+// ------------------------------
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,          // 👈 important
-  secure: true,       // 👈 obligatoire pour 465
+  host: "smtp.sendgrid.net",
+  port: 587,          // port standard SendGrid
+  secure: false,      // true si port 465, sinon false pour 587
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: "apikey",   // ⚠️ toujours "apikey" pour SendGrid
+    pass: process.env.SENDGRID_API_KEY, // clé API SendGrid
   },
   connectionTimeout: 20_000, // 20s
   greetingTimeout: 20_000,
   socketTimeout: 20_000,
 });
-
 
 // ------------------------------
 // Envoi du code de connexion (2FA)
@@ -143,7 +144,7 @@ export const sendNewOrderEmails = async (userEmail, adminEmail, orderData) => {
 
     // Email pour l’ADMIN
     await transporter.sendMail({
-      from: `"Artiva 🛍️" <${process.env.EMAIL_USER }>`,
+      from: `"Artiva 🛍️" <${process.env.EMAIL_USER}>`,
       to: adminEmail,
       subject: "📦 Nouvelle commande reçue",
       html: `
