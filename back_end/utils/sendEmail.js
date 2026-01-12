@@ -5,12 +5,18 @@ dotenv.config();
 
 // Transporteur SMTP unique pour tous les mails
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,          // 👈 important
+  secure: true,       // 👈 obligatoire pour 465
   auth: {
-    user: process.env.EMAIL_USER ,
-    pass: process.env.EMAIL_PASS
-  }
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  connectionTimeout: 20_000, // 20s
+  greetingTimeout: 20_000,
+  socketTimeout: 20_000,
 });
+
 
 // ------------------------------
 // Envoi du code de connexion (2FA)
