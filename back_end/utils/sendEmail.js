@@ -7,8 +7,8 @@ dotenv.config();
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER || "artiva.app@gmail.com",
-    pass: process.env.EMAIL_PASS || "jvyxovmasunykujs"
+    user: process.env.EMAIL_USER ,
+    pass: process.env.EMAIL_PASS
   }
 });
 
@@ -28,7 +28,7 @@ export const sendLoginCode = async (to, code) => {
     `;
 
     await transporter.sendMail({
-      from: `"Artiva 👋" <${process.env.EMAIL_USER || "artiva.app@gmail.com"}>`,
+      from: `"Artiva 👋" <${process.env.EMAIL_USER}>`,
       to,
       subject: "🔐 Votre code de connexion Artiva",
       html: htmlContent
@@ -57,7 +57,7 @@ export const sendResetPasswordCode = async (to, code) => {
     `;
 
     await transporter.sendMail({
-      from: `"Artiva 👋" <${process.env.EMAIL_USER || "artiva.app@gmail.com"}>`,
+      from: `"Artiva 👋" <${process.env.EMAIL_USER}>`,
       to,
       subject: "🔑 Code de réinitialisation Artiva",
       html: htmlContent
@@ -120,7 +120,7 @@ export const sendNewOrderEmails = async (userEmail, adminEmail, orderData) => {
 
     // Email pour le CLIENT
     await transporter.sendMail({
-      from: `"Artiva 🛍️" <${process.env.EMAIL_USER || "artiva.app@gmail.com"}>`,
+      from: `"Artiva 🛍️" <${process.env.EMAIL_USER}>`,
       to: userEmail,
       subject: "🛒 Votre commande a été enregistrée",
       html: `
@@ -137,7 +137,7 @@ export const sendNewOrderEmails = async (userEmail, adminEmail, orderData) => {
 
     // Email pour l’ADMIN
     await transporter.sendMail({
-      from: `"Artiva 🛍️" <${process.env.EMAIL_USER || "artiva.app@gmail.com"}>`,
+      from: `"Artiva 🛍️" <${process.env.EMAIL_USER }>`,
       to: adminEmail,
       subject: "📦 Nouvelle commande reçue",
       html: `
