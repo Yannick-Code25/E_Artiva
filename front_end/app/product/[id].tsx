@@ -69,10 +69,11 @@ interface Review {
   created_at: string;
 }
 
+
 // --- CONSTANTES ---
 
-const API_BASE_URL = "http://192.168.11.107:3001/api";
-  Constants.expoConfig?.extra?.API_BASE_URL ?? "http://192.168.11.107:3001/api";
+const API_BASE_URL = "http://192.168.11.114:3001/api";
+  Constants.expoConfig?.extra?.API_BASE_URL ?? "http://192.168.11.114:3001/api";
 // J'ai gardé l'IP du fichier 1 qui semble être celle de ton backend actif
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -139,6 +140,11 @@ export default function ProductDetailScreen() {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   const isInWishlist = product ? isProductInWishlist(product.id) : false;
+
+
+  const videoRef = useRef<Video>(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // --- 1. CHARGEMENT PRODUIT ---
   const fetchProductDetails = useCallback(async () => {
@@ -972,16 +978,88 @@ export default function ProductDetailScreen() {
     </Text>
 
     {product.video_url ? (
-<Video
-  source={{ uri: product.video_url }}
-  style={{ width: screenWidth, height: 200, borderRadius: 8, marginBottom: 15 }}
-  resizeMode={"contain" as unknown as ResizeMode} // force TS
-  shouldPlay
-  isLooping
-  useNativeControls={false}
-/>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() => {
+          if (isPlaying) {
+            videoRef.current?.pauseAsync();
+          } else {
+            videoRef.current?.playAsync();
+          }
+          setIsPlaying(!isPlaying);
+        }}
+        style={{
+          width: "100%",
+          height: 220,
+          borderRadius: 12,
+          backgroundColor: "#000",
+          justifyContent: "center",
+          alignItems: "center",
+          marginBottom: 15,
+          overflow: "hidden",
+        }}
+      >
+        <Video
+          ref={videoRef}
+          source={{ uri: product.video_url }}
+          style={{ width: "100%", height: "100%" }}
+          resizeMode={ResizeMode.CONTAIN}
+          isMuted={isMuted}
+          shouldPlay={false}
+          useNativeControls={false}
+        />
 
+        {/* ▶️ Play */}
+        {!isPlaying && (
+          <View
+            style={{
+              position: "absolute",
+              backgroundColor: "rgba(0,0,0,0.5)",
+              padding: 16,
+              borderRadius: 50,
+            }}
+          >
+            <Text style={{ color: "#fff", fontSize: 22 }}>▶</Text>
+          </View>
+        )}
 
+        {/* 🔊 / ⛶ */}
+        <View
+          style={{
+            position: "absolute",
+            bottom: 10,
+            right: 10,
+            flexDirection: "row",
+            gap: 12,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => setIsMuted(!isMuted)}
+            style={{
+              backgroundColor: "rgba(0,0,0,0.6)",
+              padding: 8,
+              borderRadius: 20,
+            }}
+          >
+            <Text style={{ color: "#fff" }}>
+              {isMuted ? "🔇" : "🔊"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() =>
+              videoRef.current?.presentFullscreenPlayer()
+            }
+            style={{
+              backgroundColor: "rgba(0,0,0,0.6)",
+              padding: 8,
+              borderRadius: 20,
+            }}
+          >
+            <Text style={{ color: "#fff" }}>⛶</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
     ) : (
       <Text
         style={{
@@ -1004,6 +1082,7 @@ export default function ProductDetailScreen() {
     >
       Détails en images
     </Text>
+
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       {product.imagesForCarousel.map((img, index) => (
         <TouchableOpacity
@@ -1028,7 +1107,6 @@ export default function ProductDetailScreen() {
     </ScrollView>
   </View>
 </View>
-
         {/* --- AVIS CLIENTS (Dynamique et Design) --- */}
         <View
           style={[
