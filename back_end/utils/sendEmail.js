@@ -22,10 +22,12 @@ const transporter = nodemailer.createTransport({
   socketTimeout: 20_000,
 });
 
+
 // ------------------------------
 // Fonction utilitaire pour envoyer un mail et loguer la réponse SMTP
 const sendMailWithLog = async (mailOptions, label) => {
   try {
+<<<<<<< HEAD
     const info = await transporter.sendMail(mailOptions);
     console.log(`[${label}] Email envoyé à ${mailOptions.to}`);
     console.log(`[${label}] Réponse Nodemailer :`, {
@@ -34,6 +36,23 @@ const sendMailWithLog = async (mailOptions, label) => {
       rejected: info.rejected,
       pending: info.pending,
       envelope: info.envelope
+=======
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width:500px; margin:auto; padding:20px; border:1px solid #e0e0e0; border-radius:10px; background:#f9f9f9; text-align:center;">
+        <h2 style="color:#4CAF50;">Connexion à Artiva</h2>
+        <p style="font-size:16px;">Voici votre code temporaire pour vous connecter :</p>
+        <div style="font-size:28px; font-weight:bold; margin:20px 0; color:#333;">${code}</div>
+        <p style="font-size:14px; color:#666;">Valable 5 minutes. Si vous n'avez pas demandé ce code, ignorez ce message.</p>
+        <p style="margin-top:20px; font-size:12px; color:#888;">L'équipe Artiva</p>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: `"Artiva 👋" <${process.env.EMAIL_USER}>`,
+      to,
+      subject: "🔐 Votre code de connexion Artiva",
+      html: htmlContent
+>>>>>>> cf41522456adedd0f4e154d96ebc39b6f9e1446e
     });
   } catch (err) {
     console.error(`[${label}] Erreur lors de l'envoi :`, err);
@@ -75,12 +94,27 @@ export const sendResetPasswordCode = async (to, code) => {
     </div>
   `;
 
+<<<<<<< HEAD
   await sendMailWithLog({
     from: `"Artiva 👋" <${process.env.EMAIL_USER}>`,
     to,
     subject: "🔑 Code de réinitialisation Artiva",
     html: htmlContent
   }, "Reset");
+=======
+    await transporter.sendMail({
+      from: `"Artiva 👋" <${process.env.EMAIL_USER}>`,
+      to,
+      subject: "🔑 Code de réinitialisation Artiva",
+      html: htmlContent
+    });
+
+    console.log(`[Reset] Code de réinitialisation envoyé à ${to}`);
+  } catch (err) {
+    console.error("[Reset] Erreur lors de l'envoi du code :", err);
+    throw err;
+  }
+>>>>>>> cf41522456adedd0f4e154d96ebc39b6f9e1446e
 };
 
 // ------------------------------
@@ -105,6 +139,7 @@ export const sendNewOrderEmails = async (userEmail, adminEmail, orderData) => {
       `;
     }).join("");
 
+<<<<<<< HEAD
     const total = orderData.amount || items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
 
     return `
@@ -127,6 +162,40 @@ export const sendNewOrderEmails = async (userEmail, adminEmail, orderData) => {
       </table>
     `;
   };
+=======
+    // Email pour le CLIENT
+    await transporter.sendMail({
+      from: `"Artiva 🛍️" <${process.env.EMAIL_USER}>`,
+      to: userEmail,
+      subject: "🛒 Votre commande a été enregistrée",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; border:1px solid #e0e0e0; border-radius:10px; background-color:#fdfdfd; color:#333;">
+          <h2 style="color:#4CAF50;">Merci pour votre commande, ${customerName} !</h2>
+          <p>Nous avons bien reçu votre commande. Voici les détails :</p>
+          ${generateItemsTable(orderData.items)}
+          <p style="margin-top:20px;">L'équipe <b>Artiva</b> vous remercie 🙏</p>
+          <hr style="border:none; border-top:1px solid #eee; margin:20px 0;">
+          <p style="font-size:12px; color:#888;">Si vous avez des questions, contactez-nous à ${process.env.EMAIL_USER || "artiva.app@gmail.com"}</p>
+        </div>
+      `
+    });
+
+    // Email pour l’ADMIN
+    await transporter.sendMail({
+      from: `"Artiva 🛍️" <${process.env.EMAIL_USER}>`,
+      to: adminEmail,
+      subject: "📦 Nouvelle commande reçue",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; border:1px solid #e0e0e0; border-radius:10px; background-color:#fdfdfd; color:#333;">
+          <h2 style="color:#FF9800;">Nouvelle commande reçue</h2>
+          <p><b>Client :</b> ${customerName} (${userEmail})</p>
+          <p><b>Détails :</b></p>
+          ${generateItemsTable(orderData.items)}
+          <p style="margin-top:20px; font-size:12px; color:#888;">Email généré automatiquement par le système Artiva</p>
+        </div>
+      `
+    });
+>>>>>>> cf41522456adedd0f4e154d96ebc39b6f9e1446e
 
   // Email CLIENT
   await sendMailWithLog({
