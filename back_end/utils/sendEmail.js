@@ -11,17 +11,19 @@ console.log("EMAIL_PASS =", process.env.EMAIL_PASS ? "OK" : "MANQUANT");
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 465,          // 👈 important
-  secure: true,       // 👈 obligatoire pour 465
+  port: 587,       // ✅ STARTTLS, ok sur Render
+  secure: false,   // ✅ STARTTLS = false
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  connectionTimeout: 20_000, // 20s
-  greetingTimeout: 20_000,
-  socketTimeout: 20_000,
+  tls: {
+    rejectUnauthorized: false, // permet d'éviter certains blocages cloud
+  },
+  connectionTimeout: 20000,
+  greetingTimeout: 20000,
+  socketTimeout: 20000,
 });
-
 
 // ------------------------------
 // Fonction utilitaire pour envoyer un mail et loguer la réponse SMTP
