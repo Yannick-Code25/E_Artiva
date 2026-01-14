@@ -31,7 +31,7 @@ interface Order {
   products: OrderItem[];
 }
 
-const API_BASE_URL = "http://192.168.11.114:3001/api";
+const API_BASE_URL = "https://back-end-purple-log-1280.fly.dev/api";
 
 export default function OrdersScreen() {
   const { userToken, effectiveAppColorScheme } = useAuth();

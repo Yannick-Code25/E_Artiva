@@ -17,7 +17,7 @@ import {
 import { useRouter } from "expo-router";
 import Colors from "../constants/Colors";
 
-const API_BASE_URL = "http://192.168.11.114:3001/api";
+const API_BASE_URL = "https://back-end-purple-log-1280.fly.dev/api";
 
 export default function LoginScreen() {
   const router = useRouter();

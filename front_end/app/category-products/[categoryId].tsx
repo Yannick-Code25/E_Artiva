@@ -15,7 +15,7 @@ import ProductCard, {
 import Colors from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext"; // CHANGEMENT: Utilisation du hook d'authentification pour le thème
 
-const API_BASE_URL = "http://192.168.11.114:3001/api"; // **TON IP**
+const API_BASE_URL = "https://back-end-purple-log-1280.fly.dev/api"; // **TON IP**
 
 export default function CategoryProductsScreen() {
   const { categoryId, categoryName } = useLocalSearchParams<{
