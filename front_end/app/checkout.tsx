@@ -499,8 +499,13 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import Colors from "../constants/Colors";
 
+
+
 // **ATTENTION: METS TON ADRESSE IP LOCALE CORRECTE ICI**
 const API_BASE_URL = "https://back-end-purple-log-1280.fly.dev/api";
+
+// Ref pour capturer le QR Code
+const qrCodeRef = useRef<ViewShot | null>(null);
 
 // --- TYPES ---
 interface CheckoutFormData {
@@ -743,8 +748,9 @@ export default function CheckoutScreen() {
     }
   };
   
-const handleDownloadQrCode = async () => {
+  const handleDownloadQrCode = async () => {
   try {
+    // Demande des permissions pour accéder à la galerie
     const permission = await MediaLibrary.requestPermissionsAsync(true);
 
     if (permission.status !== "granted") {
@@ -760,22 +766,18 @@ const handleDownloadQrCode = async () => {
       return;
     }
 
-    const uri = await qrCodeRef.current.capture();
+    // Capture du QRCode
+    const uri = await (qrCodeRef.current as any).capture();
 
-    if (!uri) {
-      throw new Error("Capture du QR Code échouée");
-    }
+    if (!uri) throw new Error("Capture du QR Code échouée");
 
+    // Crée l’asset et ajoute-le dans un album dédié
     const asset = await MediaLibrary.createAssetAsync(uri);
-    await MediaLibrary.createAlbumAsync(
-      "Commandes Artiva",
-      asset,
-      false
-    );
+    await MediaLibrary.createAlbumAsync("Commandes Artiva", asset, false);
 
     Alert.alert(
       "Succès",
-      "QR Code enregistré dans votre galerie (Commandes Artiva)"
+      "QR Code enregistré dans votre galerie (Album: Commandes Artiva)"
     );
   } catch (error) {
     console.error("Erreur sauvegarde QR:", error);
@@ -785,6 +787,7 @@ const handleDownloadQrCode = async () => {
     );
   }
 };
+
   // --- SECTIONS DE RENDU ---
   function renderStep1() {
     const subTotal = getTotalPrice();
