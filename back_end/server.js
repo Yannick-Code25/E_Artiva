@@ -49,10 +49,10 @@ async function startServer() {
     }
 
     // Démarrer le serveur Express pour écouter les requêtes
-    app.listen(PORT, () => {
-      console.log(`Serveur Artiva backend démarré sur le port ${PORT}`);
-      console.log(`Accessible à l'adresse http://localhost:${PORT}`);
-    });
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Serveur Artiva backend démarré sur le port ${PORT}`);
+});
+
   } catch (error) {
     console.error('Erreur lors du démarrage du serveur:', error);
     process.exit(1);

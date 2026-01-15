@@ -8,10 +8,15 @@ require('dotenv').config();
 // ==========================
 // LOGIN ADMIN (sans 2FA)
 // ==========================
-
 const loginAdmin = async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: "Email et mot de passe requis" });
+  const { email, password } = req.body; // <-- DESTRUCTURING en premier
+
+  console.log("BODY REÇU :", req.body);
+  console.log("EMAIL REÇU :", email);
+  console.log("PASSWORD REÇU :", password);
+
+  if (!email || !password)
+    return res.status(400).json({ message: "Email et mot de passe requis" });
 
   try {
     const adminResult = await db.query("SELECT * FROM admin WHERE email=$1", [email]);
@@ -29,7 +34,10 @@ const loginAdmin = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.json({ token, admin, message: "Connexion admin réussie" });
+    // retirer le password_hash avant d’envoyer l’admin
+    const { password_hash, ...safeAdmin } = admin;
+
+    res.json({ token, admin: safeAdmin, message: "Connexion admin réussie" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Erreur serveur" });
