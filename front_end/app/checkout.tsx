@@ -742,36 +742,49 @@ export default function CheckoutScreen() {
       setIsSubmitting(false);
     }
   };
+  
+const handleDownloadQrCode = async () => {
+  try {
+    const permission = await MediaLibrary.requestPermissionsAsync(true);
 
-  const handleDownloadQrCode = async () => {
-    const { status } = await MediaLibrary.requestPermissionsAsync();
-    if (status !== "granted") {
+    if (permission.status !== "granted") {
       Alert.alert(
         "Permission refusée",
-        "Impossible de sauvegarder l'image sans votre autorisation."
+        "Autorisez l'accès aux photos pour sauvegarder le QR Code."
       );
       return;
     }
-    if (qrCodeRef.current) {
-      try {
-        const uri = await qrCodeRef.current.capture?.();
-        if (!uri) throw new Error("Impossible de capturer le QR Code.");
-        const asset = await MediaLibrary.createAssetAsync(uri);
-        await MediaLibrary.createAlbumAsync("Commandes Artiva", asset, false);
-        Alert.alert(
-          "Succès",
-          "QR Code sauvegardé dans votre galerie (Album: Commandes Artiva)."
-        );
-      } catch (error) {
-        console.error("Erreur de sauvegarde QR:", error);
-        Alert.alert(
-          "Erreur",
-          "Une erreur est survenue lors de la sauvegarde du QR Code."
-        );
-      }
-    }
-  };
 
+    if (!qrCodeRef.current) {
+      Alert.alert("Erreur", "QR Code introuvable.");
+      return;
+    }
+
+    const uri = await qrCodeRef.current.capture();
+
+    if (!uri) {
+      throw new Error("Capture du QR Code échouée");
+    }
+
+    const asset = await MediaLibrary.createAssetAsync(uri);
+    await MediaLibrary.createAlbumAsync(
+      "Commandes Artiva",
+      asset,
+      false
+    );
+
+    Alert.alert(
+      "Succès",
+      "QR Code enregistré dans votre galerie (Commandes Artiva)"
+    );
+  } catch (error) {
+    console.error("Erreur sauvegarde QR:", error);
+    Alert.alert(
+      "Erreur",
+      "Impossible de sauvegarder le QR Code."
+    );
+  }
+};
   // --- SECTIONS DE RENDU ---
   function renderStep1() {
     const subTotal = getTotalPrice();
