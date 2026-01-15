@@ -91,7 +91,7 @@ function ProductTagsPage() {
   const [selectedTag, setSelectedTag] = useState(null); // Pour l'ajout ou la modification
 
   const adminToken = localStorage.getItem('adminToken');
-  const API_BASE_URL = 'http://localhost:3001/api'; // Assure-toi que c'est correct
+  const API_BASE_URL = 'https://back-end-purple-log-1280.fly.dev/api'; // Assure-toi que c'est correct
 
   const fetchTags = useCallback(async () => {
     if (!adminToken) {

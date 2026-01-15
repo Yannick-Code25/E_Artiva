@@ -210,7 +210,7 @@ import { Link } from 'react-router-dom';
 import CategoryFormModal from '../components/CategoryFormModal';
 import './ProductManagementPage.css';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = 'https://back-end-purple-log-1280.fly.dev/api';
 
 function CategoryManagementPage() {
   const [mainCategories, setMainCategories] = useState([]);

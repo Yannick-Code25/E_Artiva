@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import ProductFormModal from '../components/ProductFormModal';
 import './ProductManagementPage.css';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = 'https://back-end-purple-log-1280.fly.dev/api';
 
 function ProductManagementPage() {
   const [allProducts, setAllProducts] = useState([]);

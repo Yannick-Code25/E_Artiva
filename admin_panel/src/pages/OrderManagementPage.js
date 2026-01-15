@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import OrderDetailsModal from '../components/OrderDetailsModal';
 import './ProductManagementPage.css'; // On réutilise les styles généraux et de tableau
 
-const API_BASE_URL = 'http://localhost:3001/api'; // Déplacé en haut pour la portée globale du module
+const API_BASE_URL = 'https://back-end-purple-log-1280.fly.dev/api'; // Déplacé en haut pour la portée globale du module
 
 // Statuts possibles pour le filtre et le changement de statut
 const ORDER_STATUSES = ['pending', 'awaiting_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded', 'failed'];
