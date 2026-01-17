@@ -57,6 +57,7 @@ export default function TabAccueilScreen() {
   const [carouselIndex, setCarouselIndex] = useState(0);
 
   const carouselImages = [
+    "https://i.pinimg.com/736x/a7/97/b9/a797b964aa255829eb112ffc2c56a2ba.jpg",
     "https://i.pinimg.com/1200x/c5/20/51/c52051b79281ee5b9c9c6f4701cd852f.jpg",
     "https://i.pinimg.com/736x/ca/6e/82/ca6e826d10df23c7b65dc7f124353559.jpg",
     "https://i.pinimg.com/736x/dc/73/2a/dc732ae5b28015fe0790ce89085a8b3b.jpg",
