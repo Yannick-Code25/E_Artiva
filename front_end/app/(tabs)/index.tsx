@@ -1,5 +1,3 @@
-// ARTIVA/front_end/app/(tabs)/index.tsx
-
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   StyleSheet,
@@ -17,7 +15,9 @@ import ScrollSection from "../../components/ScrollSection";
 import CategoryCard, {
   Category as CategoryType,
 } from "../../components/CategoryCard";
-import ProductCard, { Product as ProductType } from "../../components/ProductCard";
+import ProductCard, {
+  Product as ProductType,
+} from "../../components/ProductCard";
 import Colors from "../../constants/Colors";
 import { useRouter, Href, Stack } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
@@ -34,7 +34,9 @@ interface TaggedProductsStore {
 
 export default function TabAccueilScreen() {
   const router = useRouter();
-  const { effectiveAppColorScheme } = useAuth();
+
+  // ✅ Récupération user + isLoading
+  const { effectiveAppColorScheme, user, isLoading } = useAuth();
 
   const currentScheme = effectiveAppColorScheme ?? "light";
   const pageBackgroundColor = Colors[currentScheme].background;
@@ -43,7 +45,9 @@ export default function TabAccueilScreen() {
   const cardBorderColor = Colors[currentScheme].cardBorder;
 
   const [mainCategories, setMainCategories] = useState<CategoryType[]>([]);
-  const [featuredProductSections, setFeaturedProductSections] = useState<TaggedProductsStore[]>([]);
+  const [featuredProductSections, setFeaturedProductSections] = useState<
+    TaggedProductsStore[]
+  >([]);
   const [refreshing, setRefreshing] = useState(false);
 
   /* 🔥 CARROUSEL */
@@ -55,7 +59,6 @@ export default function TabAccueilScreen() {
     "https://i.pinimg.com/1200x/c5/20/51/c52051b79281ee5b9c9c6f4701cd852f.jpg",
     "https://i.pinimg.com/736x/ca/6e/82/ca6e826d10df23c7b65dc7f124353559.jpg",
     "https://i.pinimg.com/736x/dc/73/2a/dc732ae5b28015fe0790ce89085a8b3b.jpg",
-    "https://chatgpt.com/backend-api/estuary/public_content/enc/eyJpZCI6Im1fNjk1MmQ5MmQwN2M4ODE5MWJiMmYyMmFjMDBjYjUxNDI6ZmlsZV8wMDAwMDAwMDVmYzQ3MWY3YmJiM2M2OWM2NDFmYmIzMCIsInRzIjoiMjA0NTEiLCJwIjoicHlpIiwiY2lkIjoiMSIsInNpZyI6IjJhZWIxYWI0NDg2YTEzYTRkZjA0NWFkOWJjNzc5ZjQxMWQ4NTYxZTI0M2NhOThlYjk0ZjIxY2EyNGMyOTk3YmIiLCJ2IjoiMCIsImdpem1vX2lkIjpudWxsLCJjcyI6bnVsbCwiY3AiOm51bGwsIm1hIjpudWxsfQ==",
   ];
 
   useEffect(() => {
@@ -64,6 +67,7 @@ export default function TabAccueilScreen() {
       carouselRef.current?.scrollTo({ x: next * width, animated: true });
       setCarouselIndex(next);
     }, 3500);
+
     return () => clearInterval(interval);
   }, [carouselIndex]);
 
@@ -104,7 +108,6 @@ export default function TabAccueilScreen() {
           if (!res.ok) return null;
 
           const data = await res.json();
-
           const rawProducts = Array.isArray(data)
             ? data
             : data.products || [];
@@ -166,16 +169,28 @@ export default function TabAccueilScreen() {
     <>
       <ScrollView
         style={{ flex: 1, backgroundColor: pageBackgroundColor }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <Stack.Screen options={{ title: "Accueil" }} />
 
-        <View style={[styles.headerContainer, { borderBottomColor: cardBorderColor }]}>
+        {/* 🔹 HEADER */}
+        <View
+          style={[
+            styles.headerContainer,
+            { borderBottomColor: cardBorderColor },
+          ]}
+        >
           <DefaultText style={[styles.siteName, { color: siteNameColor }]}>
             Artiva
           </DefaultText>
+
+          {/* ✅ Bienvenue + nom utilisateur */}
           <DefaultText style={{ color: textColor, marginTop: 5 }}>
-            Bienvenue !
+            {isLoading
+              ? "Bienvenue 👋"
+              : `Bienvenue ${user?.name ?? ""} 👋`}
           </DefaultText>
         </View>
 
@@ -183,7 +198,12 @@ export default function TabAccueilScreen() {
           title="Catégories"
           data={mainCategories}
           renderItem={({ item }) => (
-            <CategoryCard item={item} onPress={() => handleCategoryPress(item.id, item.name)} />
+            <CategoryCard
+              item={item}
+              onPress={() =>
+                handleCategoryPress(item.id, item.name)
+              }
+            />
           )}
           keyExtractor={(item) => item.id}
         />
@@ -196,7 +216,11 @@ export default function TabAccueilScreen() {
           style={styles.carousel}
         >
           {carouselImages.map((img, i) => (
-            <Image key={i} source={{ uri: img }} style={styles.carouselImage} />
+            <Image
+              key={i}
+              source={{ uri: img }}
+              style={styles.carouselImage}
+            />
           ))}
         </ScrollView>
 
@@ -209,15 +233,23 @@ export default function TabAccueilScreen() {
               <ProductCard item={item} onPress={handleProductPress} />
             )}
             keyExtractor={(item) => item.id}
-            onSeeAllPress={() => handleSeeAllTagProducts(section.tagName)}
+            onSeeAllPress={() =>
+              handleSeeAllTagProducts(section.tagName)
+            }
           />
         ))}
 
         <View style={{ height: 40 }} />
       </ScrollView>
 
+      {/* 🔸 BOUTON WHATSAPP */}
       <View style={styles.fabContainer}>
-        <Feather name="headphones" size={32} color="#fff" onPress={openWhatsApp} />
+        <Feather
+          name="headphones"
+          size={32}
+          color="#fff"
+          onPress={openWhatsApp}
+        />
       </View>
     </>
   );
@@ -229,9 +261,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     paddingTop: Platform.OS === "android" ? 40 : 30,
   },
-  siteName: { fontSize: 26, fontWeight: "700" },
-
-  carousel: { marginVertical: 15 },
+  siteName: {
+    fontSize: 26,
+    fontWeight: "700",
+  },
+  carousel: {
+    marginVertical: 15,
+  },
   carouselImage: {
     width: width - 32,
     height: 180,
@@ -239,7 +275,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     resizeMode: "cover",
   },
-
   fabContainer: {
     position: "absolute",
     bottom: 25,
