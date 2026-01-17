@@ -10,6 +10,8 @@ import {
   Linking,
   Image,
   Dimensions,
+  Animated,
+  Easing,
 } from "react-native";
 import ScrollSection from "../../components/ScrollSection";
 import CategoryCard, {
@@ -55,7 +57,6 @@ export default function TabAccueilScreen() {
   const [carouselIndex, setCarouselIndex] = useState(0);
 
   const carouselImages = [
-    "https://chatgpt.com/backend-api/estuary/public_content/enc/eyJpZCI6Im1fNjk1MmRjM2ZlOTk0ODE5MTg4MTljOGM4OTEyNDkxNGI6ZmlsZV8wMDAwMDAwMGM4NTA3MWY3YjU5OWIwNDQzMTZiYjIyNSIsInRzIjoiMjA0NTEiLCJwIjoicHlpIiwiY2lkIjoiMSIsInNpZyI6IjAwMDY2ZTdhOTc5NmQ1YTUxNTdjYzAxNmZkYWNhYzg3YzE4NWRlZmJhYjY1ZjQ1Mjc1MzlmMjhkN2NjNTY0YjAiLCJ2IjoiMCIsImdpem1vX2lkIjpudWxsLCJjcyI6bnVsbCwiY3AiOm51bGwsIm1hIjpudWxsfQ==",
     "https://i.pinimg.com/1200x/c5/20/51/c52051b79281ee5b9c9c6f4701cd852f.jpg",
     "https://i.pinimg.com/736x/ca/6e/82/ca6e826d10df23c7b65dc7f124353559.jpg",
     "https://i.pinimg.com/736x/dc/73/2a/dc732ae5b28015fe0790ce89085a8b3b.jpg",
@@ -165,6 +166,46 @@ export default function TabAccueilScreen() {
     );
   };
 
+  /*** ✅ ANIMATION 👋 ***/
+  const waveAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(waveAnim, {
+          toValue: 1,
+          duration: 400,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(waveAnim, {
+          toValue: 0,
+          duration: 400,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [waveAnim]);
+
+  const waveStyle = {
+    transform: [
+      {
+        rotate: waveAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: ["0deg", "20deg"],
+        }),
+      },
+    ],
+  };
+
+  /*** ✅ Détermine Bonjour / Bonsoir ***/
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 18 || hour < 6) return "Bonsoir";
+    return "Bonjour";
+  };
+
   return (
     <>
       <ScrollView
@@ -186,12 +227,17 @@ export default function TabAccueilScreen() {
             Artiva
           </DefaultText>
 
-          {/* ✅ Bienvenue + nom utilisateur */}
-          <DefaultText style={{ color: textColor, marginTop: 5 }}>
-            {isLoading
-              ? "Bienvenue 👋"
-              : `Bienvenue ${user?.name ?? ""} 👋`}
-          </DefaultText>
+          {/* ✅ Bienvenue + nom utilisateur avec 👋 animé */}
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5 }}>
+            <DefaultText style={{ color: textColor, fontSize: 16 }}>
+              {isLoading
+                ? `${getGreeting()}`
+                : `${getGreeting()} ${user?.name ?? ""}`}
+            </DefaultText>
+            <Animated.Text style={[{ fontSize: 18, marginLeft: 6 }, waveStyle]}>
+              👋
+            </Animated.Text>
+          </View>
         </View>
 
         <ScrollSection<CategoryType>
