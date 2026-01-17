@@ -759,6 +759,7 @@ import { useRouter, Href, Stack, useFocusEffect } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import Colors from "../../constants/Colors"; // Ton fichier de couleurs
 import { FontAwesome } from "@expo/vector-icons";
+import { FontAwesome5, MaterialIcons, Entypo } from "@expo/vector-icons";
 
 // (Les interfaces Order, OrderItem, UserDetails, etc. restent les mêmes)
 interface UserDetails {
@@ -940,46 +941,98 @@ export default function TabProfileScreen() {
     );
   }
 
-  // 2. Gérer le cas où l'utilisateur n'est pas connecté
-  if (!user) {
-    return (
-      <View
-        style={[
-          styles.centered,
-          { backgroundColor: colors.background, paddingHorizontal: 20 },
-        ]}
-      >
-        <Text style={[styles.authTitle, { color: colors.text }]}>
-          Votre profil vous attend !
-        </Text>
-        <Text style={[styles.authSubtitle, { color: colors.subtleText }]}>
-          Connectez-vous ou créez un compte pour accéder à vos commandes, listes
-          de souhaits et plus encore.
-        </Text>
-        <Pressable
-          style={[styles.authButton, { backgroundColor: colors.primary }]}
-          onPress={() => router.push("/login")}
-        >
-          <Text style={styles.authButtonText}>Se connecter</Text>
-        </Pressable>
-        <Pressable
-          style={[
-            styles.authButton,
-            {
-              backgroundColor: "transparent",
-              borderWidth: 1,
-              borderColor: colors.primary,
-            },
-          ]}
-          onPress={() => router.push("/register")}
-        >
-          <Text style={[styles.authButtonText, { color: colors.primary }]}>
-            S'inscrire
-          </Text>
-        </Pressable>
+// 2. Gérer le cas où l'utilisateur n'est pas connecté
+if (!user) {
+  return (
+    <View
+      style={[
+        styles.centered,
+        { backgroundColor: colors.background, paddingHorizontal: 20 },
+      ]}
+    >
+      <Text style={[styles.authTitle, { color: colors.text }]}>
+        Votre profil vous attend !
+      </Text>
+      <Text style={[styles.authSubtitle, { color: colors.subtleText }]}>
+        Connectez-vous ou créez un compte pour accéder à vos commandes, listes
+        de souhaits et plus encore.
+      </Text>
+
+      {/* Bloc fonctionnalités avec icônes vectorielles */}
+      <View style={{ width: "100%", marginVertical: 25}}>
+        {[
+          { icon: <MaterialIcons name="flash-on" size={15} color="#4CAF50" />, text: "Livraison rapide" },
+          { icon: <FontAwesome5 name="truck" size={15} color="#4CAF50" />, text: "Livraison par Artiva Logistic" },
+          { icon: <FontAwesome5 name="credit-card" size={15} color="#4CAF50" />, text: "Paiement sécurisé" },
+          { icon: <Entypo name="box" size={15} color="#4CAF50" />, text: "Emballage soigné" },
+          { icon: <FontAwesome5 name="star" size={15} color="#4CAF50" />, text: "Qualité garantie" },
+        ].map((feature, idx) => (
+          <View
+            key={idx}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 5,
+              paddingVertical: 8,
+              paddingHorizontal: 10,
+              backgroundColor: "rgba(255,255,255,0.05)",
+              borderRadius: 12,
+            }}
+          >
+            <View style={{ width: 30, alignItems: "center" }}>
+              {feature.icon}
+            </View>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "500",
+                color: colors.text,
+                marginLeft: 12,
+              }}
+            >
+              {feature.text}
+            </Text>
+          </View>
+        ))}
       </View>
-    );
-  }
+
+      {/* Boutons */}
+      <Pressable
+        style={{
+          paddingVertical: 16,
+          borderRadius: 12,
+          width: "100%",
+          alignItems: "center",
+          marginBottom: 12,
+          backgroundColor: colors.primary,
+        }}
+        onPress={() => router.push("/login")}
+      >
+        <Text style={{ fontSize: 16, fontWeight: "600", color: "#fff" }}>
+          Se connecter
+        </Text>
+      </Pressable>
+
+      <Pressable
+        style={{
+          paddingVertical: 16,
+          borderRadius: 12,
+          width: "100%",
+          alignItems: "center",
+          marginBottom: 5,
+          backgroundColor: "transparent",
+          borderWidth: 1,
+          borderColor: colors.primary,
+        }}
+        onPress={() => router.push("/register")}
+      >
+        <Text style={{ fontSize: 16, fontWeight: "600", color: colors.primary }}>
+          S'inscrire
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
 
   const displayName =
     userDetails?.full_name || user.name || "Utilisateur Artiva";
