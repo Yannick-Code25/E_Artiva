@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "front_end",
-    "slug": "front_end",
+    "name": "Artiva",
+    "slug": "artiva-new",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -20,6 +20,8 @@
       }
     },
     "android": {
+      "package": "com.fathanemarcos.artiva",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -43,6 +45,13 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "API_BASE_URL": "https://back-end-purple-log-1280.fly.dev/api",
+      "router": {},
+      "eas": {
+        "projectId": "589d0365-578c-415c-85f2-92882a581e1c"
+      }
     }
   }
 }
