@@ -79,9 +79,10 @@ export default function TabShopScreen() {
     setIsProductsLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams();
-      if (categoryToFetch) params.append("category_id", String(categoryToFetch));
-      if (searchTerm) params.append("search", searchTerm);
+// AVANT
+const params = new URLSearchParams();
+if (categoryToFetch) params.append("category_id", String(categoryToFetch));
+if (searchTerm) params.append("search", searchTerm);
 
       const response = await fetch(`${API_BASE_URL}/products?${params.toString()}`);
       if (!response.ok) throw new Error("Erreur de chargement des produits.");

@@ -53,7 +53,7 @@ export default function CategoryProductsScreen() {
     setError(null);
     try {
       const response = await fetch(
-        `${API_BASE_URL}/products?category_id=${categoryId}`
+        `${API_BASE_URL}/products?category_id=${categoryId}&limit=10000000`
       );
       if (!response.ok) {
         const errorData = await response
