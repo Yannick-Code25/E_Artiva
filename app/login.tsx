@@ -21,7 +21,7 @@ import Colors from "../constants/Colors";
 
 const API_BASE_URL = "https://back-end-purple-log-1280.fly.dev/api";
 
-const BACKGROUND_IMAGE = "https://i.pinimg.com/736x/28/fa/f9/28faf9cb67b4edabe61120122df74a60.jpg";
+const BACKGROUND_IMAGE = "https://i.pinimg.com/1200x/24/a7/b8/24a7b897d259c5514a82ded209dbdc30.jpg";
 const { height } = Dimensions.get("window");
 
 export default function LoginScreen() {
