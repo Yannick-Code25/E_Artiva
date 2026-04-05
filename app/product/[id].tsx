@@ -117,8 +117,6 @@ export default function ProductDetailScreen() {
   const flatListRef = useRef<FlatList<ProductImageGalleryItem>>(null);
   const [cartMessage, setCartMessage] = useState<string | null>(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const [isMenuVisible, setIsMenuVisible] = useState(false); // Pour le menu 3 points
-  const [searchQuery, setSearchQuery] = useState("");
 
   // AJOUTE CECI : Pour stocker l'URL de l'image qu'on veut voir en grand (null = rien d'ouvert)
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -385,14 +383,6 @@ export default function ProductDetailScreen() {
     }
   };
 
-  const handleSearch = () => {
-    if (searchQuery.trim().length > 0) {
-      // On redirige vers l'accueil (ou ta page de liste) avec le paramètre de recherche
-      // Adapte le chemin "/(tabs)/" si ta page d'accueil est ailleurs
-      router.push(`/(tabs)/?search=${encodeURIComponent(searchQuery)}` as Href);
-    }
-  };
-
   // --- RENDU HELPER ---
   const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
     if (viewableItems.length > 0 && viewableItems[0].index !== null) {
@@ -424,8 +414,7 @@ export default function ProductDetailScreen() {
     <View style={{ flex: 1, backgroundColor: pageBackgroundColor }}>
       {/* 1. On cache le header par défaut */}
       <Stack.Screen options={{ headerShown: false }} />
-
-      {/* 2. Notre Header Personnalisé */}
+      {/* 2. Header simplifié - juste la flèche retour */}
       <View
         style={{
           flexDirection: "row",
@@ -434,184 +423,12 @@ export default function ProductDetailScreen() {
           paddingBottom: 10,
           paddingHorizontal: 15,
           backgroundColor: pageBackgroundColor,
-          zIndex: 100,
         }}
       >
-        {/* Flèche Retour */}
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={{ marginRight: 10 }}
-        >
+        <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-
-        {/* Champ de Recherche */}
-        <View
-          style={{
-            flex: 1,
-            flexDirection: "row",
-            alignItems: "center",
-            backgroundColor: colors.card,
-            borderRadius: 20,
-            paddingHorizontal: 10,
-            height: 40,
-            marginRight: 10,
-            borderWidth: 1,
-            borderColor: "#ddd",
-          }}
-        >
-          <Ionicons name="search" size={20} color={colors.subtleText} />
-          <TextInput
-            placeholder="Rechercher..."
-            placeholderTextColor={colors.subtleText}
-            style={{ flex: 1, marginLeft: 5, color: colors.text }}
-            value={searchQuery} // 1. La valeur
-            onChangeText={setSearchQuery} // 2. Mise à jour du texte
-            onSubmitEditing={handleSearch} // 3. Lancer quand on appuie sur "Entrée"
-            returnKeyType="search"
-          />
-        </View>
-
-        {/* Panier - AFFICHÉ UNIQUEMENT SI CONNECTÉ */}
-        {userToken && (
-          <TouchableOpacity
-            onPress={() => router.push("/cart" as Href)}
-            style={{ marginRight: 15 }}
-          >
-            <View>
-              <Ionicons name="cart-outline" size={26} color={colors.text} />
-              {cartItems.length > 0 && (
-                <View
-                  style={{
-                    position: "absolute",
-                    top: -5,
-                    right: -5,
-                    backgroundColor: "red",
-                    borderRadius: 10,
-                    width: 18,
-                    height: 18,
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: "white",
-                      fontSize: 10,
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {cartItems.length}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
-        )}
-
-        {/* Menu 3 points */}
-        <TouchableOpacity onPress={() => setIsMenuVisible(!isMenuVisible)}>
-          <Ionicons name="ellipsis-vertical" size={24} color={colors.text} />
-        </TouchableOpacity>
       </View>
-
-      {/* Le petit Menu Déroulant (s'affiche si isMenuVisible est true) */}
-      {isMenuVisible && (
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => setIsMenuVisible(false)}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 99,
-          }}
-        >
-          <View
-            style={{
-              position: "absolute",
-              top: 90,
-              right: 15,
-              backgroundColor: cardBackgroundColor,
-              borderRadius: 8,
-              padding: 10,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.2,
-              shadowRadius: 4,
-              elevation: 5,
-              zIndex: 101,
-              minWidth: 150,
-            }}
-          >
-            <TouchableOpacity
-              onPress={() => {
-                setIsMenuVisible(false);
-                router.push("/" as Href);
-              }}
-              style={{
-                paddingVertical: 10,
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <Ionicons
-                name="home-outline"
-                size={20}
-                color={colors.text}
-                style={{ marginRight: 10 }}
-              />
-              <Text style={{ color: colors.text }}>Accueil</Text>
-            </TouchableOpacity>
-            <View style={{ height: 1, backgroundColor: "#eee" }} />
-            <TouchableOpacity
-              onPress={() => {
-                setIsMenuVisible(false);
-                handleShare();
-              }}
-              style={{
-                paddingVertical: 10,
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <Ionicons
-                name="share-social-outline"
-                size={20}
-                color={colors.text}
-                style={{ marginRight: 10 }}
-              />
-              <Text style={{ color: colors.text }}>Partager</Text>
-            </TouchableOpacity>
-            <View style={{ height: 1, backgroundColor: "#eee" }} />
-            <TouchableOpacity
-              onPress={() => {
-                setIsMenuVisible(false);
-                isInWishlist
-                  ? removeFromWishlist(product.id)
-                  : addToWishlist(product);
-              }}
-              style={{
-                paddingVertical: 10,
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <FontAwesome
-                name={isInWishlist ? "heart" : "heart-o"}
-                size={20}
-                color={isInWishlist ? "#E74C3C" : colors.text}
-                style={{ marginRight: 10 }}
-              />
-              <Text style={{ color: colors.text }}>
-                {isInWishlist ? "Retirer des favoris" : "Ajouter aux favoris"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      )}
 
       <ScrollView
         showsVerticalScrollIndicator={false}
