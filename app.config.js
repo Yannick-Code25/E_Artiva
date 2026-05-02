@@ -1,8 +1,7 @@
 // app.config.js
 import 'dotenv/config';
 
-export default ({ config }) => ({
-  ...config,
+export default {
   name: "Artiva",
   slug: "artiva",
   version: "1.1.0",
@@ -71,4 +70,4 @@ export default ({ config }) => ({
       projectId: "f8f95457-cfcc-4619-a374-33c257ccda5e"
     }
   }
-});
+};
