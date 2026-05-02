@@ -5,15 +5,15 @@ export default ({ config }) => ({
   ...config,
   name: "Artiva",
   slug: "artiva",
-  version: "1.0.0",
+  version: "1.1.0",
   sdkVersion: "54.0.0",
   platforms: ["ios", "android", "web"],
   orientation: "portrait",
-  icon: "./assets/images/icon.png",
+  icon: "./assets/images/Artiva_icon.png",
   scheme: "artiva",
   userInterfaceStyle: "automatic",
   splash: {
-    image: "./assets/images/splash-icon.png",
+    image: "./assets/images/Artiva_icon.png",
     resizeMode: "contain",
     backgroundColor: "#ffffff"
   },
@@ -25,7 +25,7 @@ export default ({ config }) => ({
   },
   android: {
     adaptiveIcon: {
-      foregroundImage: "./assets/images/adaptive-icon.png",
+      foregroundImage: "./assets/images/Artiva_icon.png",
       backgroundColor: "#ffffff"
     },
     edgeToEdgeEnabled: true,
@@ -34,8 +34,22 @@ export default ({ config }) => ({
       "WRITE_EXTERNAL_STORAGE",
       "CAMERA"
     ],
-    package: "com.fathanemarcos.artiva", // ✅ corrigé ici
-    versionCode: 1 // ✅ important pour Play Store
+    package: "com.fathanemarcos.artiva",
+    versionCode: 22,
+    intentFilters: [
+      {
+        action: "VIEW",
+        autoVerify: true,
+        data: [
+          {
+            scheme: "https",
+            host: "auth.expo.io",
+            pathPrefix: "/@fathanemarcos/artiva"
+          }
+        ],
+        category: ["BROWSABLE", "DEFAULT"]
+      }
+    ]
   },
   web: {
     bundler: "metro",
@@ -51,10 +65,10 @@ export default ({ config }) => ({
     typedRoutes: true
   },
   extra: {
-  API_BASE_URL: process.env.API_BASE_URL ?? "https://back-end-purple-log-1280.fly.dev/api",
-  router: {},
-  eas: {
-    projectId: "f8f95457-cfcc-4619-a374-33c257ccda5e"
+    API_BASE_URL: process.env.API_BASE_URL ?? "https://back-end-purple-log-1280.fly.dev/api",
+    router: {},
+    eas: {
+      projectId: "f8f95457-cfcc-4619-a374-33c257ccda5e"
+    }
   }
-}
 });

@@ -9,32 +9,40 @@ import React, {
 } from "react";
 import * as SecureStore from "expo-secure-store";
 import { Appearance } from "react-native";
-import type { ColorSchemeName } from "react-native"; // Importer le type
+import type { ColorSchemeName } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+import * as Google from 'expo-auth-session/providers/google';
+import * as AuthSession from 'expo-auth-session'; // ← AJOUTÉ
+import * as WebBrowser from 'expo-web-browser';
+import { googleConfig, googleScopes } from '../constants/GoogleAuthConfig';
+import { Alert } from 'react-native';
+
+WebBrowser.maybeCompleteAuthSession();
 
 // --- Constantes ---
 const TOKEN_KEY = "artiva-auth-token";
 const USER_INFO_KEY = "artiva-user-info";
 const THEME_PREFERENCE_KEY = "artiva-theme-preference";
-const API_BASE_URL = "https://back-end-purple-log-1280.fly.dev/api"; // **METS TON IP ICI**
+const API_BASE_URL = "https://back-end-purple-log-1280.fly.dev/api";
 
 // --- Types ---
 export interface User {
   id: number | string;
   name: string;
   email: string;
-  role: "customer" | "admin" | string; // Sois plus précis si tu as une liste fixe de rôles
+  role: "customer" | "admin" | string;
   address?: string;
   phone?: string;
-  profileImageFromAuthContext?: string; // Ajouté pour la cohérence avec ton interface
-  // Ajoute d'autres champs que tu veux disponibles globalement pour l'utilisateur
+  profileImageFromAuthContext?: string;
 }
 
-export type AppColorSchemePreference = "light" | "dark" | "system"; // 'null' n'est pas une préférence que l'utilisateur choisit
+export type AppColorSchemePreference = "light" | "dark" | "system";
 
 interface AuthContextType {
   signIn: (token: string, userData: User) => Promise<void>;
   signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   user: User | null;
   userToken: string | null;
   isLoading: boolean;
@@ -61,7 +69,7 @@ export function useAuth(): AuthContextType {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [userToken, setUserToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [isAuthDataLoading, setIsAuthDataLoading] = useState(true); // Chargement spécifique au token/user
+  const [isAuthDataLoading, setIsAuthDataLoading] = useState(true);
 
   const [unreadNotificationCount, setUnreadNotificationCount] =
     useState<number>(0);
@@ -74,6 +82,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   >(Appearance.getColorScheme() ?? "light");
   const [isThemePreferenceLoading, setIsThemePreferenceLoading] =
     useState(true);
+
+  // Google Sign-In — URI forcée vers le proxy Expo
+  const redirectUri = "https://auth.expo.io/@fathanemarcos/artiva";
+
+  const [googleRequest, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
+    clientId: googleConfig.expoClientId,
+    webClientId: googleConfig.webClientId,
+    scopes: googleScopes,
+    redirectUri,
+  });
 
   // 1. Charger le token et les informations utilisateur au démarrage
   useEffect(() => {
@@ -99,7 +117,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           "AuthContext: Erreur chargement token/user depuis SecureStore.",
           e
         );
-        // S'assurer de réinitialiser en cas d'erreur (ex: JSON corrompu)
         setUserToken(null);
         setUser(null);
       } finally {
@@ -112,13 +129,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // 2. Charger la préférence de thème et gérer le thème effectif
   useEffect(() => {
-    // Déclarer la variable pour stocker la souscription au listener
     let appearanceListenerSubscription: { remove: () => void } | undefined;
 
     const handleSystemThemeChange = (
       preferences: Appearance.AppearancePreferences
     ) => {
-      // Met à jour effectiveAppColorScheme SEULEMENT si la préférence est 'system'
       setAppColorSchemePreferenceState((currentStoredPref) => {
         if (currentStoredPref === "system") {
           const newSystemScheme = preferences.colorScheme ?? "light";
@@ -149,19 +164,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             "AuthContext: Thème système initial appliqué:",
             systemTheme
           );
-          // Attacher le listener pour les changements de thème système
           appearanceListenerSubscription = Appearance.addChangeListener(
             handleSystemThemeChange
           );
         } else {
-          setEffectiveAppColorScheme(initialPreference); // 'light' ou 'dark'
+          setEffectiveAppColorScheme(initialPreference);
           console.log(
             `AuthContext: Préférence de thème forcée appliquée: ${initialPreference}`
           );
         }
       } catch (e) {
         console.error("AuthContext: Erreur chargement préférence thème", e);
-        // Fallback en cas d'erreur
         setAppColorSchemePreferenceState("system");
         const systemTheme = Appearance.getColorScheme() ?? "light";
         setEffectiveAppColorScheme(systemTheme);
@@ -176,56 +189,95 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     loadThemePreference();
 
-    // Fonction de nettoyage pour le useEffect
     return () => {
       if (appearanceListenerSubscription) {
         console.log("AuthContext: Nettoyage du listener de thème système.");
-        appearanceListenerSubscription.remove(); // Appelle la méthode remove() de la souscription
+        appearanceListenerSubscription.remove();
       }
     };
-  }, []); // S'exécute une seule fois au montage pour configurer le thème initialement
+  }, []);
 
-  const setColorSchemePreferenceInternal = async (
-    scheme: AppColorSchemePreference
-  ) => {
-    console.log(
-      "AuthContext: Changement de préférence de thème demandé:",
-      scheme
-    );
-    try {
-      await AsyncStorage.setItem(THEME_PREFERENCE_KEY, scheme);
-      setAppColorSchemePreferenceState(scheme);
-      if (scheme === "system") {
-        setEffectiveAppColorScheme(Appearance.getColorScheme() ?? "light");
-      } else {
-        // 'light' or 'dark'
-        setEffectiveAppColorScheme(scheme);
-        // Si on force un thème, on pourrait vouloir retirer le listener, mais le useEffect le gère au prochain re-rendu.
+  // 3. Gérer la réponse de Google
+  useEffect(() => {
+    const handleGoogleResponse = async () => {
+      if (googleResponse?.type === 'success') {
+        const { authentication } = googleResponse;
+        const accessToken = authentication?.accessToken;
+
+        console.log("AuthContext: Réponse Google reçue avec succès");
+
+        if (accessToken) {
+          try {
+            // Récupérer les infos utilisateur depuis Google
+            const userInfoResponse = await fetch('https://www.googleapis.com/userinfo/v2/me', {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+
+            const userInfo = await userInfoResponse.json();
+            console.log("AuthContext: Info Google:", userInfo.email);
+
+            // Envoyer au backend
+            const backendResponse = await fetch(`${API_BASE_URL}/auth/google`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: userInfo.email,
+                name: userInfo.name,
+                googleId: userInfo.id,
+                picture: userInfo.picture,
+              }),
+            });
+
+            const data = await backendResponse.json();
+
+            if (backendResponse.ok) {
+              await SecureStore.setItemAsync(TOKEN_KEY, data.token);
+              setUserToken(data.token);
+
+              const userData: User = {
+                id: data.user.id,
+                name: data.user.name,
+                email: data.user.email,
+                role: data.user.role || 'customer',
+                profileImageFromAuthContext: data.user.picture || undefined,
+              };
+              await SecureStore.setItemAsync(USER_INFO_KEY, JSON.stringify(userData));
+              setUser(userData);
+
+              console.log("AuthContext: Connexion Google réussie");
+            } else {
+              throw new Error(data.message || 'Erreur connexion Google');
+            }
+          } catch (error) {
+            console.error('AuthContext: Erreur backend Google:', error);
+            Alert.alert('Erreur', "Impossible de s'authentifier avec Google");
+          }
+        }
+      } else if (googleResponse?.type === 'error') {
+        console.log('AuthContext: Erreur Google:', googleResponse.error);
+        Alert.alert('Erreur', "La connexion Google a échoué, veuillez réessayer.");
+      } else if (googleResponse?.type === 'dismiss') {
+        console.log('AuthContext: Connexion Google annulée par l\'utilisateur');
       }
-    } catch (e) {
-      console.error("AuthContext: Erreur sauvegarde préférence thème", e);
-    }
-  };
+    };
 
-  // 3. Récupérer le nombre de notifications non lues
+    handleGoogleResponse();
+  }, [googleResponse]);
+
+  // 4. Récupérer le nombre de notifications non lues
   const fetchUnreadNotificationCount = useCallback(async () => {
     if (!userToken) {
-      // Correction pour Erreur 3
       setUnreadNotificationCount(0);
       console.log(
         "AuthContext: Pas de userToken, fetchUnreadNotificationCount annulé."
       );
       return;
     }
-    console.log(
-      "AuthContext: fetchUnreadNotificationCount avec token:",
-      userToken ? "Présent" : "Absent"
-    );
     try {
       const response = await fetch(
         `${API_BASE_URL}/notifications/unread-count`,
         {
-          headers: { Authorization: `Bearer ${userToken}` }, // userToken est garanti d'être une string ici
+          headers: { Authorization: `Bearer ${userToken}` },
         }
       );
       if (!response.ok) {
@@ -249,12 +301,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         e
       );
     }
-  }, [userToken]); // Dépend de userToken
+  }, [userToken]);
 
-  // Appeler fetchUnreadNotificationCount lorsque userToken change et que les chargements initiaux sont faits
+  // Appeler fetchUnreadNotificationCount lorsque userToken change
   useEffect(() => {
     if (!isAuthDataLoading && !isThemePreferenceLoading) {
-      // Attendre que tout soit chargé
       console.log(
         "AuthContext: Auth et Thème chargés, appel de fetchUnreadNotificationCount."
       );
@@ -270,9 +321,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // --- Fonctions d'action ---
   const signIn = async (token: string, userData: User) => {
     console.log("AuthContext: Appel de signIn.");
-    setIsAuthDataLoading(true); // Indiquer un changement d'état d'auth
+    setIsAuthDataLoading(true);
     try {
-      // Assurer que les champs optionnels sont au moins undefined ou null si pas dans userData
       const completeUserData: User = {
         ...userData,
         address: userData.address || undefined,
@@ -288,10 +338,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUserToken(token);
       setUser(completeUserData);
       console.log("AuthContext: signIn réussi et données stockées.");
-      // fetchUnreadNotificationCount sera appelé par l'useEffect qui dépend de userToken
     } catch (e) {
       console.error("AuthContext: Erreur lors de signIn (sauvegarde).", e);
-      // Réinitialiser si erreur
       setUserToken(null);
       setUser(null);
     } finally {
@@ -313,7 +361,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setUserToken(null);
       setUser(null);
-      setUnreadNotificationCount(0); // Réinitialiser explicitement
+      setUnreadNotificationCount(0);
       setIsAuthDataLoading(false);
       console.log("AuthContext: signOut terminé.");
     }
@@ -341,17 +389,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  // Connexion avec Google — MODIFIÉ : ajout de useProxy dans promptGoogleAsync
+const signInWithGoogle = useCallback(async () => {
+  console.log("AuthContext: Démarrage connexion Google...");
+  try {
+    await promptGoogleAsync();
+  } catch (error) {
+    console.error('AuthContext: Erreur Google Sign-In:', error);
+    Alert.alert('Erreur', 'Impossible de se connecter avec Google');
+  }
+}, [promptGoogleAsync]);
+
+  const setColorSchemePreferenceInternal = async (
+    scheme: AppColorSchemePreference
+  ) => {
+    console.log(
+      "AuthContext: Changement de préférence de thème demandé:",
+      scheme
+    );
+    try {
+      await AsyncStorage.setItem(THEME_PREFERENCE_KEY, scheme);
+      setAppColorSchemePreferenceState(scheme);
+      if (scheme === "system") {
+        setEffectiveAppColorScheme(Appearance.getColorScheme() ?? "light");
+      } else {
+        setEffectiveAppColorScheme(scheme);
+      }
+    } catch (e) {
+      console.error("AuthContext: Erreur sauvegarde préférence thème", e);
+    }
+  };
+
   // Valeur du contexte
   const authContextValue: AuthContextType = {
     signIn,
     signOut,
+    signInWithGoogle,
     user,
     userToken,
-    isLoading: isAuthDataLoading || isThemePreferenceLoading, // État de chargement global
+    isLoading: isAuthDataLoading || isThemePreferenceLoading,
     unreadNotificationCount,
     fetchUnreadNotificationCount,
     appColorSchemePreference,
-    setColorSchemePreference: setColorSchemePreferenceInternal, // Utiliser la nouvelle fonction
+    setColorSchemePreference: setColorSchemePreferenceInternal,
     effectiveAppColorScheme,
     updateUserInContext,
   };
