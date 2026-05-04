@@ -9,7 +9,7 @@ export default {
   platforms: ["ios", "android", "web"],
   orientation: "portrait",
   icon: "./assets/images/Artiva_icon.png",
-  scheme: "artiva",
+  scheme: "artiva",  // ← Gardez ceci
   userInterfaceStyle: "automatic",
   splash: {
     image: "./assets/images/Artiva_icon.png",
@@ -35,20 +35,7 @@ export default {
     ],
     package: "com.fathanemarcos.artiva",
     versionCode: 22,
-    intentFilters: [
-      {
-        action: "VIEW",
-        autoVerify: true,
-        data: [
-          {
-            scheme: "https",
-            host: "auth.expo.io",
-            pathPrefix: "/@fathanemarcos/artiva"
-          }
-        ],
-        category: ["BROWSABLE", "DEFAULT"]
-      }
-    ]
+    // ❌ SUPPRIMEZ TOUT intentFilters
   },
   web: {
     bundler: "metro",

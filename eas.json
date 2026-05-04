@@ -5,12 +5,14 @@
   "build": {
     "production": {
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "autoIncrement": false
       }
     },
     "development": {
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "autoIncrement": false
       }
     }
   }

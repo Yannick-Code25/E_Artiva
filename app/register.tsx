@@ -13,17 +13,18 @@ import {
   Platform,
   SafeAreaView,
   Alert,
-  useColorScheme, // On utilise le hook de React Native
+  useColorScheme,
 } from "react-native";
 import { Link, useRouter } from "expo-router";
 import { FontAwesome } from "@expo/vector-icons";
-import Colors from "../constants/Colors"; // Assure-toi que le chemin est correct
+import Colors from "../constants/Colors";
+import { useAuth } from "../context/AuthContext"; // AJOUTÉ
 
-// N'oublie pas de remplacer cette URL par la tienne ou de la mettre dans un fichier de config
 const API_BASE_URL = "https://back-end-purple-log-1280.fly.dev/api";
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { signInWithGoogle } = useAuth(); // AJOUTÉ
   
   // --- Gestion du thème ---
   const colorScheme = useColorScheme() ?? 'light';
@@ -41,6 +42,7 @@ export default function RegisterScreen() {
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false); // AJOUTÉ
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
@@ -111,6 +113,20 @@ export default function RegisterScreen() {
       Alert.alert("Erreur d'inscription", error.message || "Une erreur est survenue.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // AJOUTÉ - Fonction connexion Google
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+      // La redirection se fera automatiquement via AuthContext
+    } catch (error) {
+      console.error("Erreur Google login:", error);
+      Alert.alert("Erreur", "Impossible de se connecter avec Google");
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -196,6 +212,31 @@ export default function RegisterScreen() {
               {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>S'inscrire</Text>}
             </TouchableOpacity>
 
+{/* AJOUTÉ - Séparateur */}
+<View style={styles.separatorContainer}>
+  <View style={[styles.separatorLine, { backgroundColor: colors.cardBorder || '#ccc' }]} />
+  <Text style={[styles.separatorText, { color: colors.subtleText }]}>ou</Text>
+  <View style={[styles.separatorLine, { backgroundColor: colors.cardBorder || '#ccc' }]} />
+</View>
+
+{/* AJOUTÉ - Bouton Google */}
+<TouchableOpacity
+  style={[styles.googleButton, { borderColor: colors.cardBorder || '#ccc', backgroundColor: colors.inputBackground }]}
+  onPress={handleGoogleLogin}
+  disabled={isLoading || isGoogleLoading}
+>
+              {isGoogleLoading ? (
+                <ActivityIndicator color="#DB4437" />
+              ) : (
+                <>
+                  <FontAwesome name="google" size={20} color="#DB4437" />
+                  <Text style={[styles.googleButtonText, { color: colors.text }]}>
+                    S'inscrire avec Google
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+
             <View style={styles.footer}>
               <Text style={[styles.footerText, { color: colors.subtleText }]}>Déjà un compte ? </Text>
               <Link href="/login" asChild>
@@ -212,7 +253,7 @@ export default function RegisterScreen() {
   );
 }
 
-// Les styles ne contiennent PLUS de couleurs statiques
+// Les styles
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -267,7 +308,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   buttonText: {
-    color: 'white', // Le texte du bouton principal reste blanc dans les deux thèmes
+    color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
   },
@@ -287,5 +328,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 10,
     marginLeft: 5,
+  },
+  // AJOUTÉS
+  separatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+  },
+  separatorText: {
+    marginHorizontal: 10,
+    fontSize: 14,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

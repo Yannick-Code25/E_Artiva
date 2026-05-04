@@ -17,7 +17,9 @@ import {
   Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { FontAwesome } from "@expo/vector-icons";
 import Colors from "../constants/Colors";
+import { useAuth } from "../context/AuthContext"; // AJOUTÉ
 
 const API_BASE_URL = "https://back-end-purple-log-1280.fly.dev/api";
 
@@ -28,10 +30,12 @@ export default function LoginScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
+  const { signInWithGoogle } = useAuth(); // AJOUTÉ
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false); // AJOUTÉ
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -56,6 +60,20 @@ export default function LoginScreen() {
       Alert.alert("Erreur", err.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // AJOUTÉ - Fonction connexion Google
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+      // La redirection se fera automatiquement via AuthContext
+    } catch (error) {
+      console.error("Erreur Google login:", error);
+      Alert.alert("Erreur", "Impossible de se connecter avec Google");
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -130,6 +148,31 @@ export default function LoginScreen() {
                   <Text style={styles.buttonText}>Se connecter</Text>
                 )}
               </TouchableOpacity>
+
+              {/* AJOUTÉ - Séparateur */}
+              <View style={styles.separatorContainer}>
+                <View style={styles.separatorLine} />
+                <Text style={[styles.separatorText, { color: colors.subtleText }]}>ou</Text>
+                <View style={styles.separatorLine} />
+              </View>
+
+              {/* AJOUTÉ - Bouton Google */}
+              <TouchableOpacity
+                style={[styles.googleButton, { borderColor: "rgba(255,255,255,0.3)" }]}
+                onPress={handleGoogleLogin}
+                disabled={isSubmitting || isGoogleLoading}
+              >
+                {isGoogleLoading ? (
+                  <ActivityIndicator color="#DB4437" />
+                ) : (
+                  <>
+                    <FontAwesome name="google" size={20} color="#DB4437" />
+                    <Text style={[styles.googleButtonText, { color: "#fff" }]}>
+                      Continuer avec Google
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -172,4 +215,33 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
   },
   buttonText: { color: "#fff", fontSize: 18, fontWeight: "700" },
+  // AJOUTÉS
+  separatorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 20,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.3)",
+  },
+  separatorText: {
+    marginHorizontal: 10,
+    fontSize: 14,
+  },
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    paddingVertical: 15,
+    borderRadius: 15,
+    borderWidth: 1,
+    backgroundColor: "rgba(255,255,255,0.1)",
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });
