@@ -45,7 +45,8 @@ export default {
   plugins: [
     "expo-router",
     "expo-secure-store",
-    "expo-localization"
+    "expo-localization",
+    "@react-native-google-signin/google-signin"
   ],
   experiments: {
     typedRoutes: true
