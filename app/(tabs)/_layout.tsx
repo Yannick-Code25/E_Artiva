@@ -1,10 +1,11 @@
 // front_end/app/(tabs)/_layout.tsx
 
-import React from 'react';
+import React, { useEffect } from 'react'; // ← AJOUTER useEffect
 import { Tabs } from 'expo-router';
+import { useRouter } from 'expo-router'; // ← AJOUTER
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // ← AJOUTER
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '../../constants/Colors';
 import { useColorScheme } from '../../components/useColorScheme';
@@ -15,9 +16,22 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { userToken, isLoading: isAuthLoading, unreadNotificationCount } = useAuth();
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets(); // ← AJOUTER - Récupère la hauteur de la barre système
+  const insets = useSafeAreaInsets();
+  const router = useRouter(); // ← AJOUTER
+
+  // 🔥 PROTECTION : Redirige vers login si non connecté
+  useEffect(() => {
+    if (!isAuthLoading && !userToken) {
+      router.replace('/login');
+    }
+  }, [userToken, isAuthLoading, router]);
 
   if (isAuthLoading) {
+    return null;
+  }
+
+  // Si pas de token, on ne rend pas les onglets (la redirection va prendre le relais)
+  if (!userToken) {
     return null;
   }
 
@@ -25,9 +39,8 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        tabBarInactiveTintColor: '#9CA3AF', // gris moderne
+        tabBarInactiveTintColor: '#9CA3AF',
         headerShown: false,
-        // 🔥 MODIFIER ICI - Adaptation dynamique à la barre système Android
         tabBarStyle: {
           height: 65 + (insets.bottom > 0 ? insets.bottom : 0),
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,

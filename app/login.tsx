@@ -1,5 +1,5 @@
 // ARTIVA/front_end/app/login.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -19,7 +19,7 @@ import {
 import { useRouter } from "expo-router";
 import { FontAwesome } from "@expo/vector-icons";
 import Colors from "../constants/Colors";
-import { useAuth } from "../context/AuthContext"; // AJOUTÉ
+import { useAuth } from "../context/AuthContext";
 
 const API_BASE_URL = "https://back-end-purple-log-1280.fly.dev/api";
 
@@ -30,12 +30,18 @@ export default function LoginScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
-  const { signInWithGoogle } = useAuth(); // AJOUTÉ
+  const { signInWithGoogle, userToken, isGoogleSigningIn } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false); // AJOUTÉ
+
+  // ✅ REDIRECTION AUTOMATIQUE VERS HOME SI DÉJÀ CONNECTÉ
+  useEffect(() => {
+    if (userToken) {
+      router.replace("/(tabs)"); // ou "/(tabs)" selon ta structure
+    }
+  }, [userToken, router]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -63,17 +69,14 @@ export default function LoginScreen() {
     }
   };
 
-  // AJOUTÉ - Fonction connexion Google
+  // ✅ Connexion Google avec gestion du chargement
   const handleGoogleLogin = async () => {
-    setIsGoogleLoading(true);
     try {
       await signInWithGoogle();
-      // La redirection se fera automatiquement via AuthContext
+      // La redirection se fait automatiquement via le useEffect ci-dessus
     } catch (error) {
       console.error("Erreur Google login:", error);
       Alert.alert("Erreur", "Impossible de se connecter avec Google");
-    } finally {
-      setIsGoogleLoading(false);
     }
   };
 
@@ -133,7 +136,9 @@ export default function LoginScreen() {
                 onPress={() => router.push("/forgot-password")}
                 style={{ alignSelf: "flex-end", marginBottom: 20 }}
               >
-                <Text style={{ color: colors.primary, fontWeight: "500" }}>Mot de passe oublié ?</Text>
+                <Text style={{ color: colors.primary, fontWeight: "500" }}>
+                  Mot de passe oublié ?
+                </Text>
               </TouchableOpacity>
 
               {/* Bouton connexion */}
@@ -149,20 +154,20 @@ export default function LoginScreen() {
                 )}
               </TouchableOpacity>
 
-              {/* AJOUTÉ - Séparateur */}
+              {/* Séparateur */}
               <View style={styles.separatorContainer}>
                 <View style={styles.separatorLine} />
                 <Text style={[styles.separatorText, { color: colors.subtleText }]}>ou</Text>
                 <View style={styles.separatorLine} />
               </View>
 
-              {/* AJOUTÉ - Bouton Google */}
+              {/* Bouton Google */}
               <TouchableOpacity
                 style={[styles.googleButton, { borderColor: "rgba(255,255,255,0.3)" }]}
                 onPress={handleGoogleLogin}
-                disabled={isSubmitting || isGoogleLoading}
+                disabled={isSubmitting || isGoogleSigningIn}
               >
-                {isGoogleLoading ? (
+                {isGoogleSigningIn ? (
                   <ActivityIndicator color="#DB4437" />
                 ) : (
                   <>
@@ -215,7 +220,6 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
   },
   buttonText: { color: "#fff", fontSize: 18, fontWeight: "700" },
-  // AJOUTÉS
   separatorContainer: {
     flexDirection: "row",
     alignItems: "center",
