@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "561614528144",
-    "project_id": "artiva-6ada5",
-    "storage_bucket": "artiva-6ada5.firebasestorage.app"
+    "project_number": "140318387654",
+    "project_id": "serene-courier-495107-b5",
+    "storage_bucket": "serene-courier-495107-b5.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:561614528144:android:14bb2c3e44163932db0215",
+        "mobilesdk_app_id": "1:140318387654:android:dc607531996f5faa99d6c7",
         "android_client_info": {
           "package_name": "com.fathanemarcos.artiva"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "140318387654-m352bk8ot7stp37pntftfftn845l8kno.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fathanemarcos.artiva",
+            "certificate_hash": "9f9ed5b2a11d4d631c53fe0af7c9e3c25eb68f87"
+          }
+        },
+        {
+          "client_id": "140318387654-145f5amfrakiu9o511h49qflo016elga.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyBAeFOsnhy6WwoQh7FBlTYS8CQv3Qe7BRA"
+          "current_key": "AIzaSyCUb829hgOZEUA26RUPmjmqB_Ha3mTtCRY"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "140318387654-145f5amfrakiu9o511h49qflo016elga.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

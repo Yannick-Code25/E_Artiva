@@ -4,7 +4,7 @@ import 'dotenv/config';
 export default {
   name: "Artiva",
   slug: "artiva",
-  version: "1.1.0",
+  version: "1.2.4",
   sdkVersion: "54.0.0",
   platforms: ["ios", "android", "web"],
   orientation: "portrait",
@@ -34,7 +34,7 @@ export default {
       "CAMERA"
     ],
     package: "com.fathanemarcos.artiva",
-    versionCode: 22,
+    versionCode: 32,
     // ❌ SUPPRIMEZ TOUT intentFilters
   },
   web: {
